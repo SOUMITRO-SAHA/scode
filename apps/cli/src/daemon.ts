@@ -1,12 +1,14 @@
 import { spawn, type ChildProcess } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { dirname, resolve } from "node:path"
+import { Logger } from "shared/logger"
 
 const DEFAULT_PORT = 4100
 const HEALTH_ENDPOINT = `http://127.0.0.1:${DEFAULT_PORT}/health`
 const POLL_INTERVAL = 200
 const MAX_POLLS = 25
 
+const logger = new Logger({ stderr: true })
 let serverProcess: ChildProcess | null = null
 
 async function healthCheck(url: string): Promise<boolean> {
@@ -20,6 +22,7 @@ async function healthCheck(url: string): Promise<boolean> {
 
 export async function findServer(): Promise<string | null> {
   const ok = await healthCheck(HEALTH_ENDPOINT)
+  if (ok) logger.debug(`Found existing server at ${HEALTH_ENDPOINT}`)
   return ok ? `http://127.0.0.1:${DEFAULT_PORT}` : null
 }
 
@@ -30,6 +33,8 @@ function resolveServerEntry(): string {
 
 export async function startServer(): Promise<string> {
   const entry = resolveServerEntry()
+  logger.info(`Starting server from ${entry}`)
+
   serverProcess = spawn("npx", ["tsx", entry, `--port=${DEFAULT_PORT}`], {
     stdio: ["ignore", "pipe", "pipe"],
     detached: true,
@@ -46,15 +51,19 @@ export async function startServer(): Promise<string> {
   })
 
   serverProcess.on("exit", (code) => {
-    if (code !== 0) console.error(`[server] exited with code ${code}`)
+    if (code !== 0) logger.warn(`Server exited with code ${code}`)
     serverProcess = null
   })
 
   serverProcess.unref()
 
+  logger.debug(`Polling server health at ${HEALTH_ENDPOINT}`)
   for (let i = 0; i < MAX_POLLS; i++) {
     const ok = await healthCheck(HEALTH_ENDPOINT)
-    if (ok) return `http://127.0.0.1:${DEFAULT_PORT}`
+    if (ok) {
+      logger.info(`Server ready at http://127.0.0.1:${DEFAULT_PORT}`)
+      return `http://127.0.0.1:${DEFAULT_PORT}`
+    }
     await new Promise((r) => setTimeout(r, POLL_INTERVAL))
   }
 
@@ -63,6 +72,7 @@ export async function startServer(): Promise<string> {
 
 export function stopServer(): void {
   if (serverProcess) {
+    logger.info("Stopping server")
     serverProcess.kill("SIGTERM")
     serverProcess = null
   }

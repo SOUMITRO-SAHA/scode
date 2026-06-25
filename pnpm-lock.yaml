@@ -35,6 +35,9 @@ importers:
       react:
         specifier: ^19.2.7
         version: 19.2.7
+      shared:
+        specifier: workspace:*
+        version: link:../../packages/shared
     devDependencies:
       '@types/node':
         specifier: ^20.11.17

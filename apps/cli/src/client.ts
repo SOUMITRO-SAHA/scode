@@ -1,8 +1,15 @@
+import { Logger } from "shared/logger"
+
+const logger = new Logger({ stderr: true })
+
 export async function sendPrompt(
   prompt: string,
   serverUrl: string,
   onToken: (token: string) => void,
 ): Promise<string> {
+  logger.debug(`Sending prompt to ${serverUrl}/process (${prompt.slice(0, 60)}...)`)
+
+  const startTime = Date.now()
   const response = await fetch(`${serverUrl}/process`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
@@ -11,6 +18,7 @@ export async function sendPrompt(
 
   if (!response.ok) {
     const text = await response.text()
+    logger.error(`Server error ${response.status}: ${text}`)
     throw new Error(`Server error ${response.status}: ${text}`)
   }
 
@@ -50,6 +58,9 @@ export async function sendPrompt(
 
   if (flushTimer) clearTimeout(flushTimer)
   flush()
+
+  const elapsed = Date.now() - startTime
+  logger.info(`Response complete (${full.length} chars in ${elapsed}ms)`)
 
   return full
 }

@@ -4,6 +4,9 @@ import { ensureServer, stopServer } from "./daemon.js"
 import { sendPrompt } from "./client.js"
 import { App } from "./app.js"
 import { stdout } from "node:process"
+import { Logger } from "shared/logger"
+
+const logger = new Logger({ stderr: true })
 
 async function main() {
   const args = process.argv.slice(2)
@@ -14,16 +17,18 @@ async function main() {
   try {
     serverUrl = await ensureServer()
   } catch (err) {
-    console.error("Failed to connect to server:", (err as Error).message)
+    logger.error(`Failed to connect to server: ${(err as Error).message}`)
     process.exit(1)
   }
 
   if (directPrompt) {
+    logger.info(`Single-shot mode: "${directPrompt.slice(0, 60)}..."`)
     await sendPrompt(directPrompt, serverUrl, (token) => {
       stdout.write(token)
     })
     stdout.write("\n")
     stopServer()
+    logger.close()
     process.exit(0)
   }
 
@@ -35,6 +40,7 @@ async function main() {
   process.on("SIGINT", () => {
     renderer.destroy()
     stopServer()
+    logger.close()
     process.exit(0)
   })
 
@@ -42,7 +48,8 @@ async function main() {
 }
 
 main().catch((err) => {
-  console.error("Fatal:", err)
+  logger.error(`Fatal: ${(err as Error).message}`)
   stopServer()
+  logger.close()
   process.exit(1)
 })
