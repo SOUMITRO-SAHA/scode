@@ -1,6 +1,7 @@
 import { useCallback, useRef, useState } from "react"
 import type { TextareaRenderable, KeyEvent } from "@opentui/core"
 import { theme } from "@scode/theme"
+import { useAppStore, AGENT_LABELS } from "../store/index"
 
 interface ComposerProps {
   onSubmit: (value: string) => void
@@ -9,6 +10,12 @@ interface ComposerProps {
   lines?: number
   placeholder?: string
   modelDisplay?: string
+}
+
+const AGENT_COLORS: Record<string, string> = {
+  plan: theme.warning,
+  write: theme.success,
+  chat: theme.brand.primary,
 }
 
 export function Composer({
@@ -24,6 +31,8 @@ export function Composer({
   const historyRef = useRef<string[]>([])
   const draftRef = useRef("")
   const histIdxRef = useRef(-1)
+  const currentAgent = useAppStore((s) => s.currentAgent)
+  const cycleAgent = useAppStore((s) => s.cycleAgent)
 
   const goHistory = useCallback((dir: -1 | 1) => {
     const ta = ref.current as any
@@ -52,7 +61,8 @@ export function Composer({
   const handleKeyDown = useCallback((event: KeyEvent) => {
     if (event.name === "up") { goHistory(-1); return }
     if (event.name === "down") { goHistory(1); return }
-  }, [goHistory])
+    if (event.name === "tab") { cycleAgent(); return }
+  }, [goHistory, cycleAgent])
 
   const handleSubmit = useCallback(() => {
     const ta = ref.current as any
@@ -96,9 +106,10 @@ export function Composer({
           {isCommand ? (
             <text fg={theme.brand.primary}>Command</text>
           ) : (
-            <text fg={theme.text.disabled}>
-              {modelDisplay ?? "scode"} | {streaming ? "Processing..." : "Ready"}
-            </text>
+            <box flexDirection="row">
+              <text fg={AGENT_COLORS[currentAgent]}>{AGENT_LABELS[currentAgent]}</text>
+              <text fg={theme.text.disabled}> · {modelDisplay ?? "scode"} | {streaming ? "Processing..." : "Ready"}</text>
+            </box>
           )}
         </box>
       </box>

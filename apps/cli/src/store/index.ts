@@ -1,6 +1,16 @@
 import { create } from "zustand"
 import type { Message } from "../types/index"
 
+export type AgentId = "plan" | "write" | "chat"
+
+export const AGENTS: AgentId[] = ["plan", "write", "chat"]
+
+export const AGENT_LABELS: Record<AgentId, string> = {
+  plan: "Plan",
+  write: "Write",
+  chat: "Chat",
+}
+
 interface AppStore {
   serverUrl: string
   currentSessionId: string | undefined
@@ -9,6 +19,7 @@ interface AppStore {
   sidebarVisible: boolean
   messages: Message[]
   streaming: boolean
+  currentAgent: AgentId
 
   setServerUrl: (url: string) => void
   setCurrentSessionId: (id: string | undefined) => void
@@ -22,6 +33,7 @@ interface AppStore {
   addSystemMessage: (text: string) => void
   clearMessages: () => void
   setStreaming: (s: boolean) => void
+  cycleAgent: () => void
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -32,6 +44,7 @@ export const useAppStore = create<AppStore>((set) => ({
   sidebarVisible: false,
   messages: [],
   streaming: false,
+  currentAgent: "chat",
 
   setServerUrl: (url) => set({ serverUrl: url }),
   setCurrentSessionId: (id) => set({ currentSessionId: id }),
@@ -65,4 +78,8 @@ export const useAppStore = create<AppStore>((set) => ({
   })),
   clearMessages: () => set({ messages: [], streaming: false }),
   setStreaming: (s) => set({ streaming: s }),
+  cycleAgent: () => set((s) => {
+    const idx = AGENTS.indexOf(s.currentAgent)
+    return { currentAgent: AGENTS[(idx + 1) % AGENTS.length] }
+  }),
 }))
