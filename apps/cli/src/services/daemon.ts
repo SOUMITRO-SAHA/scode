@@ -2,11 +2,7 @@ import { spawn, type ChildProcess } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { dirname, resolve } from "node:path"
 import { Logger } from "shared/logger"
-
-const DEFAULT_PORT = 4100
-const HEALTH_ENDPOINT = `http://127.0.0.1:${DEFAULT_PORT}/health`
-const POLL_INTERVAL = 200
-const MAX_POLLS = 25
+import { HEALTH_ENDPOINT, DEFAULT_PORT, SERVER_HOST, POLL_INTERVAL, MAX_POLLS } from "../constants/index.js"
 
 const logger = new Logger({ stderr: true })
 let serverProcess: ChildProcess | null = null
@@ -23,7 +19,7 @@ async function healthCheck(url: string): Promise<boolean> {
 export async function findServer(): Promise<string | null> {
   const ok = await healthCheck(HEALTH_ENDPOINT)
   if (ok) logger.debug(`Found existing server at ${HEALTH_ENDPOINT}`)
-  return ok ? `http://127.0.0.1:${DEFAULT_PORT}` : null
+  return ok ? `http://${SERVER_HOST}:${DEFAULT_PORT}` : null
 }
 
 function resolveServerEntry(): string {
@@ -61,8 +57,8 @@ export async function startServer(): Promise<string> {
   for (let i = 0; i < MAX_POLLS; i++) {
     const ok = await healthCheck(HEALTH_ENDPOINT)
     if (ok) {
-      logger.info(`Server ready at http://127.0.0.1:${DEFAULT_PORT}`)
-      return `http://127.0.0.1:${DEFAULT_PORT}`
+      logger.info(`Server ready at http://${SERVER_HOST}:${DEFAULT_PORT}`)
+      return `http://${SERVER_HOST}:${DEFAULT_PORT}`
     }
     await new Promise((r) => setTimeout(r, POLL_INTERVAL))
   }
