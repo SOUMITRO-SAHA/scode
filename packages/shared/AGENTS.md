@@ -1,8 +1,7 @@
 # Shared Non-obvious Learnings
 
 ## Package naming
-- package.json name is `"shared"` (unscoped), but README and internal references call it `@scode/shared` — intended rename never executed.
-- Imported as bare specifier `shared/logger`, `shared/constants` — NOT `@scode/shared/logger`.
+- Named `@scode/shared` in package.json. Import as `@scode/shared/logger`, `@scode/shared/constants`.
 
 ## Subpath exports (NO root export)
 - `"exports"` in package.json has ONLY subpath entries: `"./logger"` and `"./constants"`.

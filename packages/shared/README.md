@@ -24,7 +24,7 @@ Daily-rotating logger built on [Pino](https://getpino.io) + [pino-roll](https://
 ### Usage
 
 ```typescript
-import { Logger } from "shared/logger"
+import { Logger } from "@scode/shared/logger"
 
 const logger = new Logger()
 logger.info("Server started")

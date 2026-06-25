@@ -2,7 +2,7 @@
 
 ## tsconfig quirks
 - `jsx: "react-jsx"` and `jsxImportSource: "hono/jsx"` are enabled despite zero `.tsx` files in the server — leftover from template or prep for future Hono JSX views.
-- No tsconfig `paths` or `references` — `shared/logger` and `shared/constants` resolve via pnpm workspace linking only.
+- No tsconfig `paths` or `references` — `@scode/shared/logger` and `@scode/shared/constants` resolve via pnpm workspace linking only.
 
 ## Skill system
 - Two separate skill directories exist: `.agents/skills/` (scode agent runtime skills) and `.opencode/skills/` (AI coding agent context). Server only reads `.agents/skills/`.
@@ -13,7 +13,7 @@
 - `claude/client.ts` throws if ANTHROPIC_API_KEY is the literal placeholder `"sk-ant-..."` from `.env.example`. Single env var; no .env.local or per-environment files.
 
 ## Dependencies
-- Server depends on `shared` (pino logging, constants) but NOT on `@scode/theme` (no UI).
+- Server depends on `@scode/shared` (pino logging, constants) but NOT on `@scode/theme` (no UI).
 - Core deps: hono, @hono/node-server, @anthropic-ai/sdk, yaml.
 
 ## Tool security

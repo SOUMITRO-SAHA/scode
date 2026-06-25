@@ -1,7 +1,7 @@
 # CLI Non-obvious Learnings
 
 ## Import quirks
-- `shared/logger` and `shared/constants` are bare specifier imports resolving via pnpm workspace — the package is named `"shared"` in package.json, NOT `@scode/shared`. No tsconfig paths or references exist to resolve these.
+- `@scode/shared/logger` and `@scode/shared/constants` have no tsconfig paths or project references — resolution relies on pnpm workspace + tsx bundler only.
 - `verbatimModuleSyntax: true` in tsconfig — all relative imports must include `.js` extension despite being TS source.
 
 ## OpenTUI

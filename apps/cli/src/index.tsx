@@ -5,7 +5,7 @@ import { sendPrompt } from "./services/client.js"
 import { App } from "./app.js"
 import { stdin, stdout } from "node:process"
 import { createInterface } from "node:readline"
-import { Logger } from "shared/logger"
+import { Logger } from "@scode/shared/logger"
 
 const logger = new Logger({ stderr: true })
 

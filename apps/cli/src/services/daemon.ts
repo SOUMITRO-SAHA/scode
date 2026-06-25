@@ -1,8 +1,8 @@
 import { spawn, type ChildProcess } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { dirname, resolve } from "node:path"
-import { Logger } from "shared/logger"
-import { DEFAULT_PORT, POLL_INTERVAL, MAX_POLLS, healthUrl, serverBase } from "shared/constants"
+import { Logger } from "@scode/shared/logger"
+import { DEFAULT_PORT, POLL_INTERVAL, MAX_POLLS, healthUrl, serverBase } from "@scode/shared/constants"
 
 const logger = new Logger({ stderr: true })
 let serverProcess: ChildProcess | null = null

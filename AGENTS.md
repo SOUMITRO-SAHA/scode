@@ -109,9 +109,10 @@ Once a task is completed:
 
 # Non-obvious Project Facts
 
-## Package naming & imports
-- `shared` package is named `"shared"` (unscoped) in package.json — README calls it `@scode/shared` but rename was never executed. Imported as bare specifier `shared/logger`, `shared/constants` with no tsconfig paths or references to resolve them (relies on pnpm workspace + tsx runtime).
-- `@scode/theme` uses unscoped-single root export (`"."`). Zero runtime dependencies.
+## Package conventions
+- `@scode/shared` uses subpath exports (`"./logger"`, `"./constants"`) — no root `"."` export. Import as `@scode/shared/logger`, not `@scode/shared`.
+- `@scode/theme` uses single root export (`"."`). Zero runtime dependencies.
+- Neither `@scode/shared` nor `@scode/theme` have tsconfig paths or project references — resolution relies entirely on pnpm workspace + bundler (tsx).
 
 ## Stale turbo.json
 - `turbo.json` `build.outputs` lists `.next/**` — there is NO Next.js app in this repo. Config was copied from another project.

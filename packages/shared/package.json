@@ -1,5 +1,5 @@
 {
-  "name": "shared",
+  "name": "@scode/shared",
   "type": "module",
   "exports": {
     "./logger": "./src/logger/index.ts",

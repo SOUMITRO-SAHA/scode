@@ -1,5 +1,5 @@
-import { Logger } from "shared/logger"
-import { processUrl } from "shared/constants"
+import { Logger } from "@scode/shared/logger"
+import { processUrl } from "@scode/shared/constants"
 
 const logger = new Logger({ stderr: true })
 
