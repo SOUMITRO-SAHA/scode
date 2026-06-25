@@ -22,9 +22,11 @@ const RESET = "\x1b[0m"
 export class Logger {
   private pino: PinoLogger
   readonly logDir: string
+  private readonly useStdErr: boolean
 
   constructor(opts?: LoggerOptions) {
     this.logDir = opts?.logDir ?? process.env.SCODE_LOG_DIR ?? join(homedir(), ".scode", "logs")
+    this.useStdErr = opts?.stderr ?? false
     mkdirSync(this.logDir, { recursive: true })
 
     this.pino = pino(
@@ -45,26 +47,35 @@ export class Logger {
 
   debug(msg: string, data?: unknown): void {
     this.pino.debug(data !== undefined ? { data } : {}, msg)
-    console.log(`${LOG_COLOR.debug}DBG ${RESET}${ts()} ${msg}`)
+    this.consoleOut("debug", msg)
   }
 
   info(msg: string, data?: unknown): void {
     this.pino.info(data !== undefined ? { data } : {}, msg)
-    console.log(`${LOG_COLOR.info}INF ${RESET}${ts()} ${msg}`)
+    this.consoleOut("info", msg)
   }
 
   warn(msg: string, data?: unknown): void {
     this.pino.warn(data !== undefined ? { data } : {}, msg)
-    console.warn(`${LOG_COLOR.warn}WRN ${RESET}${ts()} ${msg}`)
+    this.consoleOut("warn", msg)
   }
 
   error(msg: string, data?: unknown): void {
     this.pino.error(data !== undefined ? { data } : {}, msg)
-    console.error(`${LOG_COLOR.error}ERR ${RESET}${ts()} ${msg}`)
+    this.consoleOut("error", msg)
   }
 
   close(): void {
     // pino-roll transport worker terminates on process exit
+  }
+
+  private consoleOut(level: string, msg: string): void {
+    const line = `${LOG_COLOR[level]}${level.toUpperCase().slice(0, 3)} ${RESET}${ts()} ${msg}`
+    if (this.useStdErr || level === "warn" || level === "error") {
+      console.error(line)
+    } else {
+      console.log(line)
+    }
   }
 }
 
