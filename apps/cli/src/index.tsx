@@ -3,7 +3,8 @@ import { createRoot } from "@opentui/react"
 import { ensureServer, stopServer } from "./daemon.js"
 import { sendPrompt } from "./client.js"
 import { App } from "./app.js"
-import { stdout } from "node:process"
+import { stdin, stdout } from "node:process"
+import { createInterface } from "node:readline"
 import { Logger } from "shared/logger"
 
 const logger = new Logger({ stderr: true })
@@ -32,19 +33,55 @@ async function main() {
     process.exit(0)
   }
 
-  const renderer = await createCliRenderer({
-    exitOnCtrlC: false,
-    targetFps: 30,
+  const tuiOk = await tryTui(serverUrl)
+  if (tuiOk) return
+
+  logger.info("TUI unavailable — falling back to REPL mode")
+  await repl(serverUrl)
+}
+
+async function tryTui(serverUrl: string): Promise<boolean> {
+  try {
+    const renderer = await createCliRenderer({
+      exitOnCtrlC: false,
+      targetFps: 30,
+    })
+
+    process.on("SIGINT", () => {
+      renderer.destroy()
+      stopServer()
+      logger.close()
+      process.exit(0)
+    })
+
+    createRoot(renderer).render(<App serverUrl={serverUrl} />)
+    return true
+  } catch {
+    return false
+  }
+}
+
+async function repl(serverUrl: string): Promise<void> {
+  console.log("scode REPL — type your prompt, or /q to quit")
+  const rl = createInterface({ input: stdin, output: stdout, terminal: true })
+
+  rl.on("line", async (line) => {
+    const input = line.trim()
+    if (!input) { rl.prompt(); return }
+    if (input === "/q") { rl.close(); return }
+    console.log()
+    await sendPrompt(input, serverUrl, (token) => stdout.write(token))
+    console.log("\n")
+    rl.prompt()
   })
 
-  process.on("SIGINT", () => {
-    renderer.destroy()
+  rl.on("close", () => {
     stopServer()
     logger.close()
     process.exit(0)
   })
 
-  createRoot(renderer).render(<App serverUrl={serverUrl} />)
+  rl.prompt()
 }
 
 main().catch((err) => {
