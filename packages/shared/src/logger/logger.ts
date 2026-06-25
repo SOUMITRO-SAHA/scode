@@ -1,101 +1,97 @@
-import { createWriteStream, readdirSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs"
-import type { WriteStream } from "node:fs"
+import { readdirSync, readFileSync, writeFileSync, unlinkSync, mkdirSync } from "node:fs"
 import { join } from "node:path"
 import { homedir } from "node:os"
 import { gzipSync } from "node:zlib"
-import { todayStr, dateFromFilename, daysOld, formatLine } from "./utils.js"
+import pino from "pino"
+import type { Logger as PinoLogger } from "pino"
+import { dateFromFilename, daysOld } from "./utils.js"
 import type { LogLevel, LoggerOptions } from "./types.js"
 
-const LEVEL_RANK: Record<LogLevel, number> = { debug: 0, info: 1, warn: 2, error: 3 }
+function ts(): string {
+  return new Date().toISOString().slice(11, 23)
+}
+
+const LOG_COLOR: Record<string, string> = {
+  info: "\x1b[32m",
+  warn: "\x1b[33m",
+  error: "\x1b[31m",
+  debug: "\x1b[36m",
+}
+const RESET = "\x1b[0m"
 
 export class Logger {
-  private stream: WriteStream | null = null
-  private currentDate = ""
-  private readonly logDir: string
-  private readonly minLevel: number
+  private pino: PinoLogger
+  readonly logDir: string
 
   constructor(opts?: LoggerOptions) {
-    this.logDir = opts?.logDir ?? join(homedir(), ".scode", "logs")
-    this.minLevel = LEVEL_RANK[opts?.level ?? "debug"]
+    this.logDir = opts?.logDir ?? process.env.SCODE_LOG_DIR ?? join(homedir(), ".scode", "logs")
     mkdirSync(this.logDir, { recursive: true })
-    this.rotate()
-    this.maintenance()
+
+    this.pino = pino(
+      { level: opts?.level ?? "debug" },
+      pino.transport({
+        target: "pino-roll",
+        options: {
+          file: join(this.logDir, "scode"),
+          frequency: "daily",
+          dateFormat: "yyyy-MM-dd",
+          mkdir: true,
+        },
+      }),
+    )
+
+    runMaintenance(this.logDir)
   }
 
-  debug(msg: string, data?: unknown): void { this.write("debug", msg, data) }
-  info(msg: string, data?: unknown): void { this.write("info", msg, data) }
-  warn(msg: string, data?: unknown): void { this.write("warn", msg, data) }
-  error(msg: string, data?: unknown): void { this.write("error", msg, data) }
+  debug(msg: string, data?: unknown): void {
+    this.pino.debug(data !== undefined ? { data } : {}, msg)
+    console.log(`${LOG_COLOR.debug}DBG ${RESET}${ts()} ${msg}`)
+  }
+
+  info(msg: string, data?: unknown): void {
+    this.pino.info(data !== undefined ? { data } : {}, msg)
+    console.log(`${LOG_COLOR.info}INF ${RESET}${ts()} ${msg}`)
+  }
+
+  warn(msg: string, data?: unknown): void {
+    this.pino.warn(data !== undefined ? { data } : {}, msg)
+    console.warn(`${LOG_COLOR.warn}WRN ${RESET}${ts()} ${msg}`)
+  }
+
+  error(msg: string, data?: unknown): void {
+    this.pino.error(data !== undefined ? { data } : {}, msg)
+    console.error(`${LOG_COLOR.error}ERR ${RESET}${ts()} ${msg}`)
+  }
 
   close(): void {
-    if (this.stream) {
-      this.stream.close()
-      this.stream = null
-    }
+    // pino-roll transport worker terminates on process exit
   }
+}
 
-  private write(level: LogLevel, msg: string, data?: unknown): void {
-    if (LEVEL_RANK[level] < this.minLevel) return
+export function runMaintenance(logDir: string): void {
+  try {
+    const entries = readdirSync(logDir, { withFileTypes: true })
 
-    const line = formatLine(level, msg, data)
-    console.log(line)
-
-    try {
-      this.ensureStream()
-      this.stream!.write(line + "\n")
-    } catch {
-      console.error(`[logger] Failed to write to log file: ${line}`)
-    }
-  }
-
-  private ensureStream(): void {
-    const today = todayStr()
-    if (today !== this.currentDate) {
-      this.rotate()
-      this.maintenance()
-    }
-  }
-
-  private rotate(): void {
-    this.currentDate = todayStr()
-    const path = join(this.logDir, `scode-${this.currentDate}.log`)
-    try {
-      this.close()
-      this.stream = createWriteStream(path, { flags: "a" })
-    } catch (err) {
-      console.error(`[logger] Failed to open log file: ${path}`, err)
-    }
-  }
-
-  private maintenance(): void {
-    try {
-      const entries = readdirSync(this.logDir, { withFileTypes: true })
-
-      for (const entry of entries) {
-        if (entry.name.endsWith(".log") && !entry.name.endsWith(".gz")) {
-          const date = dateFromFilename(entry.name)
-          if (date && daysOld(date) >= 15) {
-            this.compress(entry.name)
-          }
-        } else if (entry.name.endsWith(".log.gz")) {
-          const date = dateFromFilename(entry.name)
-          if (date && daysOld(date) >= 30) {
-            try {
-              unlinkSync(join(this.logDir, entry.name))
-            } catch { /* ignore */ }
-          }
+    for (const entry of entries) {
+      if (entry.name.endsWith(".log") && !entry.name.endsWith(".gz")) {
+        const date = dateFromFilename(entry.name)
+        if (date && daysOld(date) >= 15) {
+          compress(join(logDir, entry.name))
+        }
+      } else if (entry.name.endsWith(".log.gz")) {
+        const date = dateFromFilename(entry.name)
+        if (date && daysOld(date) >= 30) {
+          try { unlinkSync(join(logDir, entry.name)) } catch { /* ignore */ }
         }
       }
-    } catch { /* ignore maintenance errors */ }
-  }
+    }
+  } catch { /* ignore maintenance errors */ }
+}
 
-  private compress(name: string): void {
-    const fullPath = join(this.logDir, name)
-    try {
-      const content = readFileSync(fullPath)
-      const compressed = gzipSync(content)
-      writeFileSync(fullPath + ".gz", compressed)
-      unlinkSync(fullPath)
-    } catch { /* ignore compression errors */ }
-  }
+function compress(fullPath: string): void {
+  try {
+    const content = readFileSync(fullPath)
+    writeFileSync(fullPath + ".gz", gzipSync(content))
+    unlinkSync(fullPath)
+  } catch { /* ignore compression errors */ }
 }

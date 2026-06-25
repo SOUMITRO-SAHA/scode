@@ -4,14 +4,22 @@ Shared types and utilities used across `@scode/cli` and `@scode/server`.
 
 ## Logger (`shared/logger`)
 
-Daily-rotating logger with compression and cleanup. Used by server and CLI.
+Daily-rotating logger built on [Pino](https://getpino.io) + [pino-roll](https://github.com/mcollina/pino-roll).
 
 ```
 ~/.scode/logs/
-├── scode-2026-06-25.log       # today's logs
-├── scode-2026-06-10.log.gz    # compressed after 15 days
-└── ...                        # deleted after 30 days
+├── scode.2026-06-25.1.log       # today's logs (JSON)
+├── scode.2026-06-10.1.log.gz    # compressed after 15 days
+└── ...                           # deleted after 30 days
 ```
+
+### Features
+
+- **Pino** — structured JSON logs with levels, timestamps, pid
+- **pino-roll** — daily rotation with `dateFormat: yyyy-MM-dd`
+- **Console** — human-readable colored output (INF/DBG/WRN/ERR)
+- **Retention** — files older than 15 days gzip'd; compressed files older than 30 days deleted
+- **Config** — `SCODE_LOG_DIR` env var overrides default `~/.scode/logs`
 
 ### Usage
 
@@ -25,11 +33,10 @@ logger.error("Connection failed", { error: err.message })
 logger.close()
 ```
 
-### Behavior
+### Log file format
 
-| Event | Action |
-|-------|--------|
-| Daily rollover | New file at midnight |
-| File > 15 days old | Auto-compressed to `.gz` |
-| Compressed > 30 days old | Auto-deleted |
-| Log dir | `~/.scode/logs/` (override with `SCODE_LOG_DIR`) |
+```json
+{"level":30,"time":1719323588000,"pid":12345,"hostname":"...","msg":"Server starting up"}
+```
+
+Levels: 20=debug, 30=info, 40=warn, 50=error
