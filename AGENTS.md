@@ -106,3 +106,36 @@ Once a task is completed:
 - Simple keyword-based: tokenizes prompt and skill metadata, counts keyword overlap
 - Returns matched skills + always includes `main` fallback skill
 - "What's the weather?" → no skills matched → only `main` fallback (correct behavior)
+
+# Non-obvious Project Facts
+
+## Package naming & imports
+- `shared` package is named `"shared"` (unscoped) in package.json — README calls it `@scode/shared` but rename was never executed. Imported as bare specifier `shared/logger`, `shared/constants` with no tsconfig paths or references to resolve them (relies on pnpm workspace + tsx runtime).
+- `@scode/theme` uses unscoped-single root export (`"."`). Zero runtime dependencies.
+
+## Stale turbo.json
+- `turbo.json` `build.outputs` lists `.next/**` — there is NO Next.js app in this repo. Config was copied from another project.
+- `turbo.json` has `lint` and `check-types` tasks but most packages lack lint scripts.
+
+## Dev startup
+- Root `pnpm cli` tries `bun` first (silent stderr redirect), falls back to `tsx` — bun is faster for dev.
+
+## Ignored directories
+- `tasks/` is entirely gitignored (`tasks/.gitignore` contains `*`) — TODO/PLAN files are local only.
+- `docs/.gitignore` explicitly excludes `prd.md` (the assignment spec) but allows other `docs/prd/` files.
+- `.opencode/` is gitignored (`*` in `.opencode/.gitignore`).
+
+## TypeScript version divergence
+- Root: 5.9.2. CLI/server devDeps: ^5.8.3. Theme/shared: ^6.0.3. Web: ~6.0.2.
+- Theme and shared run ahead of consumer packages. Can cause resolution/emit differences between `tsx` runtime and `tsc`.
+
+## Prompt redundancy
+- Prompt builder starts system prompt with "You are scode..." AND MAIN_SKILL body also starts with "You are scode..." — slightly different wording, both end up in context.
+
+## Two separate skill systems
+- `.agents/skills/` = runtime skills for the scode AI agent (welcome-me, changelog, documentation).
+- `.opencode/skills/` = development skills for the AI coding agent building scode (opencode, opentui, effect, toon).
+- Server only reads `.agents/skills/`. The `.opencode/` skills are never loaded at runtime.
+
+## Disconnected web app
+- `apps/web/` is a standalone Vite+React scaffold with zero internal monorepo dependencies. NOT integrated with the scode server. Uses React Compiler for auto-memoization.
