@@ -1,9 +1,7 @@
-import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs"
-import { join } from "node:path"
-import { homedir } from "node:os"
+import { eq, desc } from "drizzle-orm"
+import { getDb } from "../db/client"
+import { sessions } from "../db/schema"
 import type { UnifiedMessage } from "../llm/types"
-
-const SESSIONS_DIR = join(homedir(), ".scode", "sessions")
 
 export interface Session {
   id: string
@@ -15,80 +13,69 @@ export interface Session {
   provider: string
 }
 
-function ensureDir(): void {
-  if (!existsSync(SESSIONS_DIR)) {
-    mkdirSync(SESSIONS_DIR, { recursive: true })
-  }
-}
-
-function sessionPath(id: string): string {
-  return join(SESSIONS_DIR, `${id}.json`)
-}
-
 function generateId(): string {
   return Date.now().toString(36) + Math.random().toString(36).slice(2, 8)
 }
 
+function rowToSession(row: typeof sessions.$inferSelect): Session {
+  return {
+    id: row.id,
+    name: row.name,
+    createdAt: row.createdAt,
+    updatedAt: row.updatedAt,
+    model: row.model,
+    provider: row.provider,
+    messages: JSON.parse(row.messages) as UnifiedMessage[],
+  }
+}
+
 export class SessionManager {
   create(name: string, model: string, provider: string): Session {
-    ensureDir()
     const id = generateId()
     const now = new Date().toISOString()
-    const session: Session = {
+    const row = {
       id,
       name: name || `Session ${new Date().toLocaleDateString()}`,
       createdAt: now,
       updatedAt: now,
-      messages: [],
       model,
       provider,
+      messages: "[]",
     }
-    writeFileSync(sessionPath(id), JSON.stringify(session, null, 2))
-    return session
+    getDb().insert(sessions).values(row).run()
+    return rowToSession(row)
   }
 
   get(id: string): Session | null {
-    ensureDir()
-    const path = sessionPath(id)
-    if (!existsSync(path)) return null
-    try {
-      return JSON.parse(readFileSync(path, "utf-8")) as Session
-    } catch {
-      return null
-    }
+    const row = getDb().select().from(sessions).where(eq(sessions.id, id)).get()
+    if (!row) return null
+    return rowToSession(row)
   }
 
   update(session: Session): void {
-    ensureDir()
-    session.updatedAt = new Date().toISOString()
-    writeFileSync(sessionPath(session.id), JSON.stringify(session, null, 2))
+    const now = new Date().toISOString()
+    getDb()
+      .update(sessions)
+      .set({
+        name: session.name,
+        updatedAt: now,
+        model: session.model,
+        provider: session.provider,
+        messages: JSON.stringify(session.messages),
+      })
+      .where(eq(sessions.id, session.id))
+      .run()
+    session.updatedAt = now
   }
 
   delete(id: string): boolean {
-    ensureDir()
-    const path = sessionPath(id)
-    if (!existsSync(path)) return false
-    unlinkSync(path)
-    return true
+    const result = getDb().delete(sessions).where(eq(sessions.id, id)).run()
+    return result.changes > 0
   }
 
   list(): Session[] {
-    ensureDir()
-    try {
-      const files = readdirSync(SESSIONS_DIR).filter((f) => f.endsWith(".json"))
-      return files
-        .map((f) => {
-          try {
-            return JSON.parse(readFileSync(join(SESSIONS_DIR, f), "utf-8")) as Session
-          } catch {
-            return null
-          }
-        })
-        .filter((s): s is Session => s !== null)
-        .sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
-    } catch {
-      return []
-    }
+    const rows = getDb().select().from(sessions).orderBy(desc(sessions.updatedAt)).all()
+    return rows.map(rowToSession)
   }
 
   addMessage(id: string, message: UnifiedMessage): Session | null {

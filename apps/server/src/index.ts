@@ -19,6 +19,7 @@ import { SessionManager } from "./session/manager"
 import { ConfigManager } from "./config/manager"
 import { createV1Router } from "./api/v1/index"
 import { handleChat } from "./chat/handler"
+import { getDb } from "./db/client"
 
 const DEFAULT_MODEL = "claude/claude-sonnet-4-20250515"
 
@@ -65,6 +66,9 @@ const providerRegistry = buildProviderRegistry()
 const sessionManager = new SessionManager()
 const configManager = new ConfigManager()
 const startTime = Date.now()
+
+getDb()
+logger.info("Database initialized")
 
 const app = new Hono()
 
