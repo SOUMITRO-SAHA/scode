@@ -7,8 +7,8 @@ import { Composer } from "./components/Composer.js"
 import { Footer } from "./components/Footer.js"
 import { useStreaming } from "./hooks/useStreaming.js"
 
-export function App({ serverUrl }: { serverUrl: string }) {
-  const { messages, loading, submit, clearMessages } = useStreaming(serverUrl)
+export function App({ serverUrl, model }: { serverUrl: string; model?: string }) {
+  const { messages, loading, submit, clearMessages } = useStreaming(serverUrl, model)
   const renderer = useRenderer()
   const { width, height } = useTerminalDimensions()
   const [debug, setDebug] = useState(false)

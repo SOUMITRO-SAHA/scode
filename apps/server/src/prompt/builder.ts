@@ -1,11 +1,11 @@
 import type { Skill, ToolDefinition } from "../types.js"
-import type { MessageParam } from "@anthropic-ai/sdk/resources/messages/messages.js"
+import type { UnifiedMessage } from "../llm/types.js"
 
 export function buildPrompt(
   skills: Skill[],
   userPrompt: string,
   tools: ToolDefinition[],
-): { system: string; messages: MessageParam[] } {
+): { system: string; messages: UnifiedMessage[] } {
   const skillSections = skills
     .map((s) => `## ${s.name}\n${s.description}\n\n${s.body}`)
     .join("\n\n---\n\n")
@@ -29,6 +29,6 @@ export function buildPrompt(
 
   return {
     system,
-    messages: [{ role: "user" as const, content: userPrompt }],
+    messages: [{ role: "user", content: userPrompt }],
   }
 }

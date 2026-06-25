@@ -7,7 +7,12 @@ import { discover } from "./skill/discover.js"
 import { loadSkill } from "./skill/loader.js"
 import { matchSkills } from "./skill/matcher.js"
 import { buildPrompt } from "./prompt/builder.js"
-import { streamResponse } from "./claude/client.js"
+import { ProviderRegistry } from "./llm/registry.js"
+import { resolveApiKey } from "./llm/config.js"
+import { ClaudeAdapter } from "./llm/claude/adapter.js"
+import { GeminiAdapter } from "./llm/gemini/adapter.js"
+import { OpenAICompatAdapter } from "./llm/openai-compat/adapter.js"
+import { CohereAdapter } from "./llm/cohere/adapter.js"
 import { Registry } from "./tool/registry.js"
 import * as readTool from "./tool/read.js"
 import * as writeTool from "./tool/write.js"
@@ -15,6 +20,8 @@ import * as editTool from "./tool/edit.js"
 import * as bashTool from "./tool/bash.js"
 import * as grepTool from "./tool/grep.js"
 import * as globTool from "./tool/glob.js"
+
+const DEFAULT_MODEL = "claude/claude-sonnet-4-20250515"
 
 function buildRegistry(): Registry {
   const reg = new Registry()
@@ -27,8 +34,35 @@ function buildRegistry(): Registry {
   return reg
 }
 
+function buildProviderRegistry(): ProviderRegistry {
+  const reg = new ProviderRegistry()
+  reg.register(new ClaudeAdapter())
+  reg.register(new GeminiAdapter())
+  reg.register(new OpenAICompatAdapter({
+    id: "deepseek",
+    name: "DeepSeek",
+    defaultModel: "deepseek-chat",
+    baseURL: "https://api.deepseek.com/v1",
+  }))
+  reg.register(new OpenAICompatAdapter({
+    id: "zai",
+    name: "Z.ai (Zhipu)",
+    defaultModel: "glm-5",
+    baseURL: "https://open.bigmodel.cn/api/paas/v4",
+  }))
+  reg.register(new OpenAICompatAdapter({
+    id: "minimax",
+    name: "MiniMax",
+    defaultModel: "minimax-m3",
+    baseURL: "https://api.minimax.chat/v1",
+  }))
+  reg.register(new CohereAdapter())
+  return reg
+}
+
 const logger = new Logger()
-const registry = buildRegistry()
+const toolRegistry = buildRegistry()
+const providerRegistry = buildProviderRegistry()
 const app = new Hono()
 
 logger.info("Server starting up")
@@ -37,8 +71,13 @@ app.get("/health", (c) => c.json({ healthy: true }))
 
 app.post("/process", (c) =>
   stream(c, async (s) => {
-    const { prompt } = await c.req.json<{ prompt: string }>()
-    logger.info(`Processing prompt: "${prompt.slice(0, 80)}"`)
+    const { prompt, model: modelString } = await c.req.json<{ prompt: string; model?: string }>()
+    const modelStr = modelString ?? DEFAULT_MODEL
+
+    const { provider, model } = providerRegistry.resolve(modelStr)
+    const apiKey = resolveApiKey(provider.id)
+
+    logger.info(`Processing prompt with ${provider.id}/${model}: "${prompt.slice(0, 80)}"`)
 
     const skillDirs = discover()
     logger.debug(`Discovered ${skillDirs.length} skill directories`)
@@ -50,13 +89,13 @@ app.post("/process", (c) =>
     const matched = matchSkills(prompt, skills)
     logger.debug(`Matched ${matched.length} skills: ${matched.map((s) => s.name).join(", ")}`)
 
-    const toolDefs = registry.definitions()
+    const toolDefs = toolRegistry.definitions()
     const { system, messages } = buildPrompt(matched, prompt, toolDefs)
 
     const conversation = [...messages]
 
     for (let i = 0; i < 10; i++) {
-      const generator = streamResponse({ system, messages: conversation, tools: toolDefs })
+      const generator = provider.streamResponse({ system, messages: conversation, tools: toolDefs, model, apiKey })
 
       for await (const event of generator) {
         if (event.type === "text") {
@@ -65,7 +104,7 @@ app.post("/process", (c) =>
           logger.info(`Tool call: ${event.toolCall.name} (id=${event.toolCall.id.slice(0, 8)}...)`)
           let result: unknown
           try {
-            result = await registry.settle(event.toolCall)
+            result = await toolRegistry.settle(event.toolCall)
             logger.debug(`Tool ${event.toolCall.name} succeeded`)
           } catch (err: unknown) {
             result = { error: err instanceof Error ? err.message : String(err) }
@@ -76,7 +115,7 @@ app.post("/process", (c) =>
             role: "assistant",
             content: [
               {
-                type: "tool_use" as const,
+                type: "tool_use",
                 id: event.toolCall.id,
                 name: event.toolCall.name,
                 input: event.toolCall.input,
@@ -84,14 +123,9 @@ app.post("/process", (c) =>
             ],
           })
           conversation.push({
-            role: "user" as const,
-            content: [
-              {
-                type: "tool_result" as const,
-                tool_use_id: event.toolCall.id,
-                content: JSON.stringify(result),
-              },
-            ],
+            role: "tool",
+            tool_call_id: event.toolCall.id,
+            content: JSON.stringify(result),
           })
         } else if (event.type === "done") {
           break

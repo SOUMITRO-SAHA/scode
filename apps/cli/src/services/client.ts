@@ -7,15 +7,18 @@ export async function sendPrompt(
   prompt: string,
   serverUrl: string,
   onToken: (token: string) => void,
+  model?: string,
 ): Promise<string> {
   const url = processUrl(serverUrl)
   logger.debug(`Sending prompt to ${url} (${prompt.slice(0, 60)}...)`)
 
   const startTime = Date.now()
+  const body: Record<string, unknown> = { prompt }
+  if (model) body.model = model
   const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ prompt }),
+    body: JSON.stringify(body),
   })
 
   if (!response.ok) {

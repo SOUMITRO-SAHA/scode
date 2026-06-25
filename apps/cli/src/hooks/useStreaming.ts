@@ -2,7 +2,7 @@ import { useState, useCallback } from "react"
 import { sendPrompt } from "../services/client.js"
 import type { Message } from "../types/index.js"
 
-export function useStreaming(serverUrl: string) {
+export function useStreaming(serverUrl: string, model?: string) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
 
@@ -20,7 +20,7 @@ export function useStreaming(serverUrl: string) {
             copy[copy.length - 1] = { role: "assistant", content: full }
             return copy
           })
-        })
+        }, model)
       } catch (err) {
         setMessages((prev) => {
           const copy = [...prev]
@@ -31,7 +31,7 @@ export function useStreaming(serverUrl: string) {
         setLoading(false)
       }
     })()
-  }, [serverUrl, loading])
+  }, [serverUrl, loading, model])
 
   const clearMessages = useCallback(() => {
     setMessages([])
