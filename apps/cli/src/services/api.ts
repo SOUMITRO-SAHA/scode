@@ -1,4 +1,4 @@
-import { serverBase } from "@scode/shared/constants"
+import { apiV1Base } from "@scode/shared/constants"
 
 interface SessionInfo {
   id: string
@@ -53,8 +53,7 @@ interface Stats {
 }
 
 function apiUrl(path: string, base?: string): string {
-  const root = base ?? serverBase()
-  return `${root}/api/v1${path}`
+  return `${apiV1Base(base)}${path}`
 }
 
 async function apiFetch<T>(path: string, opts?: RequestInit, base?: string): Promise<T> {
