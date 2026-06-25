@@ -1,6 +1,7 @@
 import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import { stream } from "hono/streaming"
+import { Logger } from "shared/logger"
 import { discover } from "./skill/discover.js"
 import { loadSkill } from "./skill/loader.js"
 import { matchSkills } from "./skill/matcher.js"
@@ -25,20 +26,29 @@ function buildRegistry(): Registry {
   return reg
 }
 
+const logger = new Logger()
 const registry = buildRegistry()
 const app = new Hono()
+
+logger.info("Server starting up")
 
 app.get("/health", (c) => c.json({ healthy: true }))
 
 app.post("/process", (c) =>
   stream(c, async (s) => {
     const { prompt } = await c.req.json<{ prompt: string }>()
+    logger.info(`Processing prompt: "${prompt.slice(0, 80)}"`)
 
     const skillDirs = discover()
+    logger.debug(`Discovered ${skillDirs.length} skill directories`)
+
     const loaded: ReturnType<typeof loadSkill>[] = skillDirs.map(loadSkill)
     const skills = loaded.filter((s): s is NonNullable<typeof s> => s !== null)
+    logger.debug(`Loaded ${skills.length} skills`)
 
     const matched = matchSkills(prompt, skills)
+    logger.debug(`Matched ${matched.length} skills: ${matched.map((s) => s.name).join(", ")}`)
+
     const toolDefs = registry.definitions()
     const { system, messages } = buildPrompt(matched, prompt, toolDefs)
 
@@ -51,11 +61,14 @@ app.post("/process", (c) =>
         if (event.type === "text") {
           await s.write(event.delta)
         } else if (event.type === "tool_use") {
+          logger.info(`Tool call: ${event.toolCall.name} (id=${event.toolCall.id.slice(0, 8)}...)`)
           let result: unknown
           try {
             result = await registry.settle(event.toolCall)
+            logger.debug(`Tool ${event.toolCall.name} succeeded`)
           } catch (err: unknown) {
             result = { error: err instanceof Error ? err.message : String(err) }
+            logger.warn(`Tool ${event.toolCall.name} failed: ${result}`)
           }
 
           conversation.push({
@@ -90,5 +103,11 @@ app.post("/process", (c) =>
 const port = Number(process.argv.find((a) => a.startsWith("--port="))?.split("=")[1] ?? 4100)
 
 serve({ fetch: app.fetch, port }, (info) => {
-  console.log(`Server ready on http://127.0.0.1:${info.port}`)
+  logger.info(`Server ready on http://127.0.0.1:${info.port}`)
+})
+
+process.on("SIGINT", () => {
+  logger.info("Server shutting down")
+  logger.close()
+  process.exit(0)
 })
