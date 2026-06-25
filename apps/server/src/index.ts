@@ -1,42 +1,93 @@
 import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import { stream } from "hono/streaming"
+import { discover } from "./skill/discover.js"
+import { loadSkill } from "./skill/loader.js"
+import { matchSkills } from "./skill/matcher.js"
+import { buildPrompt } from "./prompt/builder.js"
+import { streamResponse } from "./claude/client.js"
+import { Registry } from "./tool/registry.js"
+import * as readTool from "./tool/read.js"
+import * as writeTool from "./tool/write.js"
+import * as editTool from "./tool/edit.js"
+import * as bashTool from "./tool/bash.js"
+import * as grepTool from "./tool/grep.js"
+import * as globTool from "./tool/glob.js"
 
+function buildRegistry(): Registry {
+  const reg = new Registry()
+  reg.register("read", readTool.definition, readTool.handler)
+  reg.register("write", writeTool.definition, writeTool.handler)
+  reg.register("edit", editTool.definition, editTool.handler)
+  reg.register("bash", bashTool.definition, bashTool.handler)
+  reg.register("grep", grepTool.definition, grepTool.handler)
+  reg.register("glob", globTool.definition, globTool.handler)
+  return reg
+}
+
+const registry = buildRegistry()
 const app = new Hono()
 
-app.get("/health", (c) => {
-  return c.json({ healthy: true })
-})
+app.get("/health", (c) => c.json({ healthy: true }))
 
-app.post("/process", (c) => {
-  return stream(c, async (stream) => {
+app.post("/process", (c) =>
+  stream(c, async (s) => {
     const { prompt } = await c.req.json<{ prompt: string }>()
 
-    // TODO: skill discovery, matching, loading, prompt building, Claude call
-    // For now, echo back a placeholder response
-    const words = [
-      `You asked: "${prompt}"`,
-      "",
-      "This is a placeholder — the skill system, prompt builder, and Claude integration",
-      "are coming next. Here's what will happen:",
-      "",
-      "1. discover skills from .skills/ directory",
-      "2. match prompt to relevant skills (keyword matching)",
-      "3. load matched SKILL.md files",
-      "4. build system prompt with skill context",
-      "5. call Claude Sonnet with tools (read, write, edit, bash, grep, glob)",
-      "6. execute tool calls and continue the loop until Claude is done",
-      "7. stream the final response here",
-    ]
+    const skillDirs = discover()
+    const loaded: ReturnType<typeof loadSkill>[] = skillDirs.map(loadSkill)
+    const skills = loaded.filter((s): s is NonNullable<typeof s> => s !== null)
 
-    for (const line of words) {
-      await stream.write(line + "\n")
-      await stream.sleep(50)
+    const matched = matchSkills(prompt, skills)
+    const toolDefs = registry.definitions()
+    const { system, messages } = buildPrompt(matched, prompt, toolDefs)
+
+    const conversation = [...messages]
+
+    for (let i = 0; i < 10; i++) {
+      const generator = streamResponse({ system, messages: conversation, tools: toolDefs })
+
+      for await (const event of generator) {
+        if (event.type === "text") {
+          await s.write(event.delta)
+        } else if (event.type === "tool_use") {
+          let result: unknown
+          try {
+            result = await registry.settle(event.toolCall)
+          } catch (err: unknown) {
+            result = { error: err instanceof Error ? err.message : String(err) }
+          }
+
+          conversation.push({
+            role: "assistant",
+            content: [
+              {
+                type: "tool_use" as const,
+                id: event.toolCall.id,
+                name: event.toolCall.name,
+                input: event.toolCall.input,
+              },
+            ],
+          })
+          conversation.push({
+            role: "user" as const,
+            content: [
+              {
+                type: "tool_result" as const,
+                tool_use_id: event.toolCall.id,
+                content: JSON.stringify(result),
+              },
+            ],
+          })
+        } else if (event.type === "done") {
+          break
+        }
+      }
     }
-  })
-})
+  }),
+)
 
-const port = Number(process.argv.find((a) => a.startsWith("--port="))?.split("=")[1] ?? 3000)
+const port = Number(process.argv.find((a) => a.startsWith("--port="))?.split("=")[1] ?? 4100)
 
 serve({ fetch: app.fetch, port }, (info) => {
   console.log(`Server ready on http://127.0.0.1:${info.port}`)

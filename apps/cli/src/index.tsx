@@ -1,7 +1,9 @@
-import { createInterface } from "node:readline/promises"
-import { stdin, stdout } from "node:process"
+import { createCliRenderer } from "@opentui/core"
+import { createRoot } from "@opentui/react"
 import { ensureServer, stopServer } from "./daemon.js"
 import { sendPrompt } from "./client.js"
+import { App } from "./app.js"
+import { stdout } from "node:process"
 
 async function main() {
   const args = process.argv.slice(2)
@@ -9,7 +11,6 @@ async function main() {
   const directPrompt = promptIndex !== -1 ? args[promptIndex + 1] : null
 
   let serverUrl: string
-
   try {
     serverUrl = await ensureServer()
   } catch (err) {
@@ -17,33 +18,27 @@ async function main() {
     process.exit(1)
   }
 
-  process.on("SIGINT", () => {
-    stopServer()
-    process.exit(0)
-  })
-
   if (directPrompt) {
     await sendPrompt(directPrompt, serverUrl, (token) => {
       stdout.write(token)
     })
     stdout.write("\n")
+    stopServer()
     process.exit(0)
   }
 
-  console.log("scode — AI coding agent. Type your prompt (Ctrl+C to quit)\n")
+  const renderer = await createCliRenderer({
+    exitOnCtrlC: false,
+    targetFps: 30,
+  })
 
-  const rl = createInterface({ input: stdin, output: stdout })
+  process.on("SIGINT", () => {
+    renderer.destroy()
+    stopServer()
+    process.exit(0)
+  })
 
-  while (true) {
-    const prompt = await rl.question("> ")
-    if (!prompt.trim()) continue
-
-    await sendPrompt(prompt, serverUrl, (token) => {
-      stdout.write(token)
-    })
-
-    stdout.write("\n\n")
-  }
+  createRoot(renderer).render(<App serverUrl={serverUrl} />)
 }
 
 main().catch((err) => {

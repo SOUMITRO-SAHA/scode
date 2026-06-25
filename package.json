@@ -7,9 +7,9 @@
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
-    "cli": "pnpm exec tsx apps/cli/src/index.ts",
+    "cli": "pnpm exec tsx apps/cli/src/index.tsx",
     "server": "pnpm exec tsx apps/server/src/index.ts --port=4100",
-    "dev:cli": "pnpm --filter @scode/cli dev",
+    "dev:cli": "pnpm exec tsx watch apps/cli/src/index.tsx",
     "dev:server": "pnpm --filter @scode/server dev",
     "demo": "pnpm cli --prompt 'Hello, what can you do?'"
   },
