@@ -82,7 +82,7 @@ export function Composer({
     <box paddingLeft={borderPad} paddingRight={borderPad} paddingBottom={1}>
       <box
         borderStyle="rounded"
-        borderColor={isCommand ? theme.brand.primary : theme.chat.user.border}
+        borderColor={isCommand ? theme.brand.primary : AGENT_COLORS[currentAgent]}
         width={boxWidth}
         flexDirection="column"
       >
