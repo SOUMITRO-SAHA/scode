@@ -1,18 +1,19 @@
-import { theme } from "../styles/theme.js"
+import { theme } from "@scode/theme"
 
 export function UserMessage({ content }: { content: string }) {
   return (
     <box
       borderStyle="rounded"
-      borderColor={theme.user}
+      borderColor={theme.chat.user.border}
       paddingX={1}
       paddingY={1}
       marginLeft={4}
+      backgroundColor={theme.chat.user.background}
     >
       <box flexDirection="row" justifyContent="flex-end">
-        <text fg={theme.user}>You</text>
+        <text fg={theme.chat.user.border}>You</text>
       </box>
-      <text fg="#E6EDF3">{content}</text>
+      <text fg={theme.chat.user.text}>{content}</text>
     </box>
   )
 }

@@ -32,6 +32,9 @@ importers:
       '@opentui/react':
         specifier: ^0.4.2
         version: 0.4.2(react-devtools-core@7.0.1)(react@19.2.7)(typescript@5.9.2)(web-tree-sitter@0.25.10)(ws@8.21.0)
+      '@scode/theme':
+        specifier: workspace:*
+        version: link:../../packages/theme
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.17

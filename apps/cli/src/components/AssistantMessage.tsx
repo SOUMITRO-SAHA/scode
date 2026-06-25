@@ -1,4 +1,5 @@
 import { useMemo } from "react"
+import { theme } from "@scode/theme"
 import { getMarkdownStyle } from "../styles/syntaxTheme.js"
 
 export function AssistantMessage({ content, isStreaming }: { content: string; isStreaming: boolean }) {
@@ -13,7 +14,7 @@ export function AssistantMessage({ content, isStreaming }: { content: string; is
       tableOptions={{
         style: "grid",
         borderStyle: "single",
-        borderColor: "#6b7280",
+        borderColor: theme.markdown.tableBorder,
         cellPadding: 1,
       }}
     />

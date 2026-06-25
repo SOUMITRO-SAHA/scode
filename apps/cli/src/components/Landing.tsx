@@ -1,7 +1,7 @@
 import { Composer } from "./Composer.js"
 import { KeyboardHints } from "./KeyboardHints.js"
 import { TipSection } from "./TipSection.js"
-import { theme } from "../styles/theme.js"
+import { theme } from "@scode/theme"
 
 interface LandingProps {
   onSubmit: (value: string) => void
@@ -27,22 +27,22 @@ export function Landing({ onSubmit, loading, width, height }: LandingProps) {
     >
       {showFullLogo && (
         <>
-          <ascii-font text="SCODE" font="huge" color={theme.accent} />
-          <text fg={theme.muted}>  Local AI Coding Assistant  </text>
+          <ascii-font text="SCODE" font="huge" color={theme.brand.primary} />
+          <text fg={theme.text.muted}>  Local AI Coding Assistant  </text>
           <box height={2} />
         </>
       )}
       {!showFullLogo && showSmallLogo && (
         <>
-          <ascii-font text="SCODE" font="block" color={theme.accent} />
-          <text fg={theme.muted}>  Local AI Coding Assistant  </text>
+          <ascii-font text="SCODE" font="block" color={theme.brand.primary} />
+          <text fg={theme.text.muted}>  Local AI Coding Assistant  </text>
           <box height={1} />
         </>
       )}
       {!showSmallLogo && (
         <>
-          <text fg={theme.accent}><strong>  SCode  </strong></text>
-          <text fg={theme.muted}>  Local AI Coding Assistant  </text>
+          <text fg={theme.brand.primary}><strong>  SCode  </strong></text>
+          <text fg={theme.text.muted}>  Local AI Coding Assistant  </text>
           <box height={1} />
         </>
       )}

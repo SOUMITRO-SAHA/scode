@@ -1,13 +1,13 @@
-import { theme } from "../styles/theme.js"
+import { theme } from "@scode/theme"
 
 export function Footer({ debug }: { debug?: boolean }) {
   const debugHint = debug
-    ? <span fg={theme.accent}>DBG ON</span>
-    : <span fg={theme.dim}>Ctrl+D Debug</span>
+    ? <span fg={theme.brand.primary}>DBG ON</span>
+    : <span fg={theme.text.disabled}>Ctrl+D Debug</span>
 
   return (
     <box height={1} paddingLeft={1} paddingRight={1}>
-      <text fg={theme.dim}>
+      <text fg={theme.text.disabled}>
         Ctrl+C Exit    Ctrl+L Clear    {debugHint}    /help
       </text>
     </box>

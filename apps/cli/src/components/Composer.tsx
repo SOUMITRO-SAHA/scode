@@ -1,6 +1,6 @@
 import { useCallback, useRef, useState } from "react"
 import type { TextareaRenderable, KeyEvent } from "@opentui/core"
-import { theme } from "../styles/theme.js"
+import { theme } from "@scode/theme"
 
 interface ComposerProps {
   onSubmit: (value: string) => void
@@ -69,7 +69,7 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
     <box paddingLeft={borderPad} paddingRight={borderPad}>
       <box
         borderStyle="rounded"
-        borderColor={theme.user}
+        borderColor={theme.chat.user.border}
         width={boxWidth}
         flexDirection="column"
       >
@@ -86,16 +86,16 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
           keyBindings={[{ name: "return", action: "submit" }]}
           backgroundColor="transparent"
           focusedBackgroundColor="transparent"
-          textColor="#E6EDF3"
-          placeholderColor={theme.dim}
+          textColor={theme.text.primary}
+          placeholderColor={theme.text.disabled}
         />
         <box height={1}>
-          <text fg={theme.dim}>  </text>
-          <text fg={theme.muted}>Claude Sonnet</text>
-          <text fg={theme.dim}> | </text>
-          <text fg={theme.muted}>Local</text>
-          <text fg={theme.dim}> | </text>
-          <text fg={theme.accent}>Ready</text>
+          <text fg={theme.text.disabled}>  </text>
+          <text fg={theme.text.muted}>Claude Sonnet</text>
+          <text fg={theme.text.disabled}> | </text>
+          <text fg={theme.text.muted}>Local</text>
+          <text fg={theme.text.disabled}> | </text>
+          <text fg={theme.brand.primary}>Ready</text>
         </box>
       </box>
     </box>
