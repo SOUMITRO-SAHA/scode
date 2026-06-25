@@ -1,10 +1,11 @@
 {
-  "name": "my-app",
+  "name": "@scode/server",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
     "build": "tsc",
-    "start": "node dist/index.js"
+    "start": "node dist/index.js",
+    "check-types": "tsc --noEmit"
   },
   "dependencies": {
     "@hono/node-server": "^2.0.6",
