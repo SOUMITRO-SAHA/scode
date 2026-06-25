@@ -11,7 +11,11 @@ interface LandingProps {
 }
 
 export function Landing({ onSubmit, loading, width, height }: LandingProps) {
-  const showLogo = width >= 60
+  const showFullLogo = width >= 60 && height >= 28
+  const showSmallLogo = width >= 60 && height >= 20
+  const showTips = height >= 24
+
+  const composerLines = height < 20 ? 1 : height < 28 ? 2 : 3
 
   return (
     <box
@@ -21,22 +25,35 @@ export function Landing({ onSubmit, loading, width, height }: LandingProps) {
       alignItems="center"
       justifyContent="center"
     >
-      {showLogo && (
+      {showFullLogo && (
         <>
           <ascii-font text="SCODE" font="huge" color={theme.accent} />
           <text fg={theme.muted}>  Local AI Coding Assistant  </text>
           <box height={2} />
         </>
       )}
-      {!showLogo && (
+      {!showFullLogo && showSmallLogo && (
         <>
-          <text fg={theme.accent}><strong>  SCode  </strong></text>
+          <ascii-font text="SCODE" font="block" color={theme.accent} />
+          <text fg={theme.muted}>  Local AI Coding Assistant  </text>
           <box height={1} />
         </>
       )}
-      <Composer onSubmit={onSubmit} loading={loading} width={width} />
+      {!showSmallLogo && (
+        <>
+          <text fg={theme.accent}><strong>  SCode  </strong></text>
+          <text fg={theme.muted}>  Local AI Coding Assistant  </text>
+          <box height={1} />
+        </>
+      )}
+      <Composer
+        onSubmit={onSubmit}
+        loading={loading}
+        width={width}
+        lines={composerLines}
+      />
       <KeyboardHints />
-      <TipSection />
+      <TipSection show={showTips} />
     </box>
   )
 }

@@ -26,7 +26,7 @@ export async function findServer(): Promise<string | null> {
 
 function resolveServerEntry(): string {
   const cliSrc = dirname(fileURLToPath(import.meta.url))
-  return resolve(cliSrc, "../../server/src/index.ts")
+  return resolve(cliSrc, "../../../server/src/index.ts")
 }
 
 export async function startServer(): Promise<string> {

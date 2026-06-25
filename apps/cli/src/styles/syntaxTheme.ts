@@ -1,6 +1,6 @@
 import { SyntaxStyle, RGBA } from "@opentui/core"
 
-export const markdownStyle = SyntaxStyle.fromStyles({
+const mdConfig = {
   "markup.heading.1": { fg: RGBA.fromHex("#58A6FF"), bold: true },
   "markup.heading.2": { fg: RGBA.fromHex("#58A6FF"), bold: true },
   "markup.heading.3": { fg: RGBA.fromHex("#58A6FF"), bold: true },
@@ -13,9 +13,9 @@ export const markdownStyle = SyntaxStyle.fromStyles({
   "markup.link": { fg: RGBA.fromHex("#58A6FF"), underline: true },
   "markup.link.url": { fg: RGBA.fromHex("#58A6FF"), underline: true },
   default: { fg: RGBA.fromHex("#E6EDF3") },
-})
+}
 
-export const codeStyle = SyntaxStyle.fromStyles({
+const codeConfig = {
   keyword: { fg: RGBA.fromHex("#FF7B72"), bold: true },
   string: { fg: RGBA.fromHex("#A5D6FF") },
   comment: { fg: RGBA.fromHex("#8B949E"), italic: true },
@@ -33,4 +33,17 @@ export const codeStyle = SyntaxStyle.fromStyles({
   "punctuation.bracket": { fg: RGBA.fromHex("#F0F6FC") },
   "punctuation.delimiter": { fg: RGBA.fromHex("#C9D1D9") },
   default: { fg: RGBA.fromHex("#E6EDF3") },
-})
+}
+
+let _mdStyle: SyntaxStyle | null = null
+let _codeStyle: SyntaxStyle | null = null
+
+export function getMarkdownStyle(): SyntaxStyle {
+  if (!_mdStyle) _mdStyle = SyntaxStyle.fromStyles(mdConfig)
+  return _mdStyle
+}
+
+export function getCodeStyle(): SyntaxStyle {
+  if (!_codeStyle) _codeStyle = SyntaxStyle.fromStyles(codeConfig)
+  return _codeStyle
+}

@@ -6,10 +6,11 @@ interface ComposerProps {
   onSubmit: (value: string) => void
   loading: boolean
   width: number
+  lines?: number
   placeholder?: string
 }
 
-export function Composer({ onSubmit, loading, width, placeholder = "Ask anything..." }: ComposerProps) {
+export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "Ask anything..." }: ComposerProps) {
   const boxWidth = Math.min(width - 4, 80)
   const inputWidth = boxWidth - 4
   const borderPad = Math.max(0, Math.floor((width - boxWidth) / 2))
@@ -80,7 +81,7 @@ export function Composer({ onSubmit, loading, width, placeholder = "Ask anything
           onKeyDown={handleKeyDown}
           placeholder={loading ? "Waiting..." : placeholder}
           width={inputWidth}
-          height={3}
+          height={lines}
           focused
           keyBindings={[{ name: "return", action: "submit" }]}
           backgroundColor="transparent"
@@ -90,13 +91,11 @@ export function Composer({ onSubmit, loading, width, placeholder = "Ask anything
         />
         <box height={1}>
           <text fg={theme.dim}>  </text>
-          <text fg={theme.muted}>  Claude Sonnet  </text>
-          <text fg={theme.dim}>|</text>
-          <text fg={theme.muted}>  Local  </text>
-          <text fg={theme.dim}>|</text>
-          <text fg={theme.accent}>  Ready  </text>
-          <text fg={theme.dim}>  </text>
-          <text fg={theme.muted}>/help</text>
+          <text fg={theme.muted}>Claude Sonnet</text>
+          <text fg={theme.dim}> | </text>
+          <text fg={theme.muted}>Local</text>
+          <text fg={theme.dim}> | </text>
+          <text fg={theme.accent}>Ready</text>
         </box>
       </box>
     </box>

@@ -13,6 +13,7 @@ export function App({ serverUrl }: { serverUrl: string }) {
   const { width, height } = useTerminalDimensions()
   const [debug, setDebug] = useState(false)
   const hasConversation = messages.length > 0
+  const composerLines = height < 20 ? 1 : height < 28 ? 2 : 3
 
   const handleSubmit = useCallback((value: string) => {
     if (!value.trim() || loading) return
@@ -49,6 +50,7 @@ export function App({ serverUrl }: { serverUrl: string }) {
         onSubmit={handleSubmit}
         loading={loading}
         width={width}
+        lines={composerLines}
       />
       <Footer debug={debug} />
     </box>
