@@ -1,0 +1,14 @@
+{
+  "name": "@scode/theme",
+  "type": "module",
+  "exports": {
+    ".": "./src/index.ts"
+  },
+  "scripts": {
+    "check-types": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "tsx": "^4.7.1",
+    "typescript": "^6.0.3"
+  }
+}
