@@ -1,8 +1,8 @@
 import { readFileSync } from "node:fs"
 import { join } from "node:path"
 import { parseAllDocuments } from "yaml"
-import type { Skill } from "../types.js"
-import type { SkillDir } from "./discover.js"
+import type { Skill } from "../types"
+import type { SkillDir } from "./discover"
 
 const SKILL_MD = "SKILL.md"
 

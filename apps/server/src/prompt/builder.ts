@@ -1,5 +1,5 @@
-import type { Skill, ToolDefinition } from "../types.js"
-import type { UnifiedMessage } from "../llm/types.js"
+import type { Skill, ToolDefinition } from "../types"
+import type { UnifiedMessage } from "../llm/types"
 
 export function buildPrompt(
   skills: Skill[],

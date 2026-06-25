@@ -1,6 +1,6 @@
 import { useState, useCallback } from "react"
-import { sendPrompt } from "../services/client.js"
-import type { Message } from "../types/index.js"
+import { sendPrompt } from "../services/client"
+import type { Message } from "../types/index"
 
 export function useStreaming(serverUrl: string, model?: string) {
   const [messages, setMessages] = useState<Message[]>([])

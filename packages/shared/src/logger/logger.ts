@@ -4,8 +4,8 @@ import { homedir } from "node:os"
 import { gzipSync } from "node:zlib"
 import pino from "pino"
 import type { Logger as PinoLogger } from "pino"
-import { dateFromFilename, daysOld } from "./utils.js"
-import type { LogLevel, LoggerOptions } from "./types.js"
+import { dateFromFilename, daysOld } from "./utils"
+import type { LogLevel, LoggerOptions } from "./types"
 
 function ts(): string {
   return new Date().toISOString().slice(11, 23)

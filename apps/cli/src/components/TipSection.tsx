@@ -1,4 +1,4 @@
-import { useTips } from "../hooks/useTips.js"
+import { useTips } from "../hooks/useTips"
 import { theme } from "@scode/theme"
 
 export function TipSection({ show = true }: { show?: boolean }) {

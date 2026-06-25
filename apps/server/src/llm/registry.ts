@@ -1,4 +1,4 @@
-import type { LLMProvider } from "./provider.js"
+import type { LLMProvider } from "./provider"
 
 export class ProviderRegistry {
   private providers = new Map<string, LLMProvider>()

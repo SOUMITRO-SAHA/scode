@@ -1,7 +1,7 @@
 import { readdirSync, readFileSync, writeFileSync, mkdirSync, existsSync, unlinkSync } from "node:fs"
 import { join } from "node:path"
 import { homedir } from "node:os"
-import type { UnifiedMessage } from "../llm/types.js"
+import type { UnifiedMessage } from "../llm/types"
 
 const SESSIONS_DIR = join(homedir(), ".scode", "sessions")
 

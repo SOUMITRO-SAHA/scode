@@ -1,5 +1,5 @@
-import type { StreamEvent, ToolDefinition } from "../types.js"
-import type { UnifiedMessage } from "./types.js"
+import type { StreamEvent, ToolDefinition } from "../types"
+import type { UnifiedMessage } from "./types"
 
 export interface LLMProvider {
   readonly id: string

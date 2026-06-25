@@ -1,6 +1,6 @@
 import { readFileSync, readdirSync, statSync } from "node:fs"
 import { resolve } from "node:path"
-import type { ToolDefinition, ToolHandler } from "../types.js"
+import type { ToolDefinition, ToolHandler } from "../types"
 
 const WORKSPACE = process.cwd()
 

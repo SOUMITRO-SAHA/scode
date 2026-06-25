@@ -1,6 +1,6 @@
 import { writeFileSync, mkdirSync } from "node:fs"
 import { resolve, dirname } from "node:path"
-import type { ToolDefinition, ToolHandler } from "../types.js"
+import type { ToolDefinition, ToolHandler } from "../types"
 
 const WORKSPACE = process.cwd()
 

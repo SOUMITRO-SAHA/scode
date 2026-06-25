@@ -1,6 +1,6 @@
-import { Composer } from "./Composer.js"
-import { KeyboardHints } from "./KeyboardHints.js"
-import { TipSection } from "./TipSection.js"
+import { Composer } from "./Composer"
+import { KeyboardHints } from "./KeyboardHints"
+import { TipSection } from "./TipSection"
 import { theme } from "@scode/theme"
 
 interface LandingProps {

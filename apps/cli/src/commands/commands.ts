@@ -1,4 +1,4 @@
-import type { ApiClient } from "../services/api.js"
+import type { ApiClient } from "../services/api"
 
 export interface Command {
   name: string

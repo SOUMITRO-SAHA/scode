@@ -1,7 +1,7 @@
 import Anthropic from "@anthropic-ai/sdk"
-import type { MessageParam } from "@anthropic-ai/sdk/resources/messages/messages.js"
-import type { LLMProvider } from "../provider.js"
-import type { UnifiedMessage } from "../types.js"
+import type { MessageParam } from "@anthropic-ai/sdk/resources/messages"
+import type { LLMProvider } from "../provider"
+import type { UnifiedMessage } from "../types"
 
 export class ClaudeAdapter implements LLMProvider {
   readonly id = "claude"

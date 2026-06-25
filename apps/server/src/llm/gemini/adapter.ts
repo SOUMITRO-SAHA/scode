@@ -1,7 +1,7 @@
 import { GoogleGenAI } from "@google/genai"
 import type { FunctionDeclaration } from "@google/genai"
-import type { LLMProvider } from "../provider.js"
-import type { UnifiedMessage } from "../types.js"
+import type { LLMProvider } from "../provider"
+import type { UnifiedMessage } from "../types"
 
 export class GeminiAdapter implements LLMProvider {
   readonly id = "gemini"

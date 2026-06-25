@@ -1,7 +1,7 @@
 import { useState, useCallback, useRef, useEffect } from "react"
 import { useKeyboard } from "@opentui/react"
 import { theme } from "@scode/theme"
-import { COMMANDS, type Command } from "../commands/commands.js"
+import { COMMANDS, type Command } from "../commands/commands"
 
 interface CommandPaletteProps {
   visible: boolean

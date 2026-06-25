@@ -1,13 +1,13 @@
 import { Logger } from "@scode/shared/logger"
-import { discover } from "../skill/discover.js"
-import { loadSkill } from "../skill/loader.js"
-import { matchSkills } from "../skill/matcher.js"
-import { buildPrompt } from "../prompt/builder.js"
-import { resolveApiKey } from "../llm/config.js"
-import type { ProviderRegistry } from "../llm/registry.js"
-import type { Registry as ToolRegistry } from "../tool/registry.js"
-import type { SessionManager } from "../session/manager.js"
-import type { ConfigManager } from "../config/manager.js"
+import { discover } from "../skill/discover"
+import { loadSkill } from "../skill/loader"
+import { matchSkills } from "../skill/matcher"
+import { buildPrompt } from "../prompt/builder"
+import { resolveApiKey } from "../llm/config"
+import type { ProviderRegistry } from "../llm/registry"
+import type { Registry as ToolRegistry } from "../tool/registry"
+import type { SessionManager } from "../session/manager"
+import type { ConfigManager } from "../config/manager"
 
 const logger = new Logger()
 

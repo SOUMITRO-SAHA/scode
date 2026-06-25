@@ -1,7 +1,7 @@
 import OpenAI from "openai"
-import type { ChatCompletionMessageParam } from "openai/resources/chat/completions.js"
-import type { LLMProvider } from "../provider.js"
-import type { UnifiedMessage } from "../types.js"
+import type { ChatCompletionMessageParam } from "openai/resources/chat/completions"
+import type { LLMProvider } from "../provider"
+import type { UnifiedMessage } from "../types"
 
 export interface OpenAICompatConfig {
   id: string

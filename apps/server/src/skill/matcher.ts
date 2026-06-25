@@ -1,4 +1,4 @@
-import type { Skill } from "../types.js"
+import type { Skill } from "../types"
 
 const STOP_WORDS = new Set([
   "the", "a", "an", "is", "are", "was", "were", "be", "been",

@@ -1,6 +1,6 @@
 import { CohereClientV2 } from "cohere-ai"
-import type { LLMProvider } from "../provider.js"
-import type { UnifiedMessage } from "../types.js"
+import type { LLMProvider } from "../provider"
+import type { UnifiedMessage } from "../types"
 
 export class CohereAdapter implements LLMProvider {
   readonly id = "cohere"

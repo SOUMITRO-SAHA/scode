@@ -1,9 +1,9 @@
 import { useRef, useEffect } from "react"
 import type { ScrollBoxRenderable } from "@opentui/core"
-import type { Message } from "../types/index.js"
-import { UserMessage } from "./UserMessage.js"
-import { AssistantMessage } from "./AssistantMessage.js"
-import { ThinkingPanel } from "./ThinkingPanel.js"
+import type { Message } from "../types/index"
+import { UserMessage } from "./UserMessage"
+import { AssistantMessage } from "./AssistantMessage"
+import { ThinkingPanel } from "./ThinkingPanel"
 
 export function ChatArea({ messages, loading, debug }: { messages: Message[]; loading: boolean; debug?: boolean }) {
   const scrollRef = useRef<ScrollBoxRenderable>(null)
