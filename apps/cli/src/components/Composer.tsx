@@ -8,9 +8,10 @@ interface ComposerProps {
   width: number
   lines?: number
   placeholder?: string
+  modelDisplay?: string
 }
 
-export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "Ask anything..." }: ComposerProps) {
+export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "Ask anything...", modelDisplay }: ComposerProps) {
   const boxWidth = Math.min(width - 4, 80)
   const inputWidth = boxWidth - 4
   const borderPad = Math.max(0, Math.floor((width - boxWidth) / 2))
@@ -25,7 +26,6 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
     const ta = ref.current as any
     const hist = historyRef.current
     if (hist.length === 0) return
-
     if (dir === -1) {
       if (histIdxRef.current === -1) {
         draftRef.current = ta?.plainText ?? ta?.value ?? ""
@@ -65,11 +65,13 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
     setComposerKey((c) => c + 1)
   }, [onSubmit, loading])
 
+  const isCommand = initialVal.trim().startsWith("/")
+
   return (
     <box paddingLeft={borderPad} paddingRight={borderPad}>
       <box
         borderStyle="rounded"
-        borderColor={theme.chat.user.border}
+        borderColor={isCommand ? theme.brand.primary : theme.chat.user.border}
         width={boxWidth}
         flexDirection="column"
       >
@@ -90,12 +92,18 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
           placeholderColor={theme.text.disabled}
         />
         <box height={1}>
-          <text fg={theme.text.disabled}>  </text>
-          <text fg={theme.text.muted}>Claude Sonnet</text>
-          <text fg={theme.text.disabled}> | </text>
-          <text fg={theme.text.muted}>Local</text>
-          <text fg={theme.text.disabled}> | </text>
-          <text fg={theme.brand.primary}>Ready</text>
+          {isCommand ? (
+            <text fg={theme.brand.primary}>  Command</text>
+          ) : (
+            <>
+              <text fg={theme.text.disabled}>  </text>
+              <text fg={theme.text.muted}>{modelDisplay ?? "scode"}</text>
+              <text fg={theme.text.disabled}> | </text>
+              <text fg={theme.text.muted}>Local</text>
+              <text fg={theme.text.disabled}> | </text>
+              <text fg={theme.brand.primary}>{loading ? "Processing..." : "Ready"}</text>
+            </>
+          )}
         </box>
       </box>
     </box>

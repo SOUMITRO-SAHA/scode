@@ -3,12 +3,7 @@ import { Hono } from "hono"
 import { stream } from "hono/streaming"
 import { Logger } from "@scode/shared/logger"
 import { DEFAULT_PORT, healthUrl } from "@scode/shared/constants"
-import { discover } from "./skill/discover.js"
-import { loadSkill } from "./skill/loader.js"
-import { matchSkills } from "./skill/matcher.js"
-import { buildPrompt } from "./prompt/builder.js"
 import { ProviderRegistry } from "./llm/registry.js"
-import { resolveApiKey } from "./llm/config.js"
 import { ClaudeAdapter } from "./llm/claude/adapter.js"
 import { GeminiAdapter } from "./llm/gemini/adapter.js"
 import { OpenAICompatAdapter } from "./llm/openai-compat/adapter.js"
@@ -20,6 +15,10 @@ import * as editTool from "./tool/edit.js"
 import * as bashTool from "./tool/bash.js"
 import * as grepTool from "./tool/grep.js"
 import * as globTool from "./tool/glob.js"
+import { SessionManager } from "./session/manager.js"
+import { ConfigManager } from "./config/manager.js"
+import { createV1Router } from "./api/v1/index.js"
+import { handleChat } from "./chat/handler.js"
 
 const DEFAULT_MODEL = "claude/claude-sonnet-4-20250515"
 
@@ -63,75 +62,32 @@ function buildProviderRegistry(): ProviderRegistry {
 const logger = new Logger()
 const toolRegistry = buildRegistry()
 const providerRegistry = buildProviderRegistry()
+const sessionManager = new SessionManager()
+const configManager = new ConfigManager()
+const startTime = Date.now()
+
 const app = new Hono()
 
-logger.info("Server starting up")
+// Mount v1 API
+const v1 = createV1Router({ toolRegistry, providerRegistry, sessionManager, configManager, startTime })
+app.route("/api/v1", v1)
 
+// Legacy health endpoint
 app.get("/health", (c) => c.json({ healthy: true }))
 
+// Legacy process endpoint
 app.post("/process", (c) =>
   stream(c, async (s) => {
-    const { prompt, model: modelString } = await c.req.json<{ prompt: string; model?: string }>()
-    const modelStr = modelString ?? DEFAULT_MODEL
-
-    const { provider, model } = providerRegistry.resolve(modelStr)
-    const apiKey = resolveApiKey(provider.id)
-
-    logger.info(`Processing prompt with ${provider.id}/${model}: "${prompt.slice(0, 80)}"`)
-
-    const skillDirs = discover()
-    logger.debug(`Discovered ${skillDirs.length} skill directories`)
-
-    const loaded: ReturnType<typeof loadSkill>[] = skillDirs.map(loadSkill)
-    const skills = loaded.filter((s): s is NonNullable<typeof s> => s !== null)
-    logger.debug(`Loaded ${skills.length} skills`)
-
-    const matched = matchSkills(prompt, skills)
-    logger.debug(`Matched ${matched.length} skills: ${matched.map((s) => s.name).join(", ")}`)
-
-    const toolDefs = toolRegistry.definitions()
-    const { system, messages } = buildPrompt(matched, prompt, toolDefs)
-
-    const conversation = [...messages]
-
-    for (let i = 0; i < 10; i++) {
-      const generator = provider.streamResponse({ system, messages: conversation, tools: toolDefs, model, apiKey })
-
-      for await (const event of generator) {
-        if (event.type === "text") {
-          await s.write(event.delta)
-        } else if (event.type === "tool_use") {
-          logger.info(`Tool call: ${event.toolCall.name} (id=${event.toolCall.id.slice(0, 8)}...)`)
-          let result: unknown
-          try {
-            result = await toolRegistry.settle(event.toolCall)
-            logger.debug(`Tool ${event.toolCall.name} succeeded`)
-          } catch (err: unknown) {
-            result = { error: err instanceof Error ? err.message : String(err) }
-            logger.warn(`Tool ${event.toolCall.name} failed: ${result}`)
-          }
-
-          conversation.push({
-            role: "assistant",
-            content: [
-              {
-                type: "tool_use",
-                id: event.toolCall.id,
-                name: event.toolCall.name,
-                input: event.toolCall.input,
-              },
-            ],
-          })
-          conversation.push({
-            role: "tool",
-            tool_call_id: event.toolCall.id,
-            content: JSON.stringify(result),
-          })
-        } else if (event.type === "done") {
-          break
-        }
-      }
-    }
+    const { prompt, model: modelString, sessionId } = await c.req.json<{ prompt: string; model?: string; sessionId?: string }>()
+    const config = configManager.get()
+    const modelStr = modelString ?? config.defaultModel ?? DEFAULT_MODEL
+    await handleChat(
+      prompt,
+      modelStr,
+      sessionId,
+      { providerRegistry, toolRegistry, sessionManager, configManager },
+      (chunk) => s.write(chunk),
+    )
   }),
 )
 
@@ -139,6 +95,7 @@ const port = Number(process.argv.find((a) => a.startsWith("--port="))?.split("="
 
 serve({ fetch: app.fetch, port }, (info) => {
   logger.info(`Server ready on ${healthUrl()}`)
+  logger.info(`API v1 available at http://127.0.0.1:${port}/api/v1`)
 })
 
 process.on("SIGINT", () => {

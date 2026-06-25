@@ -6,6 +6,10 @@ export function useStreaming(serverUrl: string, model?: string) {
   const [messages, setMessages] = useState<Message[]>([])
   const [loading, setLoading] = useState(false)
 
+  const addSystemMessage = useCallback((text: string) => {
+    setMessages((prev) => [...prev, { role: "system", content: text }])
+  }, [])
+
   const submit = useCallback((userMsg: string) => {
     if (!userMsg.trim() || loading) return
     setMessages((prev) => [...prev, { role: "user", content: userMsg }, { role: "assistant", content: "" }])
@@ -38,5 +42,5 @@ export function useStreaming(serverUrl: string, model?: string) {
     setLoading(false)
   }, [])
 
-  return { messages, loading, submit, clearMessages }
+  return { messages, loading, submit, clearMessages, addSystemMessage }
 }

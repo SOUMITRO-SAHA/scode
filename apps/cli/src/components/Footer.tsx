@@ -8,7 +8,7 @@ export function Footer({ debug }: { debug?: boolean }) {
   return (
     <box height={1} paddingLeft={1} paddingRight={1}>
       <text fg={theme.text.disabled}>
-        Ctrl+C Exit    Ctrl+L Clear    {debugHint}    /help
+        Ctrl+C Exit    Ctrl+L Clear    Ctrl+P Palette    {debugHint}    /help
       </text>
     </box>
   )

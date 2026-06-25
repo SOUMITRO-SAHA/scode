@@ -8,9 +8,10 @@ interface LandingProps {
   loading: boolean
   width: number
   height: number
+  modelDisplay?: string
 }
 
-export function Landing({ onSubmit, loading, width, height }: LandingProps) {
+export function Landing({ onSubmit, loading, width, height, modelDisplay }: LandingProps) {
   const showFullLogo = width >= 60 && height >= 28
   const showSmallLogo = width >= 60 && height >= 20
   const showTips = height >= 24
@@ -51,6 +52,7 @@ export function Landing({ onSubmit, loading, width, height }: LandingProps) {
         loading={loading}
         width={width}
         lines={composerLines}
+        modelDisplay={modelDisplay}
       />
       <KeyboardHints />
       <TipSection show={showTips} />
