@@ -3,7 +3,9 @@ import { theme } from "@scode/theme"
 export function KeyboardHints() {
   return (
     <box flexDirection="row" justifyContent="center" paddingTop={1}>
-      <text fg={theme.text.disabled}>  /help    ctrl+p palette    ctrl+l clear    ctrl+d debug    ctrl+c quit</text>
+      <text fg={theme.text.disabled}>
+        /help  Ctrl+P Palette  Ctrl+L Clear  Ctrl+D Debug  Ctrl+S Sessions  Ctrl+C Quit
+      </text>
     </box>
   )
 }

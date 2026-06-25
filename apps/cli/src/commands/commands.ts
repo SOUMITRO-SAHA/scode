@@ -33,7 +33,7 @@ export function parseCommand(input: string): { command: string; args: string[] }
   return { command: parts[0].toLowerCase(), args: parts.slice(1) }
 }
 
-const COMMANDS: Command[] = [
+export const COMMANDS: Command[] = [
   {
     name: "help",
     aliases: ["h"],
@@ -110,7 +110,9 @@ const COMMANDS: Command[] = [
     handler: async (_args, api, ctx) => {
       if (!ctx.currentSessionId) return { type: "error", text: "No active session" }
       const { messages } = await api.getMessages(ctx.currentSessionId)
-      const lines = messages.map((m, i) => `  ${i + 1}. [${m.role}] ${typeof m.content === "string" ? m.content.slice(0, 100) : "(structured)"}`)
+      const lines = messages.map((m, i) =>
+        `  ${i + 1}. [${m.role}] ${typeof m.content === "string" ? m.content.slice(0, 100) : "(structured)"}`
+      )
       return { type: "message", text: `\nSession Messages (${messages.length}):\n${lines.join("\n")}\n` }
     },
   },
@@ -121,19 +123,20 @@ const COMMANDS: Command[] = [
     usage: "/session [switch|delete] [id]",
     category: "session",
     handler: async (args, api, ctx) => {
-      if (args[0] === "switch" || args[0] === "s" && args[1]) {
+      if ((args[0] === "switch" || args[0] === "s") && args[1]) {
         const session = await api.getSession(args[1])
         ctx.setCurrentSessionId?.(session.id)
         ctx.clearMessages?.()
         return { type: "message", text: `Switched to session: ${session.name} (${session.id.slice(0, 8)}...)` }
       }
-      if (args[0] === "delete" || args[0] === "del" || args[0] === "d") {
-        if (!args[1]) return { type: "error", text: "Usage: /session delete <id>" }
+      if ((args[0] === "delete" || args[0] === "del" || args[0] === "d") && args[1]) {
         await api.deleteSession(args[1])
         return { type: "message", text: `Session deleted: ${args[1].slice(0, 8)}...` }
       }
       const { sessions } = await api.listSessions()
-      const lines = sessions.map((s, i) => `  ${i + 1}. ${s.name} (${s.id.slice(0, 8)}...) — ${s.messageCount} msgs`)
+      const lines = sessions.map((s, i) =>
+        `  ${i + 1}. ${s.name} (${s.id.slice(0, 8)}...) — ${s.messageCount} msgs`
+      )
       return { type: "message", text: `\nSessions:\n${lines.join("\n")}\n` }
     },
   },
@@ -153,7 +156,7 @@ const COMMANDS: Command[] = [
     name: "providers",
     aliases: ["provider"],
     description: "List all providers and their status",
-    usage: "/providers",
+    usage: "/providers [use <name>]",
     category: "provider",
     handler: async (args, api, ctx) => {
       const { providers, default: def } = await api.listProviders()
@@ -162,7 +165,9 @@ const COMMANDS: Command[] = [
         ctx.setModel?.(`${result.provider}/${result.defaultModel}`)
         return { type: "message", text: `Default provider: ${result.provider} (model: ${result.defaultModel})` }
       }
-      const lines = providers.map((p) => `  ${p.id}${p.id === def ? " (default)" : ""} — ${p.name} [${p.defaultModel}]`)
+      const lines = providers.map((p) =>
+        `  ${p.id}${p.id === def ? " (default)" : ""} — ${p.name} [${p.defaultModel}]`
+      )
       return { type: "message", text: `\nProviders:\n${lines.join("\n")}\n` }
     },
   },
@@ -191,7 +196,9 @@ const COMMANDS: Command[] = [
         ctx.setModel?.(args[1])
         return { type: "message", text: `Default model: ${result.model}` }
       }
-      const lines = models.map((m) => `  ${m.provider}/${m.defaultModel}${m.provider + "/" + m.defaultModel === defaultModel ? " (default)" : ""}`)
+      const lines = models.map((m) =>
+        `  ${m.provider}/${m.defaultModel}${m.provider + "/" + m.defaultModel === defaultModel ? " (default)" : ""}`
+      )
       return { type: "message", text: `\nModels:\n${lines.join("\n")}\nDefault: ${defaultModel}\n` }
     },
   },
@@ -212,7 +219,7 @@ const COMMANDS: Command[] = [
       }
       if (args[0] === "validate") {
         const { results } = await api.validateSkills()
-        const lines = results.map((r) => `  ${r.name} — ${r.valid ? "✓ valid" : "✗ error: " + r.error}`)
+        const lines = results.map((r) => `  ${r.name} — ${r.valid ? "OK valid" : "ERROR: " + r.error}`)
         return { type: "message", text: `\nSkill Validation:\n${lines.join("\n")}\n` }
       }
       const { skills } = await api.listSkills()
@@ -248,7 +255,7 @@ const COMMANDS: Command[] = [
     category: "debug",
     handler: async (_args, _api, ctx) => {
       ctx.toggleDebug?.()
-      return { type: "debug_toggle" }
+      ctx.addSystemMessage?.("Debug toggled")
     },
   },
   {
@@ -273,7 +280,7 @@ const COMMANDS: Command[] = [
     handler: async (_args, api) => {
       const health = await api.health()
       const lines = [
-        `  Status: ${health.healthy ? "✓ Healthy" : "✗ Unhealthy"}`,
+        `  Status: ${health.healthy ? "OK Healthy" : "FAIL Unhealthy"}`,
         `  Uptime: ${health.uptime}s`,
         `  Providers: ${health.providers}`,
         `  Sessions: ${health.sessions}`,
@@ -288,9 +295,7 @@ const COMMANDS: Command[] = [
     description: "Quit the application",
     usage: "/quit",
     category: "general",
-    handler: async () => {
-      process.exit(0)
-    },
+    handler: async () => process.exit(0),
   },
   {
     name: "agent",
@@ -300,18 +305,24 @@ const COMMANDS: Command[] = [
     category: "general",
     handler: async (_args, api, ctx) => {
       const config = await api.getConfig()
-      return { type: "message", text: `\nAgent: scode\n  Model: ${ctx.model ?? config.defaultModel}\n  Provider: ${config.defaultProvider}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n` }
+      return {
+        type: "message",
+        text: `\nAgent: scode\n  Model: ${ctx.model ?? config.defaultModel}\n  Provider: ${config.defaultProvider}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n`,
+      }
     },
   },
   {
     name: "context",
     aliases: ["ctx"],
-    description: "Show current prompt context information",
+    description: "Show current context information",
     usage: "/context",
     category: "general",
     handler: async (_args, api, ctx) => {
       const config = await api.getConfig()
-      return { type: "message", text: `\nContext:\n  Model: ${ctx.model ?? config.defaultModel}\n  Provider: ${config.defaultProvider}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n  Debug: ${ctx.debugEnabled ? "on" : "off"}\n` }
+      return {
+        type: "message",
+        text: `\nContext:\n  Model: ${ctx.model ?? config.defaultModel}\n  Provider: ${config.defaultProvider}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n  Debug: ${ctx.debugEnabled ? "on" : "off"}\n`,
+      }
     },
   },
 ]
@@ -325,19 +336,14 @@ export async function executeCommand(
   if (!parsed) return
 
   const { command, args } = parsed
-
   for (const cmd of COMMANDS) {
     if (cmd.name === command || cmd.aliases.includes(command)) {
       try {
         return cmd.handler(args, api, ctx)
       } catch (err) {
-        return { type: "error", text: `Error executing /${command}: ${(err as Error).message}` }
+        return { type: "error", text: `Error /${command}: ${(err as Error).message}` }
       }
     }
   }
-
-  return { type: "error", text: `Unknown command: /${command}. Type /help for available commands.` }
+  return { type: "error", text: `Unknown: /${command}. Try /help` }
 }
-
-export { COMMANDS }
-

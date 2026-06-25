@@ -1,11 +1,18 @@
 import { createCliRenderer } from "@opentui/core"
 import { createRoot } from "@opentui/react"
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query"
 import { ensureServer, stopServer } from "./services/daemon"
 import { sendPrompt } from "./services/client"
 import { App } from "./app"
 import { stdin, stdout } from "node:process"
 import { createInterface } from "node:readline"
 import { Logger } from "@scode/shared/logger"
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 2, staleTime: 10_000, refetchOnWindowFocus: false },
+  },
+})
 
 const logger = new Logger({ stderr: true })
 
@@ -57,7 +64,11 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
       process.exit(0)
     })
 
-    createRoot(renderer).render(<App serverUrl={serverUrl} model={model} />)
+    createRoot(renderer).render(
+      <QueryClientProvider client={queryClient}>
+        <App serverUrl={serverUrl} model={model} />
+      </QueryClientProvider>,
+    )
     return true
   } catch {
     return false

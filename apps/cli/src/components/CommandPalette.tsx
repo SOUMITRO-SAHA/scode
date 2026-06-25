@@ -31,12 +31,16 @@ export function CommandPalette({ visible, onClose, onSelect }: CommandPalettePro
       )
     : COMMANDS
 
+  useEffect(() => {
+    setSelectedIdx(0)
+  }, [filtered.length])
+
   const handleKey = useCallback(
     (event: any) => {
       if (!visible) return
-      if (event.name === "down") {
+      if (event.name === "down" || (event.ctrl && event.name === "n")) {
         setSelectedIdx((i) => Math.min(i + 1, filtered.length - 1))
-      } else if (event.name === "up") {
+      } else if (event.name === "up" || (event.ctrl && event.name === "p")) {
         setSelectedIdx((i) => Math.max(i - 1, 0))
       } else if (event.name === "return") {
         if (filtered[selectedIdx]) {
@@ -57,44 +61,56 @@ export function CommandPalette({ visible, onClose, onSelect }: CommandPalettePro
   const cols = process.stdout.columns ?? 80
   const rows = process.stdout.rows ?? 24
 
+  const categories = [...new Set(filtered.map((c) => c.category))]
+
   return (
     <box
       position="absolute"
       left={Math.floor(cols / 4)}
       top={Math.floor(rows / 3)}
       width={Math.floor(cols / 2)}
-      height={Math.min(filtered.length + 3, 20)}
+      height={Math.min(filtered.length + 4, 22)}
       borderStyle="rounded"
       borderColor={theme.text.muted}
       backgroundColor={theme.background.primary}
       flexDirection="column"
     >
-      <text fg={theme.text.disabled} paddingLeft={1}>  {" >"} </text>
+      <text fg={theme.text.disabled} paddingLeft={1}>{">"}</text>
       <input
         ref={inputRef}
         value={query}
-        onChange={(v: string) => { setQuery(v); setSelectedIdx(0) }}
+        onChange={(v: string) => setQuery(v)}
         placeholder="Search commands..."
         width="100%"
         focused
       />
-      <box flexDirection="column" height={filtered.length}>
-        {filtered.slice(0, 15).map((cmd, i) => (
-          <box
-            key={cmd.name}
-            backgroundColor={i === selectedIdx ? theme.background.secondary : "transparent"}
-            height={1}
-            paddingLeft={1}
-          >
-            <text
-              fg={i === selectedIdx ? theme.brand.primary : theme.text.primary}
-            >
-              {`/${cmd.name}`}
-            </text>
-            <text fg={theme.text.muted}>{`  — ${cmd.description.slice(0, 50)}`}</text>
-          </box>
-        ))}
-      </box>
+      <scrollbox flexGrow={1}>
+        {categories.map((cat) => {
+          const catCmds = filtered.filter((c) => c.category === cat)
+          if (catCmds.length === 0) return null
+          return (
+            <box key={cat} flexDirection="column">
+              <text fg={theme.text.muted} paddingLeft={1}>{cat}</text>
+              {catCmds.slice(0, 12).map((cmd) => {
+                const idx = filtered.indexOf(cmd)
+                return (
+                  <box
+                    key={cmd.name}
+                    backgroundColor={idx === selectedIdx ? theme.background.secondary : "transparent"}
+                    height={1}
+                    paddingLeft={2}
+                  >
+                    <text fg={idx === selectedIdx ? theme.brand.primary : theme.text.primary}>
+                      /{cmd.name}
+                    </text>
+                    <text fg={theme.text.muted}>{`  ${cmd.description.slice(0, 50)}`}</text>
+                  </box>
+                )
+              })}
+            </box>
+          )
+        })}
+      </scrollbox>
     </box>
   )
 }

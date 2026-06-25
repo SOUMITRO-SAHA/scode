@@ -4,14 +4,17 @@ import { theme } from "@scode/theme"
 
 interface ComposerProps {
   onSubmit: (value: string) => void
-  loading: boolean
+  streaming: boolean
   width: number
   lines?: number
   placeholder?: string
   modelDisplay?: string
 }
 
-export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "Ask anything...", modelDisplay }: ComposerProps) {
+export function Composer({
+  onSubmit, streaming, width, lines = 3,
+  placeholder = "Ask anything...", modelDisplay,
+}: ComposerProps) {
   const boxWidth = Math.min(width - 4, 80)
   const inputWidth = boxWidth - 4
   const borderPad = Math.max(0, Math.floor((width - boxWidth) / 2))
@@ -27,9 +30,7 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
     const hist = historyRef.current
     if (hist.length === 0) return
     if (dir === -1) {
-      if (histIdxRef.current === -1) {
-        draftRef.current = ta?.plainText ?? ta?.value ?? ""
-      }
+      if (histIdxRef.current === -1) draftRef.current = ta?.plainText ?? ta?.value ?? ""
       if (histIdxRef.current < hist.length - 1) {
         histIdxRef.current++
         setInitialVal(hist[hist.length - 1 - histIdxRef.current])
@@ -56,19 +57,19 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
   const handleSubmit = useCallback(() => {
     const ta = ref.current as any
     const val = (ta?.plainText ?? ta?.value ?? "").trim()
-    if (!val || loading) return
+    if (!val || streaming) return
     historyRef.current.push(val)
     histIdxRef.current = -1
     draftRef.current = ""
     onSubmit(val)
     setInitialVal("")
     setComposerKey((c) => c + 1)
-  }, [onSubmit, loading])
+  }, [onSubmit, streaming])
 
   const isCommand = initialVal.trim().startsWith("/")
 
   return (
-    <box paddingLeft={borderPad} paddingRight={borderPad}>
+    <box paddingLeft={borderPad} paddingRight={borderPad} paddingBottom={1}>
       <box
         borderStyle="rounded"
         borderColor={isCommand ? theme.brand.primary : theme.chat.user.border}
@@ -81,7 +82,7 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
           initialValue={initialVal}
           onSubmit={handleSubmit}
           onKeyDown={handleKeyDown}
-          placeholder={loading ? "Waiting..." : placeholder}
+          placeholder={streaming ? "Waiting..." : placeholder}
           width={inputWidth}
           height={lines}
           focused
@@ -91,18 +92,13 @@ export function Composer({ onSubmit, loading, width, lines = 3, placeholder = "A
           textColor={theme.text.primary}
           placeholderColor={theme.text.disabled}
         />
-        <box height={1}>
+        <box height={1} paddingLeft={1}>
           {isCommand ? (
-            <text fg={theme.brand.primary}>  Command</text>
+            <text fg={theme.brand.primary}>Command</text>
           ) : (
-            <>
-              <text fg={theme.text.disabled}>  </text>
-              <text fg={theme.text.muted}>{modelDisplay ?? "scode"}</text>
-              <text fg={theme.text.disabled}> | </text>
-              <text fg={theme.text.muted}>Local</text>
-              <text fg={theme.text.disabled}> | </text>
-              <text fg={theme.brand.primary}>{loading ? "Processing..." : "Ready"}</text>
-            </>
+            <text fg={theme.text.disabled}>
+              {modelDisplay ?? "scode"} | {streaming ? "Processing..." : "Ready"}
+            </text>
           )}
         </box>
       </box>

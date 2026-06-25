@@ -19,9 +19,11 @@
     "@opentui/core": "^0.4.2",
     "@opentui/core-darwin-arm64": "0.4.2",
     "@opentui/react": "^0.4.2",
+    "@scode/shared": "workspace:*",
+    "@scode/theme": "workspace:*",
+    "@tanstack/react-query": "^5.101.1",
     "@types/react": "^19.2.17",
     "react": "^19.2.7",
-    "@scode/theme": "workspace:*",
-    "@scode/shared": "workspace:*"
+    "zustand": "^5.0.14"
   }
 }
