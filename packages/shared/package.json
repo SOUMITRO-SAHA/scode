@@ -2,7 +2,8 @@
   "name": "shared",
   "type": "module",
   "exports": {
-    "./logger": "./src/logger/index.ts"
+    "./logger": "./src/logger/index.ts",
+    "./constants": "./src/constants/index.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit"

@@ -33,5 +33,10 @@ export function useStreaming(serverUrl: string) {
     })()
   }, [serverUrl, loading])
 
-  return { messages, loading, submit }
+  const clearMessages = useCallback(() => {
+    setMessages([])
+    setLoading(false)
+  }, [])
+
+  return { messages, loading, submit, clearMessages }
 }

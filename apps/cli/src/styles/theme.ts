@@ -5,4 +5,6 @@ export const theme = {
   assistant: "#0f8",
   muted: "#666",
   dim: "#444",
+  surface: "#161b22",
+  bg: "#0d1117",
 } as const

@@ -1,4 +1,5 @@
 import { Logger } from "shared/logger"
+import { processUrl } from "shared/constants"
 
 const logger = new Logger({ stderr: true })
 
@@ -7,10 +8,11 @@ export async function sendPrompt(
   serverUrl: string,
   onToken: (token: string) => void,
 ): Promise<string> {
-  logger.debug(`Sending prompt to ${serverUrl}/process (${prompt.slice(0, 60)}...)`)
+  const url = processUrl(serverUrl)
+  logger.debug(`Sending prompt to ${url} (${prompt.slice(0, 60)}...)`)
 
   const startTime = Date.now()
-  const response = await fetch(`${serverUrl}/process`, {
+  const response = await fetch(url, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ prompt }),

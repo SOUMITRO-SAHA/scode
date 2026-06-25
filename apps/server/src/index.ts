@@ -2,6 +2,7 @@ import { serve } from "@hono/node-server"
 import { Hono } from "hono"
 import { stream } from "hono/streaming"
 import { Logger } from "shared/logger"
+import { DEFAULT_PORT, healthUrl } from "shared/constants"
 import { discover } from "./skill/discover.js"
 import { loadSkill } from "./skill/loader.js"
 import { matchSkills } from "./skill/matcher.js"
@@ -100,10 +101,10 @@ app.post("/process", (c) =>
   }),
 )
 
-const port = Number(process.argv.find((a) => a.startsWith("--port="))?.split("=")[1] ?? 4100)
+const port = Number(process.argv.find((a) => a.startsWith("--port="))?.split("=")[1] ?? DEFAULT_PORT)
 
 serve({ fetch: app.fetch, port }, (info) => {
-  logger.info(`Server ready on http://127.0.0.1:${info.port}`)
+  logger.info(`Server ready on ${healthUrl()}`)
 })
 
 process.on("SIGINT", () => {

@@ -2,14 +2,16 @@ import { spawn, type ChildProcess } from "node:child_process"
 import { fileURLToPath } from "node:url"
 import { dirname, resolve } from "node:path"
 import { Logger } from "shared/logger"
-import { HEALTH_ENDPOINT, DEFAULT_PORT, SERVER_HOST, POLL_INTERVAL, MAX_POLLS } from "../constants/index.js"
+import { DEFAULT_PORT, POLL_INTERVAL, MAX_POLLS, healthUrl, serverBase } from "shared/constants"
 
 const logger = new Logger({ stderr: true })
 let serverProcess: ChildProcess | null = null
+const healthCheckUrl = healthUrl()
+const baseUrl = serverBase()
 
-async function healthCheck(url: string): Promise<boolean> {
+async function healthCheck(): Promise<boolean> {
   try {
-    const res = await fetch(url, { signal: AbortSignal.timeout(1500) })
+    const res = await fetch(healthCheckUrl, { signal: AbortSignal.timeout(1500) })
     return res.ok
   } catch {
     return false
@@ -17,9 +19,9 @@ async function healthCheck(url: string): Promise<boolean> {
 }
 
 export async function findServer(): Promise<string | null> {
-  const ok = await healthCheck(HEALTH_ENDPOINT)
-  if (ok) logger.debug(`Found existing server at ${HEALTH_ENDPOINT}`)
-  return ok ? `http://${SERVER_HOST}:${DEFAULT_PORT}` : null
+  const ok = await healthCheck()
+  if (ok) logger.debug(`Found existing server at ${healthCheckUrl}`)
+  return ok ? baseUrl : null
 }
 
 function resolveServerEntry(): string {
@@ -53,12 +55,12 @@ export async function startServer(): Promise<string> {
 
   serverProcess.unref()
 
-  logger.debug(`Polling server health at ${HEALTH_ENDPOINT}`)
+  logger.debug(`Polling server health at ${healthCheckUrl}`)
   for (let i = 0; i < MAX_POLLS; i++) {
-    const ok = await healthCheck(HEALTH_ENDPOINT)
+    const ok = await healthCheck()
     if (ok) {
-      logger.info(`Server ready at http://${SERVER_HOST}:${DEFAULT_PORT}`)
-      return `http://${SERVER_HOST}:${DEFAULT_PORT}`
+      logger.info(`Server ready at ${baseUrl}`)
+      return baseUrl
     }
     await new Promise((r) => setTimeout(r, POLL_INTERVAL))
   }
