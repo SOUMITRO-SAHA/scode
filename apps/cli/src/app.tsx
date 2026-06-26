@@ -13,6 +13,8 @@ import { Header } from "./components/header";
 import { Landing } from "./components/landing";
 import { ModelSwitcher } from "./components/model-switcher";
 import { SessionSidebar } from "./components/session-sidebar";
+import { DialogProvider } from "./components/ui/dialog";
+import { ToastProvider } from "./components/ui/toast";
 import { useStreamChat } from "./hooks/useStreamChat";
 import { ApiClient } from "./services/api";
 import { useAppStore } from "./store/index";
@@ -171,37 +173,41 @@ export function App({
   const modelDisplay = model || undefined;
 
   return (
-    <box flexDirection="row" width={width} height={height}>
-      <SessionSidebar />
-      <box flexDirection="column" flexGrow={1}>
-        {hasConversation && <Header modelDisplay={modelDisplay} />}
-        {hasConversation ? (
-          <ChatArea messages={messages} streaming={streaming} />
-        ) : (
-          <Landing
-            onSubmit={handleSubmit}
-            streaming={streaming}
-            height={height}
-            modelDisplay={modelDisplay}
-          />
-        )}
-        {hasConversation && (
-          <Composer
-            onSubmit={handleSubmit}
-            streaming={streaming}
-            width={width}
-            lines={composerLines}
-            placeholder={streaming ? "Waiting..." : "Ask anything..."}
-            modelDisplay={modelDisplay}
-          />
-        )}
-        <CommandPalette
-          visible={paletteVisible}
-          onClose={() => setPaletteVisible(false)}
-          onSelect={handlePaletteSelect}
-        />
-        {modelPickerOpen && <ModelSwitcher />}
-      </box>
-    </box>
+    <DialogProvider>
+      <ToastProvider>
+        <box flexDirection="row" width={width} height={height}>
+          <SessionSidebar />
+          <box flexDirection="column" flexGrow={1}>
+            {hasConversation && <Header modelDisplay={modelDisplay} />}
+            {hasConversation ? (
+              <ChatArea messages={messages} streaming={streaming} />
+            ) : (
+              <Landing
+                onSubmit={handleSubmit}
+                streaming={streaming}
+                height={height}
+                modelDisplay={modelDisplay}
+              />
+            )}
+            {hasConversation && (
+              <Composer
+                onSubmit={handleSubmit}
+                streaming={streaming}
+                width={width}
+                lines={composerLines}
+                placeholder={streaming ? "Waiting..." : "Ask anything..."}
+                modelDisplay={modelDisplay}
+              />
+            )}
+            <CommandPalette
+              visible={paletteVisible}
+              onClose={() => setPaletteVisible(false)}
+              onSelect={handlePaletteSelect}
+            />
+            {modelPickerOpen && <ModelSwitcher />}
+          </box>
+        </box>
+      </ToastProvider>
+    </DialogProvider>
   );
 }
