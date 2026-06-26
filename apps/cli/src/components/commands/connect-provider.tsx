@@ -18,6 +18,8 @@ import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { ProviderInfo } from "@scode/shared/types";
 import { theme } from "@scode/theme";
 
+type View = "providers" | "api-key";
+
 export function ConnectProvider() {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const setModel = useAppStore((s) => s.setModel);
@@ -27,46 +29,56 @@ export function ConnectProvider() {
   const setDefaultProvider = useSetDefaultProvider(serverUrl);
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
   const [open, setOpen] = useState(true);
+  const [view, setView] = useState<View>("providers");
+  const [selectedProvider, setSelectedProvider] = useState<ProviderInfo | null>(
+    null,
+  );
   const dialog = useDialog();
 
   useKeyboard((event: KeyEvent) => {
     if (!open) return;
     if (event.name === "escape") {
-      setOpen(false);
+      if (view === "api-key") {
+        setView("providers");
+        setSelectedProvider(null);
+      } else {
+        setOpen(false);
+      }
     }
   });
 
-  const handleConnect = useCallback(
-    async (provider: ProviderInfo) => {
-      const apiKey = await DialogPrompt.show(
-        dialog,
-        `API Key: ${provider.name}`,
-        {
-          placeholder: "Enter your API key",
-          description: (
-            <text fg={theme.text.muted}>
-              API key required for {provider.name}
-            </text>
-          ),
-        },
-      );
-      if (!apiKey) return;
+  const handleConnect = useCallback(async (provider: ProviderInfo) => {
+    setSelectedProvider(provider);
+    setView("api-key");
+  }, []);
+
+  const handleApiKeyConfirm = useCallback(
+    async (apiKey: string) => {
+      if (!selectedProvider || !apiKey) return;
       try {
         await connectProvider.mutateAsync({
-          provider: provider.id,
+          provider: selectedProvider.id,
           apiKey,
         });
         useAppStore
           .getState()
-          .addSystemMessage(`Connected to ${provider.name}`);
+          .addSystemMessage(`Connected to ${selectedProvider.name}`);
+        setOpen(false);
       } catch (err) {
         useAppStore
           .getState()
           .addSystemMessage(`Failed to connect: ${(err as Error).message}`);
+        setView("providers");
+        setSelectedProvider(null);
       }
     },
-    [dialog, connectProvider],
+    [selectedProvider, connectProvider],
   );
+
+  const handleApiKeyCancel = useCallback(() => {
+    setView("providers");
+    setSelectedProvider(null);
+  }, []);
 
   const handleDisconnect = useCallback(
     async (provider: ProviderInfo) => {
@@ -139,80 +151,95 @@ export function ConnectProvider() {
         paddingTop={1}
         flexDirection="column"
       >
-        <DialogSelect
-          title="Connect Provider"
-          placeholder="Search providers..."
-          options={options}
-          flat
-          current={defaultProvider}
-          onSelect={async (option) => {
-            const provider = data?.providers.find((p) => p.id === option.value);
-            if (!provider) return;
-            if (provider.connected) {
-              await handleDisconnect(provider);
-            } else {
-              await handleConnect(provider);
+        {view === "providers" ? (
+          <DialogSelect
+            title="Connect Provider"
+            placeholder="Search providers..."
+            options={options}
+            flat
+            current={defaultProvider}
+            onSelect={async (option) => {
+              const provider = data?.providers.find(
+                (p) => p.id === option.value,
+              );
+              if (!provider) return;
+              if (provider.connected) {
+                await handleDisconnect(provider);
+              } else {
+                await handleConnect(provider);
+              }
+            }}
+            onClose={() => setOpen(false)}
+            actions={[
+              {
+                command: "c",
+                title: "connect",
+                side: "left",
+                disabled: (opt) => {
+                  const p = data?.providers.find((x) => x.id === opt?.value);
+                  return !p || !!p.connected;
+                },
+                onTrigger: async (option) => {
+                  const provider = data?.providers.find(
+                    (p) => p.id === option.value,
+                  );
+                  if (provider) await handleConnect(provider);
+                },
+              },
+              {
+                command: "d",
+                title: "disconnect",
+                side: "left",
+                disabled: (opt) => {
+                  const p = data?.providers.find((x) => x.id === opt?.value);
+                  return !p || !p.connected;
+                },
+                onTrigger: async (option) => {
+                  const provider = data?.providers.find(
+                    (p) => p.id === option.value,
+                  );
+                  if (provider) await handleDisconnect(provider);
+                },
+              },
+              {
+                command: "s",
+                title: "set default",
+                side: "left",
+                onTrigger: async (option) => {
+                  const provider = data?.providers.find(
+                    (p) => p.id === option.value,
+                  );
+                  if (provider) await handleSetDefault(provider);
+                },
+              },
+            ]}
+            footer={
+              <text fg={theme.text.disabled}>↑↓ navigate tab actions</text>
             }
-            setOpen(false);
-          }}
-          onClose={() => setOpen(false)}
-          actions={[
-            {
-              command: "c",
-              title: "connect",
-              side: "left",
-              disabled: (opt) => {
-                const p = data?.providers.find((x) => x.id === opt?.value);
-                return !p || !!p.connected;
-              },
-              onTrigger: async (option) => {
-                const provider = data?.providers.find(
-                  (p) => p.id === option.value,
-                );
-                if (provider) await handleConnect(provider);
-                setOpen(false);
-              },
-            },
-            {
-              command: "d",
-              title: "disconnect",
-              side: "left",
-              disabled: (opt) => {
-                const p = data?.providers.find((x) => x.id === opt?.value);
-                return !p || !p.connected;
-              },
-
-              onTrigger: async (option) => {
-                const provider = data?.providers.find(
-                  (p) => p.id === option.value,
-                );
-                if (provider) await handleDisconnect(provider);
-                setOpen(false);
-              },
-            },
-            {
-              command: "s",
-              title: "set default",
-              side: "left",
-              onTrigger: async (option) => {
-                const provider = data?.providers.find(
-                  (p) => p.id === option.value,
-                );
-                if (provider) await handleSetDefault(provider);
-                setOpen(false);
-              },
-            },
-          ]}
-          footer={<text fg={theme.text.disabled}>↑↓ navigate tab actions</text>}
-          footerHints={[{ title: "↵", label: "select", side: "right" }]}
-          emptyView={
-            <box paddingLeft={4} paddingRight={4} paddingTop={1}>
+            footerHints={[{ title: "↵", label: "select", side: "right" }]}
+            emptyView={
+              <box paddingLeft={4} paddingRight={4} paddingTop={1}>
+                <text fg={theme.text.muted}>
+                  {isLoading
+                    ? "Loading providers..."
+                    : "No providers available"}
+                </text>
+              </box>
+            }
+          />
+        ) : (
+          <DialogPrompt
+            title={`API Key: ${selectedProvider?.name}`}
+            placeholder="Enter your API key"
+            description={
               <text fg={theme.text.muted}>
-                {isLoading ? "Loading providers..." : "No providers available"}
+                API key required for {selectedProvider?.name}
               </text>
-            </box>
-          }
-        />
+            }
+            onConfirm={handleApiKeyConfirm}
+            onCancel={handleApiKeyCancel}
+          />
+        )}
       </box>
     </box>
   );

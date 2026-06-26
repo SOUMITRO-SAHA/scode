@@ -30,6 +30,10 @@ export function DialogPrompt(props: DialogPromptProps) {
 
   useKeyboard((event: { name: string }) => {
     if (event.name === "return") confirm();
+    if (event.name === "escape") {
+      props.onCancel?.();
+      dialog.clear();
+    }
   });
 
   useEffect(() => {
@@ -49,7 +53,13 @@ export function DialogPrompt(props: DialogPromptProps) {
         <text attributes={TextAttributes.BOLD} fg={theme.text.primary}>
           {props.title}
         </text>
-        <text fg={theme.text.muted} onMouseUp={() => dialog.clear()}>
+        <text
+          fg={theme.text.muted}
+          onMouseUp={() => {
+            props.onCancel?.();
+            dialog.clear();
+          }}
+        >
           esc
         </text>
       </box>
