@@ -15,7 +15,8 @@
     "@types/node": "^20.11.17",
     "tsx": "^4.7.1",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:"
   },
   "dependencies": {
     "axios": "catalog:",

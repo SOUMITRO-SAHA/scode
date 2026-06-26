@@ -11,6 +11,7 @@
   "devDependencies": {
     "tsx": "^4.7.1",
     "typescript": "catalog:",
-    "vitest": "catalog:"
+    "vitest": "catalog:",
+    "@vitest/coverage-v8": "catalog:"
   }
 }

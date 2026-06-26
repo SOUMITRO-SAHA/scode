@@ -9,3 +9,4 @@ catalog:
   "@effect/platform-node": "4.0.0-beta.90"
   axios: "^1.7.9"
   vitest: "^3.1.0"
+  "@vitest/coverage-v8": "^3.1.0"

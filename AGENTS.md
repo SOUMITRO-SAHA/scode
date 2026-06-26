@@ -110,7 +110,7 @@ Component directories (when used) also follow kebab-case: `ui/button.tsx`, `form
 
 # Testing
 
-- `pnpm test` — run all workspace tests (vitest, 24 tests across shared, theme, cli, server)
+- `pnpm test` — run all workspace tests (vitest, 155 tests across shared, theme, cli, server)
 - `pnpm demo` — end-to-end: CLI spawns server, sends prompt, streams response (needs ANTHROPIC_API_KEY)
 - Both `--prompt` (stdout) and interactive TUI modes
 - `pnpm check-types` — type check both packages

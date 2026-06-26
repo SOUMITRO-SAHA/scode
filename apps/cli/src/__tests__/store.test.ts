@@ -1,6 +1,6 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { useAppStore } from "../store";
+import { AGENTS, EFFORT_LEVELS, useAppStore } from "../store";
 
 describe("AppStore", () => {
   beforeEach(() => {
@@ -17,11 +17,66 @@ describe("AppStore", () => {
     });
   });
 
+  it("has initial state", () => {
+    const s = useAppStore.getState();
+    expect(s.serverUrl).toBe("");
+    expect(s.currentSessionId).toBeUndefined();
+    expect(s.model).toBeUndefined();
+    expect(s.effortLevel).toBe("high");
+    expect(s.debug).toBe(false);
+    expect(s.sidebarVisible).toBe(false);
+    expect(s.messages).toEqual([]);
+    expect(s.streaming).toBe(false);
+    expect(s.currentAgent).toBe("chat");
+  });
+
+  it("sets server URL", () => {
+    useAppStore.getState().setServerUrl("http://localhost:4100");
+    expect(useAppStore.getState().serverUrl).toBe("http://localhost:4100");
+  });
+
+  it("sets current session ID", () => {
+    useAppStore.getState().setCurrentSessionId("abc");
+    expect(useAppStore.getState().currentSessionId).toBe("abc");
+    useAppStore.getState().setCurrentSessionId(undefined);
+    expect(useAppStore.getState().currentSessionId).toBeUndefined();
+  });
+
+  it("sets model", () => {
+    useAppStore.getState().setModel("claude/claude-sonnet-4");
+    expect(useAppStore.getState().model).toBe("claude/claude-sonnet-4");
+    useAppStore.getState().setModel(undefined);
+    expect(useAppStore.getState().model).toBeUndefined();
+  });
+
+  it("sets effort level", () => {
+    useAppStore.getState().setEffortLevel("low");
+    expect(useAppStore.getState().effortLevel).toBe("low");
+    useAppStore.getState().setEffortLevel("medium");
+    expect(useAppStore.getState().effortLevel).toBe("medium");
+    useAppStore.getState().setEffortLevel("high");
+    expect(useAppStore.getState().effortLevel).toBe("high");
+  });
+
+  it("toggles sidebar", () => {
+    expect(useAppStore.getState().sidebarVisible).toBe(false);
+    useAppStore.getState().toggleSidebar();
+    expect(useAppStore.getState().sidebarVisible).toBe(true);
+    useAppStore.getState().toggleSidebar();
+    expect(useAppStore.getState().sidebarVisible).toBe(false);
+  });
+
   it("adds a user message", () => {
     useAppStore.getState().addUserMessage("hello");
     const msgs = useAppStore.getState().messages;
     expect(msgs).toHaveLength(1);
     expect(msgs[0]).toEqual({ role: "user", content: "hello" });
+  });
+
+  it("adds multiple user messages", () => {
+    useAppStore.getState().addUserMessage("first");
+    useAppStore.getState().addUserMessage("second");
+    expect(useAppStore.getState().messages).toHaveLength(2);
   });
 
   it("adds an assistant message with empty content", () => {
@@ -37,6 +92,32 @@ describe("AppStore", () => {
     useAppStore.getState().appendAssistantChunk("lo");
     const msgs = useAppStore.getState().messages;
     expect(msgs[0].content).toBe("Hello");
+  });
+
+  it("does not append chunk when last message is not assistant", () => {
+    useAppStore.getState().addUserMessage("hi");
+    useAppStore.getState().appendAssistantChunk("should-not-appear");
+    const msgs = useAppStore.getState().messages;
+    expect(msgs[0].content).toBe("hi");
+  });
+
+  it("sets last assistant error", () => {
+    useAppStore.getState().addAssistantMessage();
+    useAppStore.getState().setLastAssistantError("timeout");
+    const msgs = useAppStore.getState().messages;
+    expect(msgs[0].content).toBe("Error: timeout");
+  });
+
+  it("does not set error when no assistant message", () => {
+    useAppStore.getState().setLastAssistantError("fail");
+    expect(useAppStore.getState().messages).toHaveLength(0);
+  });
+
+  it("adds system message", () => {
+    useAppStore.getState().addSystemMessage("system note");
+    const msgs = useAppStore.getState().messages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]).toEqual({ role: "system", content: "system note" });
   });
 
   it("cycles through agents in order", () => {
@@ -65,10 +146,15 @@ describe("AppStore", () => {
     expect(useAppStore.getState().streaming).toBe(false);
   });
 
-  it("sets last assistant error", () => {
-    useAppStore.getState().addAssistantMessage();
-    useAppStore.getState().setLastAssistantError("timeout");
-    const msgs = useAppStore.getState().messages;
-    expect(msgs[0].content).toBe("Error: timeout");
+  it("sets streaming flag", () => {
+    useAppStore.getState().setStreaming(true);
+    expect(useAppStore.getState().streaming).toBe(true);
+    useAppStore.getState().setStreaming(false);
+    expect(useAppStore.getState().streaming).toBe(false);
+  });
+
+  it("exports constants", () => {
+    expect(AGENTS).toEqual(["plan", "write", "chat"]);
+    expect(EFFORT_LEVELS).toEqual(["low", "medium", "high"]);
   });
 });
