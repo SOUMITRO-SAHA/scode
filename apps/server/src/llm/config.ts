@@ -1,6 +1,6 @@
 import { existsSync, readFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+
+import { PROVIDER_ENV_MAP, SCODE_AUTH_PATH } from "@scode/shared/constants";
 
 interface AuthEntry {
   apiKey?: string;
@@ -10,21 +10,10 @@ export interface Auth {
   apiKey: string;
 }
 
-const AUTH_PATH = join(homedir(), ".scode", "auth.json");
-
-const PROVIDER_ENV_MAP: Record<string, string> = {
-  claude: "ANTHROPIC_API_KEY",
-  gemini: "GEMINI_API_KEY",
-  deepseek: "DEEPSEEK_API_KEY",
-  zai: "ZHIPU_API_KEY",
-  minimax: "MINIMAX_API_KEY",
-  cohere: "COHERE_API_KEY",
-};
-
 function readAuthFile(): Record<string, AuthEntry> {
-  if (!existsSync(AUTH_PATH)) return {};
+  if (!existsSync(SCODE_AUTH_PATH)) return {};
   try {
-    const raw = readFileSync(AUTH_PATH, "utf-8");
+    const raw = readFileSync(SCODE_AUTH_PATH, "utf-8");
     return JSON.parse(raw) as Record<string, AuthEntry>;
   } catch {
     return {};

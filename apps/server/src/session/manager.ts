@@ -4,6 +4,8 @@ import { getDb } from "../db/client";
 import { sessions } from "../db/schema";
 import type { UnifiedMessage } from "../llm/types";
 
+import { generateId } from "@scode/shared/utils";
+
 export interface Session {
   id: string;
   name: string;
@@ -12,10 +14,6 @@ export interface Session {
   messages: UnifiedMessage[];
   model: string;
   provider: string;
-}
-
-function generateId(): string {
-  return Date.now().toString(36) + Math.random().toString(36).slice(2, 8);
 }
 
 function rowToSession(row: typeof sessions.$inferSelect): Session {

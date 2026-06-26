@@ -1,4 +1,3 @@
-import { apiV1Base } from "@scode/shared/constants";
 import type {
   HealthStatus,
   LogEntry,
@@ -9,24 +8,8 @@ import type {
   SkillInfo,
   Stats,
 } from "@scode/shared/types";
+import { apiFetch } from "@scode/shared/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-
-function apiUrl(path: string, base?: string): string {
-  return `${apiV1Base(base)}${path}`;
-}
-
-async function apiFetch<T>(
-  path: string,
-  opts?: RequestInit,
-  base?: string,
-): Promise<T> {
-  const res = await fetch(apiUrl(path, base), {
-    headers: { "Content-Type": "application/json" },
-    ...opts,
-  });
-  if (!res.ok) throw new Error(`API error ${res.status}: ${await res.text()}`);
-  return res.json() as Promise<T>;
-}
 
 export function useApiBase(serverUrl?: string) {
   return serverUrl;

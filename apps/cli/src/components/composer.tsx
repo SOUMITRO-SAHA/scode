@@ -7,7 +7,7 @@ import { AGENT_LABELS, useAppStore } from "../store/index";
 
 import type { KeyEvent, TextareaRenderable } from "@opentui/core";
 import { useTerminalDimensions } from "@opentui/react";
-import { parseModelString } from "@scode/shared/utils";
+import { formatModelName, parseModelString } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 interface ComposerProps {
@@ -24,15 +24,6 @@ const AGENT_COLORS: Record<string, string> = {
   write: theme.success,
   chat: theme.brand.primary,
 };
-
-function formatModelName(modelId: string): string {
-  return modelId
-    .replace(/^claude-/, "")
-    .replace(/-\d{8}$/, "")
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
-}
 
 export function Composer({
   onSubmit,

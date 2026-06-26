@@ -2,31 +2,12 @@ import { useHealth, useModels } from "../hooks/useApi";
 import { useAppStore } from "../store/index";
 import { EFFORT_LEVELS, type EffortLevel } from "../store/index";
 
+import { formatModelName, parseModelString } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 interface HeaderProps {
   modelDisplay?: string;
   sessionName?: string;
-}
-
-function parseModelString(
-  modelStr: string,
-): { providerId: string; model: string } | null {
-  const idx = modelStr.indexOf("/");
-  if (idx === -1) return null;
-  return {
-    providerId: modelStr.slice(0, idx),
-    model: modelStr.slice(idx + 1),
-  };
-}
-
-function formatModelName(modelId: string): string {
-  return modelId
-    .replace(/^claude-/, "")
-    .replace(/-\d{8}$/, "")
-    .split("-")
-    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ");
 }
 
 function cycleEffort(level: EffortLevel): EffortLevel {

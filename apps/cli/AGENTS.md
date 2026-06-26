@@ -2,7 +2,7 @@
 
 ## Import quirks
 
-- `@scode/shared/logger` and `@scode/shared/constants` have no tsconfig paths or project references — resolution relies on pnpm workspace + tsx bundler only.
+- `@scode/shared/logger`, `@scode/shared/constants`, `@scode/shared/utils` have no tsconfig paths or project references — resolution relies on pnpm workspace + tsx bundler only.
 - `verbatimModuleSyntax: true` in tsconfig — all relative imports must include `.js` extension despite being TS source.
 
 ## OpenTUI

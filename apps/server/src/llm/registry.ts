@@ -1,5 +1,7 @@
 import type { LLMProvider } from "./provider";
 
+import { parseModelString } from "@scode/shared/utils";
+
 export class ProviderRegistry {
   private providers = new Map<string, LLMProvider>();
 
@@ -12,16 +14,12 @@ export class ProviderRegistry {
   }
 
   parseModelString(input: string): { providerId: string; model: string } {
-    const idx = input.indexOf("/");
-    if (idx === -1)
+    const parsed = parseModelString(input);
+    if (!parsed)
       throw new Error(
         `Invalid model string: "${input}" (expected format: provider/model)`,
       );
-    const providerId = input.slice(0, idx);
-    const model = input.slice(idx + 1);
-    if (!providerId || !model)
-      throw new Error(`Invalid model string: "${input}"`);
-    return { providerId, model };
+    return parsed;
   }
 
   resolve(input: string): { provider: LLMProvider; model: string } {

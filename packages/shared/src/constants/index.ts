@@ -25,5 +25,18 @@ export {
   v1StatsUrl,
 } from "./endpoints";
 
+export {
+  SCODE_DIR,
+  scodePath,
+  SCODE_CONFIG_PATH,
+  SCODE_AUTH_PATH,
+  SCODE_DB_PATH,
+  SCODE_LOGS_DIR,
+} from "./paths";
+
+export { PROVIDER_ENV_MAP } from "./providers";
+
+export { DEFAULT_MODEL_STRING, DEFAULT_APP_CONFIG } from "./defaults";
+
 export const POLL_INTERVAL = 200;
 export const MAX_POLLS = 25;

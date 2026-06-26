@@ -2,13 +2,35 @@
 
 ## Package naming
 
-- Named `@scode/shared` in package.json. Import as `@scode/shared/logger`, `@scode/shared/constants`.
+- Named `@scode/shared` in package.json. Import as `@scode/shared/logger`, `@scode/shared/constants`, `@scode/shared/types`, `@scode/shared/utils`.
 
 ## Subpath exports (NO root export)
 
-- `"exports"` in package.json has ONLY subpath entries: `"./logger"` and `"./constants"`.
-- NO `"."` root export — `import { X } from "shared"` will fail. Forces explicit domain imports.
-- Each subpath points directly to `.ts` source (not compiled output): `"./src/logger/index.ts"`.
+- `"exports"` in package.json has ONLY subpath entries.
+- NO `"."` root export — `import { X } from "@scode/shared"` will fail. Forces explicit domain imports.
+- Each subpath points directly to `.ts` source (not compiled output).
+
+## Available subpath modules
+
+| Subpath       | Contents                                                 |
+| ------------- | -------------------------------------------------------- |
+| `./logger`    | Pino logger with daily rotation                          |
+| `./constants` | Ports, URLs, paths, provider env map, defaults           |
+| `./types`     | Entities, API request/response types, stream chunk codec |
+| `./utils`     | `apiUrl`, `apiFetch`, `generateId`                       |
+
+## constants/ submodules
+
+- `endpoints.ts` — server port, base URLs, all API v1 endpoint builders
+- `paths.ts` — `SCODE_DIR`, `scodePath()`, config/auth/db/logs paths
+- `providers.ts` — `PROVIDER_ENV_MAP` (provider ID → env var name)
+- `defaults.ts` — `DEFAULT_MODEL_STRING`, `DEFAULT_APP_CONFIG`
+
+## utils/ submodules
+
+- `api.ts` — `apiUrl(path, base?)` and `apiFetch<T>(path, opts?, base?)`
+- `id.ts` — `generateId()` UUID v4 via `uuid` package
+- `model.ts` — `parseModelString(input)` returns `{providerId, model}` or null; `formatModelName(modelId)` human-readable model label
 
 ## Logger
 
