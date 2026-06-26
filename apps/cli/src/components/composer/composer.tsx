@@ -3,8 +3,8 @@ import { useCallback, useRef, useState } from "react";
 import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
 import { ComposerFooter } from "./composer-footer.js";
 import { calculateLayout, parseModelDisplay } from "./layout.js";
-import { useAutocomplete } from "./use-autocomplete.js";
-import { useHistory } from "./use-history.js";
+import { useAutocomplete } from "./useAutocomplete.js";
+import { useHistory } from "./useHistory.js";
 
 import type { Command } from "@/components/commands/commands.js";
 import { AGENT_LABELS, useAppStore } from "@/store/index";
