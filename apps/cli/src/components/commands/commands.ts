@@ -1,4 +1,3 @@
-import type { DialogContextValue } from "@/components/ui/dialog.js";
 import type { ApiClient } from "@/services/api";
 import type { AppConfig } from "@scode/shared/types";
 
@@ -199,16 +198,17 @@ export const COMMANDS: Command[] = [
     name: "connect",
     aliases: [],
     description: "Connect a provider with an API key",
-    usage: "/connect <provider> <apiKey>",
+    usage: "/connect [provider] [apiKey]",
     category: "provider",
-    handler: async (args, api) => {
-      if (args.length < 2)
-        return { type: "error", text: "Usage: /connect <provider> <apiKey>" };
-      const result = await api.connectProvider(args[0], args[1]);
-      return {
-        type: "message",
-        text: `Provider connected: ${result.provider}`,
-      };
+    handler: async (args, api, ctx) => {
+      if (args.length >= 2) {
+        const result = await api.connectProvider(args[0], args[1]);
+        return {
+          type: "message",
+          text: `Provider connected: ${result.provider}`,
+        };
+      }
+      ctx.openProviderPicker?.();
     },
   },
   {

@@ -51,6 +51,7 @@ export function Composer({
   const [autoQuery, setAutoQuery] = useState("");
   const [autoIdx, setAutoIdx] = useState(0);
   const [inputMode, setInputMode] = useState<"keyboard" | "mouse">("keyboard");
+  const skipSubmitRef = useRef(false);
   const { width: termWidth } = useTerminalDimensions();
 
   const { modelName, providerName, hasModel } = parseModelDisplay(modelDisplay);
@@ -93,7 +94,10 @@ export function Composer({
         }
         if (event.name === "return" || event.name === "tab") {
           const cmd = items[autoIdx];
-          if (cmd) handleAutoSelect(cmd);
+          if (cmd) {
+            skipSubmitRef.current = true;
+            handleAutoSelect(cmd);
+          }
           return;
         }
         if (event.name === "escape") {
@@ -120,7 +124,10 @@ export function Composer({
   );
 
   const handleSubmit = useCallback(() => {
-    if (autoVisible) return;
+    if (skipSubmitRef.current) {
+      skipSubmitRef.current = false;
+      return;
+    }
     const ta = ref.current;
     const val = (ta?.plainText ?? "").trim();
     if (!val || streaming) return;
@@ -128,7 +135,7 @@ export function Composer({
     onSubmit(val);
     setInitialVal("");
     setComposerKey((c) => c + 1);
-  }, [onSubmit, streaming, autoVisible, pushToHistory]);
+  }, [onSubmit, streaming, pushToHistory]);
 
   const isCommand = initialVal.trim().startsWith("/");
 
