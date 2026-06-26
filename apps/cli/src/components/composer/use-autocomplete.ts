@@ -2,9 +2,10 @@ import { useMemo } from "react";
 
 import fuzzysort from "fuzzysort";
 
-import { COMMANDS } from "../../commands/commands";
-import { useSkills } from "../../hooks/useApi";
 import type { AutocompleteItem } from "./types";
+
+import { COMMANDS } from "@/components/commands/commands.js";
+import { useSkills } from "@/hooks/useApi";
 
 interface UseAutocompleteOptions {
   query: string;

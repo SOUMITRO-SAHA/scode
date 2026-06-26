@@ -1,9 +1,8 @@
-import { useHealth } from "../hooks/useApi";
-import { useAppStore } from "../store/index";
-import { Composer } from "./composer";
-import { KeyboardHints } from "./keyboard-hints";
-import { TipSection } from "./tip-section";
-
+import { Composer } from "@/components/composer/index.js";
+import { KeyboardHints } from "@/components/feedback/keyboard-hints";
+import { TipSection } from "@/components/feedback/tip-section";
+import { useHealth } from "@/hooks/useApi";
+import { useAppStore } from "@/store/index";
 import { formatModelName, parseModelString } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 

@@ -1,7 +1,6 @@
-import { useHealth, useModels } from "../hooks/useApi";
-import { useAppStore } from "../store/index";
-import { EFFORT_LEVELS, type EffortLevel } from "../store/index";
-
+import { useHealth, useModels } from "@/hooks/useApi";
+import { useAppStore } from "@/store/index";
+import { EFFORT_LEVELS, type EffortLevel } from "@/store/index";
 import { formatModelName, parseModelString } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 

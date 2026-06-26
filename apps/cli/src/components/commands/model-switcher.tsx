@@ -1,8 +1,7 @@
 import { useCallback, useState } from "react";
 
-import { useModels, useSetDefaultModel } from "../hooks/useApi";
-import { useAppStore } from "../store/index";
-
+import { useModels, useSetDefaultModel } from "@/hooks/useApi";
+import { useAppStore } from "@/store/index";
 import { useKeyboard } from "@opentui/react";
 import { theme } from "@scode/theme";
 

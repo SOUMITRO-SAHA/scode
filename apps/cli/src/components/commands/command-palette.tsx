@@ -1,8 +1,8 @@
 import { useMemo } from "react";
 
-import { COMMANDS, type Command } from "../commands/commands";
-import { DialogSelect, type DialogSelectOption } from "./ui/dialog";
+import { COMMANDS, type Command } from "./commands.js";
 
+import { DialogSelect, type DialogSelectOption } from "@/components/ui/dialog";
 import type { KeyEvent } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";

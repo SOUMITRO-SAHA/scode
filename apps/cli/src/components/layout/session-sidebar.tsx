@@ -4,9 +4,8 @@ import {
   useCreateSession,
   useDeleteSession,
   useSessions,
-} from "../hooks/useApi";
-import { useAppStore } from "../store/index";
-
+} from "@/hooks/useApi";
+import { useAppStore } from "@/store/index";
 import { theme } from "@scode/theme";
 
 export function SessionSidebar() {

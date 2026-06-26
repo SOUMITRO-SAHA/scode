@@ -1,13 +1,13 @@
 import { useCallback, useRef, useState } from "react";
 
-import type { Command } from "../../commands/commands";
-import { AGENT_LABELS, useAppStore } from "../../store/index";
 import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
 import { ComposerFooter } from "./composer-footer.js";
 import { calculateLayout, parseModelDisplay } from "./layout.js";
 import { useAutocomplete } from "./use-autocomplete.js";
 import { useHistory } from "./use-history.js";
 
+import type { Command } from "@/components/commands/commands.js";
+import { AGENT_LABELS, useAppStore } from "@/store/index";
 import {
   type KeyEvent,
   TextAttributes,

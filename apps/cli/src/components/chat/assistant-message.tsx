@@ -1,7 +1,6 @@
 import { useMemo } from "react";
 
-import { getMarkdownStyle } from "../styles/syntaxTheme";
-
+import { getMarkdownStyle } from "@/styles/syntaxTheme";
 import { theme } from "@scode/theme";
 
 export function AssistantMessage({

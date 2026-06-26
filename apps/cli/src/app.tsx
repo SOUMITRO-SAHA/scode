@@ -1,24 +1,23 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { ChatArea } from "@/components/chat/index.js";
 import {
   type Command,
   type CommandContext,
   executeCommand,
   parseCommand,
-} from "./commands/commands";
-import { ChatArea } from "./components/chat-area";
-import { CommandPalette } from "./components/command-palette";
-import { Composer } from "./components/composer";
-import { Header } from "./components/header";
-import { Landing } from "./components/landing";
-import { ModelSwitcher } from "./components/model-switcher";
-import { SessionSidebar } from "./components/session-sidebar";
-import { DialogProvider } from "./components/ui/dialog";
-import { ToastProvider } from "./components/ui/toast";
-import { useStreamChat } from "./hooks/useStreamChat";
-import { ApiClient } from "./services/api";
-import { useAppStore } from "./store/index";
-
+} from "@/components/commands/commands.js";
+import { CommandPalette } from "@/components/commands/index.js";
+import { ModelSwitcher } from "@/components/commands/index.js";
+import { Composer } from "@/components/composer/index.js";
+import { Header } from "@/components/layout/index.js";
+import { Landing } from "@/components/layout/index.js";
+import { SessionSidebar } from "@/components/layout/index.js";
+import { DialogProvider } from "@/components/ui/dialog";
+import { ToastProvider } from "@/components/ui/toast";
+import { useStreamChat } from "@/hooks/useStreamChat";
+import { ApiClient } from "@/services/api";
+import { useAppStore } from "@/store/index";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 
 export function App({

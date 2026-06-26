@@ -1,6 +1,5 @@
-import { useTips } from "../hooks/useTips";
-import { Icon } from "./icon";
-
+import { Icon } from "@/components/ui/icon";
+import { useTips } from "@/hooks/useTips";
 import { theme } from "@scode/theme";
 
 export function TipSection({ show = true }: { show?: boolean }) {

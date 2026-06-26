@@ -1,5 +1,4 @@
-import type { ApiClient } from "../services/api";
-
+import type { ApiClient } from "@/services/api";
 import type { AppConfig } from "@scode/shared/types";
 
 export interface Command {

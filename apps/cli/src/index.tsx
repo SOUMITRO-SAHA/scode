@@ -1,12 +1,11 @@
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline";
 
-import { App } from "./app";
-import { ErrorBoundary } from "./components/error-boundary";
-import { sendPrompt } from "./services/client";
-import { initializeApp } from "./services/init";
-import { gracefulShutdown, setRendererCleanup } from "./services/shutdown";
-
+import { App } from "@/app";
+import { ErrorBoundary } from "@/components/error/index.js";
+import { sendPrompt } from "@/services/client";
+import { initializeApp } from "@/services/init";
+import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { Logger } from "@scode/shared/logger";
