@@ -20,6 +20,16 @@
 - Server depends on `@scode/shared` (pino logging, constants) but NOT on `@scode/theme` (no UI).
 - Core deps: hono, @hono/node-server, @anthropic-ai/sdk, yaml.
 
+## Testing (TDD)
+
+- **What's tested:** registry (5 tests), matcher (5 tests), active-clients (8 tests), prompt-builder (2 tests), types (2 tests) — all 100% line coverage.
+- **What's not tested:** LLM adapter (`claude/client.ts` — needs Anthropic SDK mock), tool executors (`read.ts`, `write.ts`, `edit.ts`, `bash.ts`, `grep.ts`, `glob.ts` — heavy filesystem I/O), server entrypoint (`index.ts` — Hono routing), skill loader (`loader.ts` — filesystem reads).
+- **Mocking patterns:**
+  - `vi.mock("@anthropic-ai/sdk")` for LLM client tests (not yet written).
+  - Tool executors can be tested by creating temp files via `node:fs` + `beforeEach`/`afterEach` cleanup.
+  - Pure functions (matcher, prompt-builder, types) need zero mocking.
+- Tests use `vitest` with `environment: "node"` — no DOM dependencies.
+
 ## Tool security
 
 - All file tools (read, write, edit) validate path safety — prevents workspace escape.

@@ -77,6 +77,17 @@
 - `@scode/theme/layout` exports platform-agnostic tokens. In CLI they drive Yoga flexbox props; in the future web app they could drive CSS container queries or Tailwind breakpoints.
 - When adding a new layout-sensitive component, prefer deriving its dimensions from `theme.layout` rather than hardcoding numbers.
 
+## Testing (TDD)
+
+- **What's tested:** store (19 tests), shutdown (7 tests), types (2 tests) — all 100% line coverage.
+- **What's not tested:** `app.tsx`, `header.tsx`, `chat-area.tsx`, `composer.tsx`, `thinking-panel.tsx`, `footer.tsx` — OpenTUI components need a jsdom-like TUI environment not yet configured.
+- **Mocking patterns:**
+  - `vi.mock("@scode/shared/utils")` — blanket mocks `apiFetch`, `apiFetchStream`, `generateId` for service tests.
+  - `vi.mock("node:child_process")` — for daemon tests (not yet written).
+  - `vi.spyOn(process, "exit")` — for shutdown handler tests.
+- **Store tests:** Create fresh `useStore` instances per test via `useStore.setState(initial)`, verify state transitions directly.
+- Test files in `src/__tests__/` are excluded from tsconfig.
+
 ## Entrypoint
 
 - `pnpm cli` at root tries `bun` first (silent failure), falls back to `tsx` — bun is faster for dev startup.

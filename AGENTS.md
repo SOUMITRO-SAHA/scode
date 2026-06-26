@@ -108,12 +108,18 @@ Component directories (when used) also follow kebab-case: `ui/button.tsx`, `form
 - **Tool loop**: Single-turn prompt → Claude calls tools → server executes → feeds results back. Max 10 iterations.
 - **Model**: `claude-sonnet-4-20250515` via Anthropic SDK, streaming with `tool_use` support.
 
-# Testing
+# Testing (TDD)
+
+**This project follows TDD — write tests first, then implement.** Every package uses vitest with coverage via `@vitest/coverage-v8`.
 
 - `pnpm test` — run all workspace tests (vitest, 155 tests across shared, theme, cli, server)
-- `pnpm demo` — end-to-end: CLI spawns server, sends prompt, streams response (needs ANTHROPIC_API_KEY)
-- Both `--prompt` (stdout) and interactive TUI modes
-- `pnpm check-types` — type check both packages
+- `pnpm --filter <package> test -- --coverage` — run tests with coverage for a specific package
+- Every package has `"test": "vitest run"` script. Run per-package: `pnpm --filter <package> test`
+- Test files live in `src/__tests__/` alongside source, named `<module>.test.ts`
+- Files in `src/__tests__/` and `*.test.*` are excluded from tsconfig so `check-types` stays clean
+- `pnpm check-types` — type check all packages
+- Tests must pass before committing. No exceptions for TDD — write test first, then code until it passes.
+- Coverage thresholds: target 100% lines/funcs/branches for pure logic. Type-only exports are excluded. Heavy I/O (DB, LLM, subprocess) tested through mocked interfaces.
 
 # Skill Matching
 

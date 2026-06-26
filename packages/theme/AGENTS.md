@@ -13,6 +13,13 @@
 - Status colors (success, warning, error, info) are computed once as a merged Spread — not individually importable.
 - `syntax` colors live in `colors.ts`, not tokens — consumed directly by CLI's `syntaxTheme.ts`.
 
+## Testing (TDD)
+
+- **100% line/branch/function coverage** — every export is exercised.
+- Layout utilities (`getBreakpoint`, `isWide`, `getComposerLines`) are tested with boundary and edge-case values.
+- Data-only modules (tokens, colors, typography, spacing) have a single smoke test that imports all exports — this verifies no runtime errors in the deeply-merged token object.
+- No mocking needed — zero runtime deps means pure function tests only.
+
 ## Layout tokens (`layout.ts`)
 
 - `breakpoints` — terminal width thresholds (`sm: 80`, `md: 100`, `lg: 120` columns). Used for responsive layout switching in CLI.

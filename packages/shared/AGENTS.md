@@ -50,3 +50,13 @@ Always import from `@scode/shared/utils` — never import `axios` directly. This
 ## TypeScript
 
 - Uses TypeScript 6.x while consuming apps (CLI, server) use 5.x — resolution and emit behavior may differ between `tsx` runtime and `tsc`.
+
+## Testing (TDD)
+
+- All logic modules have vitest coverage: metrics, model, logger, types/stream, constants, logger/utils.
+- `apiFetch` and `apiFetchStream` are tested with `vi.mock("axios")` — the mock wires `axios()` calls to config assertions.
+- **98.5% line/branch coverage.** Remaining uncovered lines are:
+  - `logger/logger.ts` lines 38/109/115/125 — error handlers (consoleOut for warn/error, compress try-catch, runMaintenance try-catch). These are I/O edge-cases not exercised without filesystem failures.
+  - `logger/types.ts`, `types/api.ts`, `types/entities.ts` — pure type exports, erased at runtime, 0% by V8 definition.
+- Test files in `src/**/__tests__/` are excluded from tsconfig so `check-types` stays clean.
+- Write tests first. Mock `node:fs` and `node:zlib` when testing Logger or maintenance routines.
