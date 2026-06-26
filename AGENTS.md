@@ -14,10 +14,21 @@ scode/
 │   │   ├── src/
 │   │   │   ├── index.tsx      # CLI entrypoint — creates renderer, handles --prompt mode
 │   │   │   ├── app.tsx        # React TUI component with OpenTUI (header, output, input, streaming)
-│   │   │   ├── daemon.ts      # Server lifecycle (health check, spawn, poll, stop)
-│   │   │   └── client.ts      # HTTP client via apiFetchStream from @scode/shared/utils
+│   │   │   ├── components/
+│   │   │   │   ├── layout/    # header, session-sidebar, landing
+│   │   │   │   ├── chat/      # chat-area, assistant-message, user-message
+│   │   │   │   ├── commands/  # command-palette, model-switcher, commands
+│   │   │   │   ├── composer/  # composer, autocomplete-dropdown, use-autocomplete
+│   │   │   │   ├── feedback/  # thinking-panel, tip-section, keyboard-hints
+│   │   │   │   ├── error/     # error-boundary, error-component
+│   │   │   │   └── ui/        # dialog, toast, spinner, icon (generalized)
+│   │   │   ├── hooks/         # useApi, useStreamChat, useTips
+│   │   │   ├── services/      # api client, daemon, init, shutdown
+│   │   │   ├── store/         # Zustand state management
+│   │   │   ├── styles/        # syntaxTheme for markdown
+│   │   │   └── commands/      # command definitions
 │   │   ├── package.json       # @scode/cli — deps: @opentui/core, @opentui/react, react
-│   │   └── tsconfig.json      # JSX with @opentui/react
+│   │   └── tsconfig.json      # JSX with @opentui/react, @/* path alias
 │   └── server/
 │       ├── src/
 │       │   ├── index.ts       # Hono server — /health, /process (discover→match→load→build→Claude→stream)
@@ -88,15 +99,33 @@ Once a task is completed:
 
 # Code Conventions
 
-## React component file naming (shadcn style)
+## File naming
 
-All React component files use **kebab-case** naming — lowercase words separated by hyphens, no PascalCase for file names.
+Files follow different conventions based on their type:
 
-**Correct:** `dialog.tsx`, `command-palette.tsx`, `login-form.tsx`, `use-debounce.ts`, `format-date.ts`
+**React components:** kebab-case — `dialog.tsx`, `command-palette.tsx`, `login-form.tsx`
 
-**Incorrect:** `Dialog.tsx`, `CommandPalette.tsx`, `LoginForm.tsx`
+**Hooks:** camelCase with `use` prefix — `useAutocomplete.ts`, `useHistory.ts`, `useStreamChat.ts`
 
-Component directories (when used) also follow kebab-case: `ui/button.tsx`, `forms/login-form.tsx`.
+**Other files:** camelCase — `layout.ts`, `types.ts`, `syntaxTheme.ts`, `commands.ts`
+
+**Component directories:** kebab-case — `ui/button.tsx`, `forms/login-form.tsx`
+
+## Path aliases
+
+Use `@/` for cross-directory imports (maps to `./src/*`). Same-directory imports use `./`:
+
+```typescript
+// Cross-directory ✅
+import { useAppStore } from "@/store/index";
+import { Composer } from "@/components/composer/index.js";
+
+// Same-directory ✅
+import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
+
+// Deep relative ❌
+import { useAppStore } from "../../store/index";
+```
 
 # Key Design Decisions
 
@@ -179,9 +208,11 @@ Component directories (when used) also follow kebab-case: `ui/button.tsx`, `form
 
 - Server has 3 routes that all call the same `chatStream` handler: `POST /process` (legacy, mounted in `apps/server/src/index.ts`), `POST /api/v1/chat`, and `POST /api/v1/process` (both in the v1 router). They are identical.
 
-## Dead tsconfig aliases
+## Path alias usage
 
-- Both `apps/cli/tsconfig.json` and `apps/server/tsconfig.json` define `paths: {"@/*": ["./src/*"]}` but **zero imports** use `@/` anywhere in either package. All imports use relative paths. Inert/config deadweight.
+- `apps/cli/tsconfig.json` defines `paths: {"@/*": ["./src/*"]}` — use `@/` for cross-directory imports.
+- Same-directory imports use `./` (e.g., `./autocomplete-dropdown.js`).
+- Deep relative paths like `../../` are avoided — use `@/` instead.
 
 ## Dev mode divergence (CLI vs Server)
 
