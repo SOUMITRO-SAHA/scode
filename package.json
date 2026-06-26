@@ -9,8 +9,10 @@
     "check-types": "turbo run check-types",
     "cli": "bun apps/cli/src/index.tsx 2>/dev/null || pnpm exec tsx apps/cli/src/index.tsx",
     "server": "pnpm exec tsx apps/server/src/index.ts --port=4100",
+    "web": "pnpm --filter web dev",
     "dev:cli": "pnpm exec tsx watch apps/cli/src/index.tsx",
     "dev:server": "pnpm --filter @scode/server dev",
+    "dev:web": "pnpm --filter web dev",
     "demo": "pnpm cli --prompt 'Hello, what can you do?'"
   },
   "devDependencies": {
