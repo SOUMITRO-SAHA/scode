@@ -14,7 +14,7 @@
     "dev:server": "pnpm --filter @scode/server dev",
     "dev:web": "pnpm --filter web dev",
     "demo": "pnpm cli --prompt 'Hello, what can you do?'",
-    "prepare": "husky"
+    "prepare": "husky && effect-language-service patch"
   },
   "devDependencies": {
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
