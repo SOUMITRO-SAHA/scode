@@ -61,7 +61,9 @@ async function main() {
   const tuiOk = await tryTui(serverUrl, model);
   if (tuiOk) return;
 
-  logger.info("TUI unavailable — falling back to REPL mode");
+  logger.warn(
+    "TUI unavailable — falling back to REPL mode. Try resetting your terminal if this persists.",
+  );
   await repl(serverUrl, model);
 }
 
@@ -97,15 +99,25 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
       process.exit(1);
     });
 
+    const handleExit = () => {
+      renderer.destroy();
+      stopServer();
+      logger.close();
+      process.exit(0);
+    };
+
     createRoot(renderer).render(
       <QueryClientProvider client={queryClient}>
         <ErrorBoundary>
-          <App serverUrl={serverUrl} model={model} />
+          <App serverUrl={serverUrl} model={model} onExit={handleExit} />
         </ErrorBoundary>
       </QueryClientProvider>,
     );
     return true;
-  } catch {
+  } catch (err) {
+    logger.debug(
+      `TUI init failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
     return false;
   }
 }

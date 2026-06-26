@@ -17,18 +17,16 @@ import { useStreamChat } from "./hooks/useStreamChat";
 import { ApiClient } from "./services/api";
 import { useAppStore } from "./store/index";
 
-import {
-  useKeyboard,
-  useRenderer,
-  useTerminalDimensions,
-} from "@opentui/react";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 
 export function App({
   serverUrl,
   model: initialModel,
+  onExit,
 }: {
   serverUrl: string;
   model?: string;
+  onExit?: () => void;
 }) {
   const {
     messages,
@@ -36,7 +34,6 @@ export function App({
     setSessionId,
     submit: chatSubmit,
   } = useStreamChat(serverUrl);
-  const renderer = useRenderer();
   const { width, height } = useTerminalDimensions();
 
   const currentSessionId = useAppStore((s) => s.currentSessionId);
@@ -165,8 +162,7 @@ export function App({
     } else if (key.ctrl && key.name === "m") {
       setModelPickerOpen((v) => !v);
     } else if (key.ctrl && (key.name === "c" || key.name === "q")) {
-      renderer.destroy();
-      process.exit(0);
+      onExit?.();
     }
   });
 
