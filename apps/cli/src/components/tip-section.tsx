@@ -1,5 +1,5 @@
 import { useTips } from "../hooks/useTips";
-import { Icon } from "./Icon";
+import { Icon } from "./icon";
 
 import { theme } from "@scode/theme";
 

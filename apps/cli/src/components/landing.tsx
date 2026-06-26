@@ -1,8 +1,8 @@
 import { useHealth } from "../hooks/useApi";
 import { useAppStore } from "../store/index";
-import { Composer } from "./Composer";
-import { KeyboardHints } from "./KeyboardHints";
-import { TipSection } from "./TipSection";
+import { Composer } from "./composer";
+import { KeyboardHints } from "./keyboard-hints";
+import { TipSection } from "./tip-section";
 
 import { theme } from "@scode/theme";
 

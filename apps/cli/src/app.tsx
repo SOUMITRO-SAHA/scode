@@ -6,13 +6,13 @@ import {
   executeCommand,
   parseCommand,
 } from "./commands/commands";
-import { ChatArea } from "./components/ChatArea";
-import { CommandPalette } from "./components/CommandPalette";
-import { Composer } from "./components/Composer";
-import { Header } from "./components/Header";
-import { Landing } from "./components/Landing";
-import { ModelSwitcher } from "./components/ModelSwitcher";
-import { SessionSidebar } from "./components/SessionSidebar";
+import { ChatArea } from "./components/chat-area";
+import { CommandPalette } from "./components/command-palette";
+import { Composer } from "./components/composer";
+import { Header } from "./components/header";
+import { Landing } from "./components/landing";
+import { ModelSwitcher } from "./components/model-switcher";
+import { SessionSidebar } from "./components/session-sidebar";
 import { useStreamChat } from "./hooks/useStreamChat";
 import { ApiClient } from "./services/api";
 import { useAppStore } from "./store/index";

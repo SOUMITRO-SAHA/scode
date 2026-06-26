@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 
-import { AssistantMessage } from "./AssistantMessage";
-import { UserMessage } from "./UserMessage";
+import { AssistantMessage } from "./assistant-message";
+import { UserMessage } from "./user-message";
 
 import type { ScrollBoxRenderable } from "@opentui/core";
 import type { Message } from "@scode/shared/types";
