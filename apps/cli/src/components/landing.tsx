@@ -60,17 +60,17 @@ export function Landing({
       )}
       <box flexDirection="row" justifyContent="center" paddingBottom={1}>
         {health?.healthy && hasModel && (
-          <text paddingLeft={2}>
-            <text fg={theme.text.primary}>
+          <>
+            <text fg={theme.text.primary} paddingLeft={2}>
               <strong>{modelName}</strong>
             </text>
             {providerName && <text fg={theme.text.muted}> {providerName}</text>}
             <text fg={theme.warning}> {effortLevel}</text>
-          </text>
+          </>
         )}
         {health?.healthy && !hasModel && (
-          <text paddingLeft={2}>
-            <text fg={theme.warning}>No model selected — Ctrl+M to choose</text>
+          <text fg={theme.warning} paddingLeft={2}>
+            No model selected — Ctrl+M to choose
           </text>
         )}
       </box>

@@ -71,14 +71,14 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
             {connected ? "●" : "○"}
           </text>
           {hasModel ? (
-            <text paddingLeft={1}>
-              <text fg={theme.text.primary}>
+            <>
+              <text fg={theme.text.primary} paddingLeft={1}>
                 <strong>{modelName}</strong>
               </text>
               {providerName && (
                 <text fg={theme.text.muted}> {providerName}</text>
               )}
-            </text>
+            </>
           ) : (
             <text fg={theme.warning} paddingLeft={1}>
               No model selected
