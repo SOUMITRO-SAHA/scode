@@ -1,8 +1,10 @@
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
+import { DialogSelect, type DialogSelectOption } from "@/components/ui/dialog";
 import { useModels, useSetDefaultModel } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
-import { useKeyboard } from "@opentui/react";
+import type { KeyEvent } from "@opentui/core";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";
 
 export function ModelSwitcher() {
@@ -11,98 +13,83 @@ export function ModelSwitcher() {
   const setModel = useAppStore((s) => s.setModel);
   const { data, isLoading } = useModels(serverUrl);
   const setDefaultModel = useSetDefaultModel(serverUrl);
+  const { width: termWidth, height: termHeight } = useTerminalDimensions();
   const [open, setOpen] = useState(true);
-  const [search, setSearch] = useState("");
 
-  const allModels = data?.models ?? [];
-  const filtered = search.trim()
-    ? allModels.filter((m) =>
-        `${m.provider}/${m.defaultModel}`
-          .toLowerCase()
-          .includes(search.toLowerCase()),
-      )
-    : allModels;
-
-  const handleSelect = useCallback(
-    async (modelStr: string) => {
-      await setDefaultModel.mutateAsync(modelStr);
-      setModel(modelStr);
-      setOpen(false);
-      setSearch("");
-    },
-    [setDefaultModel, setModel],
-  );
-
-  useKeyboard((key) => {
-    if (key.name === "escape") {
+  useKeyboard((event: KeyEvent) => {
+    if (!open) return;
+    if (event.name === "escape") {
       setOpen(false);
     }
   });
 
+  const handleSelect = useCallback(
+    async (option: DialogSelectOption<string>) => {
+      const modelStr = option.value;
+      await setDefaultModel.mutateAsync(modelStr);
+      setModel(modelStr);
+      setOpen(false);
+    },
+    [setDefaultModel, setModel],
+  );
+
+  const options = useMemo((): DialogSelectOption<string>[] => {
+    if (!data?.models) return [];
+    return data.models.map((m) => {
+      const modelStr = `${m.provider}/${m.defaultModel}`;
+      return {
+        title: m.defaultModel,
+        description: m.providerName,
+        category: m.providerName,
+        value: modelStr,
+        truncateTitle: false,
+      };
+    });
+  }, [data]);
+
   if (!open) return null;
 
-  const cols = process.stdout.columns ?? 80;
-  const rows = process.stdout.rows ?? 24;
-  const w = Math.min(50, cols - 10);
-  const h = Math.min(filtered.length + 6, 18);
+  const paletteWidth = Math.min(Math.floor(termWidth * 0.6), 64);
 
   return (
     <box
       position="absolute"
-      left={Math.floor((cols - w) / 2)}
-      top={Math.floor(rows / 3)}
-      width={w}
-      height={h}
-      borderStyle="rounded"
-      borderColor={theme.border.focus}
-      backgroundColor={theme.background.primary}
+      left={0}
+      top={0}
+      width={termWidth}
+      height={termHeight}
+      alignItems="center"
+      paddingTop={Math.floor(termHeight / 4)}
+      zIndex={3000}
       flexDirection="column"
     >
-      <box paddingLeft={1} height={1}>
-        <text fg={theme.brand.primary}>Select Model</text>
-      </box>
-      {!model && (
-        <box paddingLeft={1} height={1}>
-          <text fg={theme.warning}>No model selected</text>
-        </box>
-      )}
-      <input
-        value={search}
-        onChange={(v: string) => setSearch(v)}
-        placeholder="Search models..."
-        width={w - 2}
-        focused
-      />
-      <box flexDirection="column" flexGrow={1}>
-        {isLoading && (
-          <text fg={theme.text.muted} paddingLeft={1}>
-            Loading...
-          </text>
-        )}
-        {filtered.length === 0 && !isLoading && (
-          <text fg={theme.text.muted} paddingLeft={1}>
-            {search ? "No matching models" : "No models available"}
-          </text>
-        )}
-        {filtered.slice(0, 12).map((m) => {
-          const modelStr = `${m.provider}/${m.defaultModel}`;
-          const active = modelStr === model;
-          return (
-            <box
-              key={modelStr}
-              height={1}
-              paddingLeft={1}
-              backgroundColor={active ? theme.background.hover : "transparent"}
-            >
-              <box onMouseDown={() => handleSelect(modelStr)}>
-                <text fg={active ? theme.brand.primary : theme.text.primary}>
-                  {active ? ">" : " "} {modelStr}
-                </text>
-              </box>
-              <text fg={theme.text.muted}> ({m.providerName})</text>
+      <box
+        width={paletteWidth}
+        maxWidth={termWidth - 2}
+        backgroundColor={theme.background.surface}
+        borderStyle="rounded"
+        borderColor={theme.border.focus}
+        paddingTop={1}
+        flexDirection="column"
+      >
+        <DialogSelect
+          title="Select Model"
+          placeholder="Search models..."
+          options={options}
+          flat
+          current={model}
+          onSelect={handleSelect}
+          onClose={() => setOpen(false)}
+          footer={<text fg={theme.text.disabled}>↑↓ navigate</text>}
+          footerHints={[{ title: "↵", label: "select", side: "right" }]}
+          emptyView={
+            <box paddingLeft={4} paddingRight={4} paddingTop={1}>
+              <text fg={theme.text.muted}>
+                {isLoading ? "Loading models..." : "No models available"}
+              </text>
             </box>
-          );
-        })}
+          }
+        />
       </box>
     </box>
   );

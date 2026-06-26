@@ -107,6 +107,8 @@ export function ConnectProvider() {
         width={paletteWidth}
         maxWidth={termWidth - 2}
         backgroundColor={theme.background.surface}
+        borderStyle="rounded"
+        borderColor={theme.border.focus}
         paddingTop={1}
         flexDirection="column"
       >
