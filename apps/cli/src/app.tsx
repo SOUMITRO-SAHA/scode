@@ -4,7 +4,6 @@ import { Landing } from "./components/Landing"
 import { Header } from "./components/Header"
 import { ChatArea } from "./components/ChatArea"
 import { Composer } from "./components/Composer"
-import { Footer } from "./components/Footer"
 import { SessionSidebar } from "./components/SessionSidebar"
 import { ModelSwitcher } from "./components/ModelSwitcher"
 import { CommandPalette } from "./components/CommandPalette"
@@ -150,7 +149,6 @@ export function App({ serverUrl, model: initialModel }: { serverUrl: string; mod
             modelDisplay={modelDisplay}
           />
         )}
-        <Footer />
         <CommandPalette
           visible={paletteVisible}
           onClose={() => setPaletteVisible(false)}

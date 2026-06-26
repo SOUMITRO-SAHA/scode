@@ -18,6 +18,21 @@ const AGENT_COLORS: Record<string, string> = {
   chat: theme.brand.primary,
 }
 
+function parseModelString(modelStr: string): { providerId: string; modelId: string } | null {
+  const idx = modelStr.indexOf("/")
+  if (idx === -1) return null
+  return { providerId: modelStr.slice(0, idx), modelId: modelStr.slice(idx + 1) }
+}
+
+function formatModelName(modelId: string): string {
+  return modelId
+    .replace(/^claude-/, "")
+    .replace(/-\d{8}$/, "")
+    .split("-")
+    .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
+    .join(" ")
+}
+
 export function Composer({
   onSubmit, streaming, width, lines = 3,
   placeholder = "Ask anything...", modelDisplay,
@@ -33,6 +48,12 @@ export function Composer({
   const histIdxRef = useRef(-1)
   const currentAgent = useAppStore((s) => s.currentAgent)
   const cycleAgent = useAppStore((s) => s.cycleAgent)
+  const effortLevel = useAppStore((s) => s.effortLevel)
+
+  const modelStr = modelDisplay ?? ""
+  const parsed = parseModelString(modelStr)
+  const modelName = parsed ? formatModelName(parsed.modelId) : (modelStr || "scode")
+  const providerName = parsed?.providerId ?? ""
 
   const goHistory = useCallback((dir: -1 | 1) => {
     const ta = ref.current as any
@@ -108,7 +129,12 @@ export function Composer({
           ) : (
             <box flexDirection="row">
               <text fg={AGENT_COLORS[currentAgent]}>{AGENT_LABELS[currentAgent]}</text>
-              <text fg={theme.text.disabled}> · {modelDisplay ?? "scode"} | {streaming ? "Processing..." : "Ready"}</text>
+              <text fg={theme.text.disabled}> · </text>
+              <text fg={theme.text.primary}>{modelName}</text>
+              {providerName && <text fg={theme.text.muted}> {providerName}</text>}
+              <text fg={theme.text.disabled}> · </text>
+              <text fg={theme.warning}>{effortLevel}</text>
+              <text fg={theme.text.disabled}> | {streaming ? "Processing..." : "Ready"}</text>
             </box>
           )}
         </box>
