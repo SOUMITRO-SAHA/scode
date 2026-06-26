@@ -5,7 +5,7 @@ import { App } from "./app";
 import { ErrorBoundary } from "./components/error-boundary";
 import { sendPrompt } from "./services/client";
 import { initializeApp } from "./services/init";
-import { gracefulShutdown, initShutdown } from "./services/shutdown";
+import { gracefulShutdown, setRendererCleanup } from "./services/shutdown";
 
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
@@ -74,7 +74,7 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
       targetFps: 30,
     });
 
-    initShutdown(serverUrl, () => renderer.destroy());
+    setRendererCleanup(() => renderer.destroy());
 
     process.on("SIGINT", () => {
       void gracefulShutdown(0);

@@ -9,9 +9,12 @@ let clientId: string | null = null;
 let apiBaseUrl = "";
 let rendererDestroy: (() => void) | null = null;
 
-export function initShutdown(baseUrl: string, destroy?: () => void) {
+export function setApiBaseUrl(baseUrl: string) {
   apiBaseUrl = `${baseUrl}/api/v1`;
-  rendererDestroy = destroy ?? null;
+}
+
+export function setRendererCleanup(destroy: () => void) {
+  rendererDestroy = destroy;
 }
 
 export function setClientId(id: string | null) {

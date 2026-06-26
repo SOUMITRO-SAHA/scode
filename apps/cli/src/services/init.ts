@@ -1,5 +1,5 @@
 import { ensureServer, registerActiveClient } from "./daemon";
-import { initShutdown, setClientId } from "./shutdown";
+import { setApiBaseUrl, setClientId } from "./shutdown";
 
 import { Logger } from "@scode/shared/logger";
 
@@ -12,7 +12,7 @@ export interface InitResult {
 export async function initializeApp(): Promise<InitResult> {
   const serverUrl = await ensureServer();
 
-  initShutdown(serverUrl);
+  setApiBaseUrl(serverUrl);
 
   const id = await registerActiveClient();
   if (id) {
