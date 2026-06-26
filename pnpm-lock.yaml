@@ -59,9 +59,15 @@ importers:
       '@types/react':
         specifier: ^19.2.17
         version: 19.2.17
+      fuzzysort:
+        specifier: ^3.1.0
+        version: 3.1.0
       react:
         specifier: ^19.2.7
         version: 19.2.7
+      remeda:
+        specifier: ^2.39.0
+        version: 2.39.0
       zustand:
         specifier: ^5.0.14
         version: 5.0.14(@types/react@19.2.17)(react@19.2.7)
@@ -1712,6 +1718,9 @@ packages:
   function-bind@1.1.2:
     resolution: {integrity: sha512-7XHNxH7qX9xG5mIwxkhumTox/MIRNcOgDrxWsMt2pAr23WHp6MrRlN7FBSFpCpr+oVO0F744iUgR82nJMfG2SA==}
 
+  fuzzysort@3.1.0:
+    resolution: {integrity: sha512-sR9BNCjBg6LNgwvxlBd0sBABvQitkLzoVY9MYYROQVX/FvfJ4Mai9LsGhDgd8qYdds0bY77VzYd5iuB+v5rwQQ==}
+
   gaxios@7.1.5:
     resolution: {integrity: sha512-5FZy72Rh8LhtjmvDrKkI+lVhrsQrVKVsItxMoDm5mNQE+xR0WVIIs+jzPSJgBvKVsLi24fZhXJIsNI0bihDzFg==}
     engines: {node: '>=18'}
@@ -2200,6 +2209,10 @@ packages:
 
   real-require@1.0.0:
     resolution: {integrity: sha512-P4nbQYQfePJxRSmY+v/KINxVucm4NF3p3s7pJveMTtom52FR4YGltUQLB8idDXwDDWW+eYrWDFbuzUnjoWHF7g==}
+
+  remeda@2.39.0:
+    resolution: {integrity: sha512-3Ki8dU1o3OVu4dwIQ2Pj+yiuP7OnEbmWAGmJ3yDRqopily5jsj8NWzPvbS89H85d6UdONKEcUnrfuHY6jN9vyw==}
+    engines: {node: '>=18.0.0'}
 
   resolve-pkg-maps@1.0.0:
     resolution: {integrity: sha512-seS2Tj26TBVOC2NIc2rOe2y2ZO7efxITtLZcGSOnHHNOQ7CkiUBfw0Iw2ck6xkIhPwLhKNLS8BO+hEpngQlqzw==}
@@ -3758,6 +3771,8 @@ snapshots:
 
   function-bind@1.1.2: {}
 
+  fuzzysort@3.1.0: {}
+
   gaxios@7.1.5:
     dependencies:
       extend: 3.0.2
@@ -4225,6 +4240,8 @@ snapshots:
   real-require@0.2.0: {}
 
   real-require@1.0.0: {}
+
+  remeda@2.39.0: {}
 
   resolve-pkg-maps@1.0.0: {}
 

@@ -23,7 +23,9 @@
     "@scode/theme": "workspace:*",
     "@tanstack/react-query": "^5.101.1",
     "@types/react": "^19.2.17",
+    "fuzzysort": "^3.1.0",
     "react": "^19.2.7",
+    "remeda": "^2.39.0",
     "zustand": "^5.0.14"
   }
 }
