@@ -28,6 +28,21 @@ export interface DialogSelectProps<T> {
   locked?: boolean;
   onClose?: () => void;
   current?: T;
+  actions?: {
+    command: string;
+    title: string;
+    side?: "left" | "right";
+    hidden?: boolean;
+    disabled?:
+      | boolean
+      | ((option: DialogSelectOption<T> | undefined) => boolean);
+    onTrigger: (option: DialogSelectOption<T>) => void;
+  }[];
+  footerHints?: {
+    title: string;
+    label: string;
+    side?: "left" | "right";
+  }[];
 }
 
 export interface DialogSelectOption<T = unknown> {
@@ -45,6 +60,7 @@ export interface DialogSelectOption<T = unknown> {
   bg?: RGBA;
   gutter?: () => React.ReactNode;
   margin?: React.ReactNode;
+  onSelect?: () => void;
 }
 
 function selectedForeground(): string {
@@ -83,6 +99,9 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [filter, setFilter] = useState("");
   const [inputMode, setInputMode] = useState<"keyboard" | "mouse">("keyboard");
+  const [focusedActionIdx, setFocusedActionIdx] = useState<number | undefined>(
+    undefined,
+  );
   const inputRef = useRef<InputRenderable | null>(null);
   const scrollRef = useRef<ScrollBoxRenderable | null>(null);
 
@@ -169,6 +188,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
 
   useEffect(() => {
     setSelectedIndex(0);
+    setFocusedActionIdx(undefined);
   }, [filter]);
 
   const move = useCallback(
@@ -178,19 +198,69 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       if (next < 0) next = flatList.length - 1;
       if (next >= flatList.length) next = 0;
       setSelectedIndex(next);
+      setFocusedActionIdx(undefined);
       const opt = flatList[next];
       if (opt) props.onMove?.(opt);
     },
     [props.locked, flatList, selectedIndex, props.onMove],
   );
 
+  const movePage = useCallback(
+    (direction: number) => move(direction * 10),
+    [move],
+  );
+
+  const moveHome = useCallback(() => {
+    if (props.locked || flatList.length === 0) return;
+    setSelectedIndex(0);
+    setFocusedActionIdx(undefined);
+    const opt = flatList[0];
+    if (opt) props.onMove?.(opt);
+  }, [props.locked, flatList, props.onMove]);
+
+  const moveEnd = useCallback(() => {
+    if (props.locked || flatList.length === 0) return;
+    const last = flatList.length - 1;
+    setSelectedIndex(last);
+    setFocusedActionIdx(undefined);
+    const opt = flatList[last];
+    if (opt) props.onMove?.(opt);
+  }, [props.locked, flatList, props.onMove]);
+
   const submit = useCallback(() => {
     if (props.locked) return;
     setInputMode("keyboard");
+    const index = focusedActionIdx;
+    const actions = (props.actions ?? []).filter((a) => !a.hidden);
+    if (index !== undefined && actions[index]) {
+      if (selected) actions[index].onTrigger(selected);
+      return;
+    }
     if (selected) {
+      selected.onSelect?.();
       props.onSelect?.(selected);
     }
-  }, [props.locked, selected, props.onSelect]);
+  }, [props.locked, focusedActionIdx, props.actions, selected, props.onSelect]);
+
+  const moveAction = useCallback(
+    (direction: 1 | -1) => {
+      if (props.locked) return;
+      const actions = (props.actions ?? []).filter(
+        (a) =>
+          !a.hidden &&
+          !(typeof a.disabled === "function"
+            ? a.disabled(selected)
+            : a.disabled),
+      );
+      if (actions.length === 0) return;
+      setFocusedActionIdx((idx) => {
+        if (idx === undefined) return direction === 1 ? 0 : actions.length - 1;
+        const next = idx + direction;
+        return next < 0 || next >= actions.length ? undefined : next;
+      });
+    },
+    [props.locked, props.actions, selected],
+  );
 
   const handleKeyDown = useCallback(
     (event: { name: string; ctrl: boolean; meta: boolean; shift: boolean }) => {
@@ -200,13 +270,34 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       } else if (event.name === "down") {
         setInputMode("keyboard");
         move(1);
+      } else if (event.name === "pageup") {
+        setInputMode("keyboard");
+        movePage(-1);
+      } else if (event.name === "pagedown") {
+        setInputMode("keyboard");
+        movePage(1);
+      } else if (event.name === "home") {
+        setInputMode("keyboard");
+        moveHome();
+      } else if (event.name === "end") {
+        setInputMode("keyboard");
+        moveEnd();
       } else if (event.name === "return" || event.name === "enter") {
         submit();
       } else if (event.name === "escape") {
         props.onClose?.();
+      } else if (event.name === "tab") {
+        setInputMode("keyboard");
+        moveAction(1);
+      } else if (
+        event.name === "shift-tab" ||
+        (event.shift && event.name === "tab")
+      ) {
+        setInputMode("keyboard");
+        moveAction(-1);
       }
     },
-    [move, submit, props.onClose],
+    [move, movePage, moveHome, moveEnd, submit, props.onClose, moveAction],
   );
 
   const handleInput = useCallback(
@@ -229,9 +320,48 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   const handleMouseUp = useCallback(
     (option: DialogSelectOption<T>) => {
       if (props.locked) return;
+      option.onSelect?.();
       props.onSelect?.(option);
     },
     [props.locked, props.onSelect],
+  );
+
+  const shownActions = useMemo(
+    () => (props.actions ?? []).filter((a) => !a.hidden),
+    [props.actions],
+  );
+
+  const actionItems = useMemo(
+    () =>
+      shownActions.filter((a) => {
+        if (typeof a.disabled === "function") return !a.disabled(selected);
+        return !a.disabled;
+      }),
+    [shownActions, selected],
+  );
+
+  const leftHints = useMemo(
+    () => [
+      ...actionItems
+        .filter((a) => a.side !== "right")
+        .map((a) => ({ ...a, isAction: true as const })),
+      ...(props.footerHints ?? [])
+        .filter((h) => h.side !== "right")
+        .map((h) => ({ ...h, isAction: false as const })),
+    ],
+    [actionItems, props.footerHints],
+  );
+
+  const rightHints = useMemo(
+    () => [
+      ...actionItems
+        .filter((a) => a.side === "right")
+        .map((a) => ({ ...a, isAction: true as const })),
+      ...(props.footerHints ?? [])
+        .filter((h) => h.side === "right")
+        .map((h) => ({ ...h, isAction: false as const })),
+    ],
+    [actionItems, props.footerHints],
   );
 
   return (
@@ -374,7 +504,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           ))
         )}
       </box>
-      {props.footer && (
+      {(props.footer || leftHints.length > 0 || rightHints.length > 0) && (
         <box
           paddingRight={2}
           paddingLeft={4}
@@ -382,8 +512,107 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           justifyContent="space-between"
           flexShrink={0}
         >
-          {props.footer}
+          <box flexDirection="row" gap={2}>
+            {props.footer}
+            {leftHints.map((hint, i) =>
+              hint.isAction ? (
+                <FooterAction
+                  key={hint.command}
+                  title={hint.title}
+                  label={""}
+                  focused={focusedActionIdx === actionItems.indexOf(hint)}
+                  disabled={
+                    typeof hint.disabled === "function"
+                      ? !!hint.disabled(selected)
+                      : !!hint.disabled
+                  }
+                  onTrigger={() => {
+                    if (selected) hint.onTrigger(selected);
+                  }}
+                />
+              ) : (
+                <FooterHint key={i} title={hint.title} label={hint.label} />
+              ),
+            )}
+          </box>
+          <box flexDirection="row" gap={2}>
+            {rightHints.map((hint, i) =>
+              hint.isAction ? (
+                <FooterAction
+                  key={hint.command}
+                  title={hint.title}
+                  label={""}
+                  focused={focusedActionIdx === actionItems.indexOf(hint)}
+                  disabled={
+                    typeof hint.disabled === "function"
+                      ? !!hint.disabled(selected)
+                      : !!hint.disabled
+                  }
+                  onTrigger={() => {
+                    if (selected) hint.onTrigger(selected);
+                  }}
+                />
+              ) : (
+                <FooterHint key={i} title={hint.title} label={hint.label} />
+              ),
+            )}
+          </box>
         </box>
+      )}
+    </box>
+  );
+}
+
+function FooterHint(props: { title: string; label: string }) {
+  return (
+    <box flexDirection="row" gap={0}>
+      <text fg={theme.text.primary}>{props.title}</text>
+      <text fg={theme.text.muted}> {props.label}</text>
+    </box>
+  );
+}
+
+function FooterAction(props: {
+  title: string;
+  label: string;
+  focused: boolean;
+  disabled: boolean;
+  onTrigger: () => void;
+}) {
+  const fg = selectedForeground();
+  return (
+    <box
+      flexDirection="row"
+      backgroundColor={
+        props.focused ? theme.background.hover : RGBA.fromInts(0, 0, 0, 0)
+      }
+      onMouseUp={props.onTrigger}
+    >
+      <text
+        fg={
+          props.disabled
+            ? theme.text.disabled
+            : props.focused
+              ? fg
+              : theme.text.primary
+        }
+        attributes={props.focused ? TextAttributes.BOLD : undefined}
+      >
+        {props.title}
+      </text>
+      {props.label && (
+        <text
+          fg={
+            props.disabled
+              ? theme.text.disabled
+              : props.focused
+                ? fg
+                : theme.text.muted
+          }
+        >
+          {" "}
+          {props.label}
+        </text>
       )}
     </box>
   );
@@ -423,25 +652,36 @@ function Option(props: {
           ●
         </text>
       )}
-      <text
-        flexGrow={1}
-        fg={text}
-        attributes={props.active ? TextAttributes.BOLD : undefined}
-        overflow="hidden"
-        wrapMode="none"
-        paddingLeft={3}
-      >
-        {props.titleView ?? displayTitle}
-        {props.description && (
-          <text fg={props.active ? fg : theme.text.muted}>
-            {" "}
-            {props.description}
-          </text>
+      <box flexDirection="row" flexGrow={1} overflow="hidden">
+        {props.titleView ? (
+          props.titleView
+        ) : (
+          <>
+            <text
+              fg={text}
+              attributes={props.active ? TextAttributes.BOLD : undefined}
+              wrapMode="none"
+              paddingLeft={3}
+            >
+              {displayTitle}
+            </text>
+            {props.description && (
+              <text fg={props.active ? fg : theme.text.muted} wrapMode="none">
+                {` ${props.description}`}
+              </text>
+            )}
+          </>
         )}
-      </text>
+      </box>
       {props.footer && (
         <box flexShrink={0}>
-          <text fg={props.active ? fg : theme.text.muted}>{props.footer}</text>
+          {typeof props.footer === "string" ? (
+            <text fg={props.active ? fg : theme.text.muted}>
+              {props.footer}
+            </text>
+          ) : (
+            props.footer
+          )}
         </box>
       )}
     </>
