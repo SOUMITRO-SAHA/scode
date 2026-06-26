@@ -4,6 +4,12 @@ settings:
   autoInstallPeers: true
   excludeLinksFromLockfile: false
 
+catalogs:
+  default:
+    typescript:
+      specifier: ^6.0.3
+      version: 6.0.3
+
 importers:
 
   .:
@@ -18,20 +24,20 @@ importers:
         specifier: ^2.9.18
         version: 2.10.0
       typescript:
-        specifier: 5.9.2
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 6.0.3
 
   apps/cli:
     dependencies:
       '@opentui/core':
         specifier: ^0.4.2
-        version: 0.4.2(typescript@5.9.2)(web-tree-sitter@0.25.10)
+        version: 0.4.2(typescript@6.0.3)(web-tree-sitter@0.25.10)
       '@opentui/core-darwin-arm64':
         specifier: 0.4.2
         version: 0.4.2
       '@opentui/react':
         specifier: ^0.4.2
-        version: 0.4.2(react-devtools-core@7.0.1)(react@19.2.7)(typescript@5.9.2)(web-tree-sitter@0.25.10)(ws@8.21.0)
+        version: 0.4.2(react-devtools-core@7.0.1)(react@19.2.7)(typescript@6.0.3)(web-tree-sitter@0.25.10)(ws@8.21.0)
       '@scode/shared':
         specifier: workspace:*
         version: link:../../packages/shared
@@ -58,8 +64,8 @@ importers:
         specifier: ^4.7.1
         version: 4.22.4
       typescript:
-        specifier: ^5.8.3
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 6.0.3
 
   apps/server:
     dependencies:
@@ -107,8 +113,8 @@ importers:
         specifier: ^4.7.1
         version: 4.22.4
       typescript:
-        specifier: ^5.8.3
-        version: 5.9.2
+        specifier: 'catalog:'
+        version: 6.0.3
 
   apps/web:
     dependencies:
@@ -159,7 +165,7 @@ importers:
         specifier: ^17.6.0
         version: 17.7.0
       typescript:
-        specifier: ~6.0.2
+        specifier: 'catalog:'
         version: 6.0.3
       typescript-eslint:
         specifier: ^8.61.0
@@ -184,7 +190,7 @@ importers:
         specifier: ^4.7.1
         version: 4.22.4
       typescript:
-        specifier: ^6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
   packages/theme:
@@ -193,7 +199,7 @@ importers:
         specifier: ^4.7.1
         version: 4.22.4
       typescript:
-        specifier: ^6.0.3
+        specifier: 'catalog:'
         version: 6.0.3
 
 packages:
@@ -840,7 +846,6 @@ packages:
 
   '@opentui/core-darwin-arm64@0.4.2':
     resolution: {integrity: sha512-is+O+sS/l3E9cZXyM9pRF1WhqnE+hYSPYoZkbseR9CthJcaWPGi3R3jUJa1cLj325252jWgxVupnDqFUtKg36w==}
-    cpu: [arm64]
     os: [darwin]
 
   '@opentui/core-darwin-x64@0.4.2':
@@ -2032,6 +2037,7 @@ packages:
   prettier@3.7.4:
     resolution: {integrity: sha512-v6UNi1+3hSlVvv8fSaoUbggEM5VErKmmpGA7Pl3HF8V6uKY7rvClBOJlH6yNwQtfTueNkGVpOv/mtWL9L4bgRA==}
     engines: {node: '>=14'}
+    hasBin: true
 
   process-warning@5.0.0:
     resolution: {integrity: sha512-a39t9ApHNx2L4+HBnQKqxxHNs1r7KF+Intd8Q/g1bUh6q0WIp9voPXJ/x0j+ZL45KF1pJd9+q2jLIRMfvEshkA==}
@@ -2225,10 +2231,6 @@ packages:
     peerDependencies:
       eslint: ^8.57.0 || ^9.0.0 || ^10.0.0
       typescript: '>=4.8.4 <6.1.0'
-
-  typescript@5.9.2:
-    resolution: {integrity: sha512-CWBzXQrc/qOkhidw1OzBTQuYRbfyxDXJMVJ1XNwUHGROVmuaeiEm3OslpZ1RV96d7SKKjZKrSJu3+t/xlw3R9A==}
-    engines: {node: '>=14.17'}
 
   typescript@6.0.3:
     resolution: {integrity: sha512-y2TvuxSZPDyQakkFRPZHKFm+KKVqIisdg9/CZwm9ftvKXLP8NRWj38/ODjNbr43SsoXqNuAisEf1GdCxqWcdBw==}
@@ -2862,9 +2864,9 @@ snapshots:
   '@opentui/core-win32-x64@0.4.2':
     optional: true
 
-  '@opentui/core@0.4.2(typescript@5.9.2)(web-tree-sitter@0.25.10)':
+  '@opentui/core@0.4.2(typescript@6.0.3)(web-tree-sitter@0.25.10)':
     dependencies:
-      bun-ffi-structs: 0.2.3(typescript@5.9.2)
+      bun-ffi-structs: 0.2.3(typescript@6.0.3)
       diff: 9.0.0
       marked: 17.0.1
       string-width: 7.2.0
@@ -2882,9 +2884,9 @@ snapshots:
     transitivePeerDependencies:
       - typescript
 
-  '@opentui/react@0.4.2(react-devtools-core@7.0.1)(react@19.2.7)(typescript@5.9.2)(web-tree-sitter@0.25.10)(ws@8.21.0)':
+  '@opentui/react@0.4.2(react-devtools-core@7.0.1)(react@19.2.7)(typescript@6.0.3)(web-tree-sitter@0.25.10)(ws@8.21.0)':
     dependencies:
-      '@opentui/core': 0.4.2(typescript@5.9.2)(web-tree-sitter@0.25.10)
+      '@opentui/core': 0.4.2(typescript@6.0.3)(web-tree-sitter@0.25.10)
       react: 19.2.7
       react-devtools-core: 7.0.1
       react-reconciler: 0.33.0(react@19.2.7)
@@ -3235,9 +3237,9 @@ snapshots:
       base64-js: 1.5.1
       ieee754: 1.2.1
 
-  bun-ffi-structs@0.2.3(typescript@5.9.2):
+  bun-ffi-structs@0.2.3(typescript@6.0.3):
     dependencies:
-      typescript: 5.9.2
+      typescript: 6.0.3
 
   call-bind-apply-helpers@1.0.2:
     dependencies:
@@ -4144,8 +4146,6 @@ snapshots:
       typescript: 6.0.3
     transitivePeerDependencies:
       - supports-color
-
-  typescript@5.9.2: {}
 
   typescript@6.0.3: {}
 
