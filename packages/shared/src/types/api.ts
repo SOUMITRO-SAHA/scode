@@ -137,3 +137,24 @@ export interface StatsResponse extends Stats {}
 export interface DeleteSessionResponse {
   ok: boolean;
 }
+
+// ── Active Client Types ──
+
+export interface RegisterClientRequest {
+  clientId?: string;
+}
+
+export interface RegisterClientResponse {
+  clientId: string;
+}
+
+export interface UnregisterClientResponse {
+  ok: boolean;
+  wasLast: boolean;
+  activeCount: number;
+}
+
+export interface ActiveClientsResponse {
+  count: number;
+  clients: Array<{ id: string; connectedAt: number }>;
+}

@@ -13,6 +13,7 @@ import { join } from "node:path";
 import { handleChat } from "../../chat/handler";
 import type { ConfigManager } from "../../config/manager";
 import type { ProviderRegistry } from "../../llm/registry";
+import type { ActiveClientManager } from "../../session/active-clients";
 import type { SessionManager } from "../../session/manager";
 import { discover } from "../../skill/discover";
 import { loadSkill } from "../../skill/loader";
@@ -30,6 +31,7 @@ interface RouterDeps {
   sessionManager: SessionManager;
   configManager: ConfigManager;
   startTime: number;
+  activeClientManager: ActiveClientManager;
 }
 
 export function createV1Router(deps: RouterDeps): Hono {
@@ -221,15 +223,15 @@ export function createV1Router(deps: RouterDeps): Hono {
     return c.json({ results });
   });
 
-  router.get("/config", (c) => {
-    return c.json(deps.configManager.get());
-  });
-
-  router.patch("/config", async (c) => {
-    const body = await c.req.json<Record<string, unknown>>();
-    const updated = deps.configManager.update(body as any);
-    return c.json(updated);
-  });
+  router
+    .get("/config", (c) => {
+      return c.json(deps.configManager.get());
+    })
+    .patch("/config", async (c) => {
+      const body = await c.req.json<Record<string, unknown>>();
+      const updated = deps.configManager.update(body as any);
+      return c.json(updated);
+    });
 
   router.get("/logs", (c) => {
     const logsDir = SCODE_LOGS_DIR;
@@ -283,14 +285,32 @@ export function createV1Router(deps: RouterDeps): Hono {
     });
   }
 
-  router.get("/chat", (c) =>
-    c.json({ error: "Use POST for streaming chat" }, 405),
-  );
-  router.get("/process", (c) =>
-    c.json({ error: "Use POST for streaming" }, 405),
-  );
-  router.post("/chat", chatStream);
-  router.post("/process", chatStream);
+  router
+    .get("/chat", (c) => c.json({ error: "Use POST for streaming chat" }, 405))
+    .post("/chat", chatStream);
+
+  router
+    .get("/process", (c) => c.json({ error: "Use POST for streaming" }, 405))
+    .post("/process", chatStream);
+
+  router
+    .get("/active-clients", (c) => {
+      return c.json({
+        count: deps.activeClientManager.getCount(),
+        clients: deps.activeClientManager.getClients(),
+      });
+    })
+    .post("/active-clients", async (c) => {
+      const body = await c.req.json().catch(() => ({}));
+      const clientId = deps.activeClientManager.register(body.clientId);
+      return c.json({ clientId }, 201);
+    })
+    .delete("/active-clients/:clientId", (c) => {
+      const clientId = c.req.param("clientId");
+      const { existed, count } = deps.activeClientManager.unregister(clientId);
+      if (!existed) return c.json({ error: "Client not found" }, 404);
+      return c.json({ ok: true, wasLast: count === 0, activeCount: count });
+    });
 
   router.get("/stats", (c) => {
     const sessions = deps.sessionManager.list();

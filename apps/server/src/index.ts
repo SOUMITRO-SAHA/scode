@@ -10,6 +10,7 @@ import { CohereAdapter } from "./llm/cohere/adapter";
 import { GeminiAdapter } from "./llm/gemini/adapter";
 import { OpenAICompatAdapter } from "./llm/openai-compat/adapter";
 import { ProviderRegistry } from "./llm/registry";
+import { ActiveClientManager } from "./session/active-clients";
 import { SessionManager } from "./session/manager";
 import * as bashTool from "./tool/bash";
 import * as editTool from "./tool/edit";
@@ -72,6 +73,7 @@ const providerRegistry = buildProviderRegistry();
 const sessionManager = new SessionManager();
 const configManager = new ConfigManager();
 const startTime = Date.now();
+const activeClientManager = new ActiveClientManager();
 
 getDb();
 logger.info("Database initialized");
@@ -85,6 +87,7 @@ const v1 = createV1Router({
   sessionManager,
   configManager,
   startTime,
+  activeClientManager,
 });
 app.route("/api/v1", v1);
 

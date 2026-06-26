@@ -1,11 +1,14 @@
 import type {
+  ActiveClientsResponse,
   HealthStatus,
   ModelInfo,
   ProviderInfo,
+  RegisterClientResponse,
   ServerConfig,
   SessionInfo,
   SkillInfo,
   Stats,
+  UnregisterClientResponse,
 } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
 
@@ -168,5 +171,21 @@ export class ApiClient {
     logs: { file: string; size: number; content: string }[];
   }> {
     return apiFetch("/logs", {}, this.baseUrl);
+  }
+
+  async getActiveClients(): Promise<ActiveClientsResponse> {
+    return apiFetch("/active-clients", {}, this.baseUrl);
+  }
+
+  async registerClient(): Promise<RegisterClientResponse> {
+    return apiFetch("/active-clients", { method: "POST" }, this.baseUrl);
+  }
+
+  async unregisterClient(clientId: string): Promise<UnregisterClientResponse> {
+    return apiFetch(
+      `/active-clients/${encodeURIComponent(clientId)}`,
+      { method: "DELETE" },
+      this.baseUrl,
+    );
   }
 }

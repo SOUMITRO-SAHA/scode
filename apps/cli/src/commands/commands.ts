@@ -30,6 +30,7 @@ export interface CommandContext {
   clearMessages?: () => void;
   toggleDebug?: () => void;
   addSystemMessage?: (text: string) => void;
+  onExit?: () => void;
 }
 
 export interface CommandResult {
@@ -380,7 +381,9 @@ export const COMMANDS: Command[] = [
     description: "Quit the application",
     usage: "/quit",
     category: "general",
-    handler: async () => process.exit(0),
+    handler: async (_args, _api, ctx) => {
+      ctx.onExit?.();
+    },
   },
   {
     name: "agent",

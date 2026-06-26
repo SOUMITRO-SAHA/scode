@@ -90,3 +90,20 @@ export async function ensureServer(): Promise<string> {
   if (existing) return existing;
   return startServer();
 }
+
+export async function registerActiveClient(): Promise<string | null> {
+  try {
+    const apiBaseUrl = `${baseUrl}/api/v1`;
+    const res = await fetch(`${apiBaseUrl}/active-clients`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+    });
+    if (res.ok) {
+      const data = (await res.json()) as { clientId: string };
+      return data.clientId;
+    }
+  } catch (err) {
+    logger.warn(`Failed to register client: ${err}`);
+  }
+  return null;
+}

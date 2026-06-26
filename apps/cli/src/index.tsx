@@ -4,7 +4,12 @@ import { createInterface } from "node:readline";
 import { App } from "./app";
 import { ErrorBoundary } from "./components/error-boundary";
 import { sendPrompt } from "./services/client";
-import { ensureServer, stopServer } from "./services/daemon";
+import { ensureServer, registerActiveClient } from "./services/daemon";
+import {
+  gracefulShutdown,
+  initShutdown,
+  setClientId,
+} from "./services/shutdown";
 
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
@@ -34,6 +39,11 @@ async function main() {
     process.exit(1);
   }
 
+  initShutdown(serverUrl);
+
+  const id = await registerActiveClient();
+  if (id) setClientId(id);
+
   if (directPrompt) {
     logger.info(`Single-shot mode: "${directPrompt.slice(0, 60)}..."`);
     if (model) logger.info(`Using model: ${model}`);
@@ -48,14 +58,12 @@ async function main() {
       );
     } catch (err) {
       logger.error(`Prompt failed: ${(err as Error).message}`);
-      stopServer();
-      logger.close();
-      process.exit(1);
+      await gracefulShutdown(1);
+      return;
     }
     stdout.write("\n");
-    stopServer();
-    logger.close();
-    process.exit(0);
+    await gracefulShutdown(0);
+    return;
   }
 
   const tuiOk = await tryTui(serverUrl, model);
@@ -74,36 +82,25 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
       targetFps: 30,
     });
 
+    initShutdown(serverUrl, () => renderer.destroy());
+
     process.on("SIGINT", () => {
-      renderer.destroy();
-      stopServer();
-      logger.close();
-      process.exit(0);
+      void gracefulShutdown(0);
     });
 
-    // Handle uncaught exceptions and unhandled rejections
     process.on("uncaughtException", (err) => {
       logger.error(`Uncaught exception: ${err.message}`);
-      renderer.destroy();
-      stopServer();
-      logger.close();
-      process.exit(1);
+      void gracefulShutdown(1);
     });
 
     process.on("unhandledRejection", (reason) => {
       const message = reason instanceof Error ? reason.message : String(reason);
       logger.error(`Unhandled rejection: ${message}`);
-      renderer.destroy();
-      stopServer();
-      logger.close();
-      process.exit(1);
+      void gracefulShutdown(1);
     });
 
     const handleExit = () => {
-      renderer.destroy();
-      stopServer();
-      logger.close();
-      process.exit(0);
+      void gracefulShutdown(0);
     };
 
     createRoot(renderer).render(
@@ -143,9 +140,7 @@ async function repl(serverUrl: string, model?: string): Promise<void> {
   });
 
   rl.on("close", () => {
-    stopServer();
-    logger.close();
-    process.exit(0);
+    void gracefulShutdown(0);
   });
 
   rl.prompt();
@@ -156,7 +151,5 @@ main().catch((err) => {
   if (err instanceof Error && err.stack) {
     logger.error(err.stack);
   }
-  stopServer();
-  logger.close();
-  process.exit(1);
+  void gracefulShutdown(1);
 });

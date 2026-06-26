@@ -92,6 +92,7 @@ export function App({
           clearMessages,
           toggleDebug,
           addSystemMessage,
+          onExit,
         };
         const result = await executeCommand(value, apiRef.current, ctx);
         if (result?.type === "message" && result.text) {
@@ -130,6 +131,7 @@ export function App({
         clearMessages,
         toggleDebug,
         addSystemMessage,
+        onExit,
       };
       executeCommand(`/${cmd.name}`, apiRef.current, ctx);
     },

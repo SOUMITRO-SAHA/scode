@@ -47,6 +47,10 @@ export type {
   LogsResponse,
   StatsResponse,
   DeleteSessionResponse,
+  RegisterClientRequest,
+  RegisterClientResponse,
+  UnregisterClientResponse,
+  ActiveClientsResponse,
 } from "./api";
 
 export type { StreamChunk, StreamEvent } from "./stream";
