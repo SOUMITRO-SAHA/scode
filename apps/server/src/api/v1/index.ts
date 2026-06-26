@@ -1,4 +1,5 @@
 import { Hono } from "hono";
+import type { Context } from "hono";
 import { stream } from "hono/streaming";
 import {
   existsSync,
@@ -24,6 +25,7 @@ import {
   SCODE_DIR,
   SCODE_LOGS_DIR,
 } from "@scode/shared/constants";
+import type { AppConfig, Skill } from "@scode/shared/types";
 
 interface RouterDeps {
   toolRegistry: ToolRegistry;
@@ -186,11 +188,11 @@ export function createV1Router(deps: RouterDeps): Hono {
 
   router.get("/skills", (c) => {
     const dirs = discover();
-    const skills = dirs.map(loadSkill).filter(Boolean);
+    const skills = dirs.map(loadSkill).filter((s): s is Skill => s !== null);
     return c.json({
       skills: skills.map((s) => ({
-        name: (s as any).name,
-        description: (s as any).description,
+        name: s.name,
+        description: s.description,
       })),
     });
   });
@@ -228,8 +230,8 @@ export function createV1Router(deps: RouterDeps): Hono {
       return c.json(deps.configManager.get());
     })
     .patch("/config", async (c) => {
-      const body = await c.req.json<Record<string, unknown>>();
-      const updated = deps.configManager.update(body as any);
+      const body = await c.req.json<Partial<AppConfig>>();
+      const updated = deps.configManager.update(body);
       return c.json(updated);
     });
 
@@ -255,13 +257,13 @@ export function createV1Router(deps: RouterDeps): Hono {
     }
   });
 
-  async function chatStream(c: any) {
+  async function chatStream(c: Context) {
     const body = await c.req.json().catch(() => ({}));
     const message = body.message ?? body.prompt;
     if (!message) {
       return c.json({ error: "message or prompt required" }, 400);
     }
-    return stream(c, async (s: any) => {
+    return stream(c, async (s) => {
       const model = body.model;
       const provider = body.provider;
       const sessionId = body.sessionId;

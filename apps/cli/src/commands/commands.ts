@@ -1,5 +1,7 @@
 import type { ApiClient } from "../services/api";
 
+import type { AppConfig } from "@scode/shared/types";
+
 export interface Command {
   name: string;
   aliases: string[];
@@ -310,7 +312,7 @@ export const COMMANDS: Command[] = [
     category: "config",
     handler: async (args, api) => {
       if (args[0] === "set" && args.length >= 2) {
-        const key = args[1] as any;
+        const key = args[1] as keyof AppConfig;
         const value = args.slice(2).join(" ");
         const num = Number(value);
         await api.updateConfig({ [key]: isNaN(num) ? value : num });

@@ -77,12 +77,11 @@ export function Composer({
   );
 
   const goHistory = useCallback((dir: -1 | 1) => {
-    const ta = ref.current as any;
+    const ta = ref.current;
     const hist = historyRef.current;
     if (hist.length === 0) return;
     if (dir === -1) {
-      if (histIdxRef.current === -1)
-        draftRef.current = ta?.plainText ?? ta?.value ?? "";
+      if (histIdxRef.current === -1) draftRef.current = ta?.plainText ?? "";
       if (histIdxRef.current < hist.length - 1) {
         histIdxRef.current++;
         setInitialVal(hist[hist.length - 1 - histIdxRef.current]);
@@ -102,7 +101,7 @@ export function Composer({
   }, []);
 
   function handleAutoSelect(name: string) {
-    const ta = ref.current as any;
+    const ta = ref.current!;
     const newText = `/${name} `;
     const cursor = ta.logicalCursor;
     ta.deleteRange(0, 0, cursor.row, cursor.col);
@@ -154,8 +153,8 @@ export function Composer({
 
   const handleSubmit = useCallback(() => {
     if (autoVisible) return;
-    const ta = ref.current as any;
-    const val = (ta?.plainText ?? ta?.value ?? "").trim();
+    const ta = ref.current;
+    const val = (ta?.plainText ?? "").trim();
     if (!val || streaming) return;
     historyRef.current.push(val);
     histIdxRef.current = -1;
@@ -187,8 +186,8 @@ export function Composer({
           onKeyDown={handleKeyDown}
           onContentChange={() => {
             if (streaming) return;
-            const ta = ref.current as any;
-            const val = ta?.plainText ?? ta?.value ?? "";
+            const ta = ref.current;
+            const val = ta?.plainText ?? "";
             if (val.startsWith("/")) {
               const afterSlash = val.slice(1);
               if (!afterSlash.includes(" ")) {

@@ -1,12 +1,15 @@
 import type {
   ActiveClientsResponse,
   HealthStatus,
+  MessagesResponse,
   ModelInfo,
   ProviderInfo,
   RegisterClientResponse,
   ServerConfig,
   SessionInfo,
+  SessionResponse,
   SkillInfo,
+  SkillResponse,
   Stats,
   UnregisterClientResponse,
 } from "@scode/shared/types";
@@ -92,7 +95,7 @@ export class ApiClient {
     name?: string,
     model?: string,
     provider?: string,
-  ): Promise<any> {
+  ): Promise<SessionResponse> {
     return apiFetch(
       "/sessions",
       {
@@ -103,11 +106,11 @@ export class ApiClient {
     );
   }
 
-  async getSession(id: string): Promise<any> {
+  async getSession(id: string): Promise<SessionResponse> {
     return apiFetch(`/sessions/${encodeURIComponent(id)}`, {}, this.baseUrl);
   }
 
-  async renameSession(id: string, name: string): Promise<any> {
+  async renameSession(id: string, name: string): Promise<SessionResponse> {
     return apiFetch(
       `/sessions/${encodeURIComponent(id)}`,
       {
@@ -126,7 +129,7 @@ export class ApiClient {
     );
   }
 
-  async getMessages(id: string): Promise<{ messages: any[] }> {
+  async getMessages(id: string): Promise<MessagesResponse> {
     return apiFetch(
       `/sessions/${encodeURIComponent(id)}/messages`,
       {},
@@ -138,7 +141,7 @@ export class ApiClient {
     return apiFetch("/skills", {}, this.baseUrl);
   }
 
-  async getSkill(name: string): Promise<any> {
+  async getSkill(name: string): Promise<SkillResponse> {
     return apiFetch(`/skills/${encodeURIComponent(name)}`, {}, this.baseUrl);
   }
 

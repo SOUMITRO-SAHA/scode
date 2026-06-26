@@ -2,7 +2,12 @@ import type { LLMProvider } from "../provider";
 import type { UnifiedMessage } from "../types";
 
 import { GoogleGenAI } from "@google/genai";
-import type { FunctionDeclaration } from "@google/genai";
+import type {
+  Content,
+  FunctionCall,
+  FunctionDeclaration,
+  Part,
+} from "@google/genai";
 
 export class GeminiAdapter implements LLMProvider {
   readonly id = "gemini";
@@ -41,10 +46,12 @@ export class GeminiAdapter implements LLMProvider {
         yield { type: "text", delta: chunk.text };
       }
       if (chunk.functionCalls) {
-        aggregatedFunctionCalls = chunk.functionCalls.map((fc: any) => ({
-          name: fc.name,
-          args: (fc.args ?? {}) as Record<string, unknown>,
-        }));
+        aggregatedFunctionCalls = chunk.functionCalls.map(
+          (fc: FunctionCall) => ({
+            name: fc.name ?? "",
+            args: (fc.args ?? {}) as Record<string, unknown>,
+          }),
+        );
       }
     }
 
@@ -75,10 +82,10 @@ function toGeminiTools(
 
 function toGeminiContents(messages: UnifiedMessage[]): {
   systemInstruction: string | undefined;
-  contents: any[];
+  contents: Content[];
 } {
   let systemInstruction: string | undefined;
-  const contents: any[] = [];
+  const contents: Content[] = [];
 
   for (const msg of messages) {
     if (msg.role === "system") {
@@ -110,7 +117,7 @@ function toGeminiContents(messages: UnifiedMessage[]): {
     }
 
     if (msg.role === "assistant") {
-      const parts: any[] = [];
+      const parts: Part[] = [];
       if (typeof msg.content === "string") {
         parts.push({ text: msg.content });
       } else {

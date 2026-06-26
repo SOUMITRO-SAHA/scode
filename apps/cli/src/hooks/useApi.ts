@@ -1,11 +1,14 @@
 import type {
   HealthStatus,
   LogEntry,
+  MessagesResponse,
   ModelInfo,
   ProviderInfo,
   ServerConfig,
   SessionInfo,
+  SessionResponse,
   SkillInfo,
+  SkillResponse,
   Stats,
 } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
@@ -132,7 +135,7 @@ export function useCreateSession(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { name?: string; model?: string; provider?: string }) =>
-      apiFetch<any>(
+      apiFetch<SessionResponse>(
         "/sessions",
         { method: "POST", body: JSON.stringify(body) },
         serverUrl,
@@ -147,7 +150,11 @@ export function useSession(id: string | undefined, serverUrl?: string) {
   return useQuery({
     queryKey: ["session", id, serverUrl],
     queryFn: () =>
-      apiFetch<any>(`/sessions/${encodeURIComponent(id!)}`, {}, serverUrl),
+      apiFetch<SessionResponse>(
+        `/sessions/${encodeURIComponent(id!)}`,
+        {},
+        serverUrl,
+      ),
     enabled: !!id,
   });
 }
@@ -164,7 +171,7 @@ export function useUpdateSession(serverUrl?: string) {
       model?: string;
       provider?: string;
     }) =>
-      apiFetch<any>(
+      apiFetch<SessionResponse>(
         `/sessions/${encodeURIComponent(id)}`,
         {
           method: "PATCH",
@@ -197,7 +204,7 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
   return useQuery({
     queryKey: ["session-messages", id, serverUrl],
     queryFn: () =>
-      apiFetch<{ messages: any[] }>(
+      apiFetch<MessagesResponse>(
         `/sessions/${encodeURIComponent(id!)}/messages`,
         {},
         serverUrl,
@@ -218,7 +225,11 @@ export function useSkill(name: string | undefined, serverUrl?: string) {
   return useQuery({
     queryKey: ["skill", name, serverUrl],
     queryFn: () =>
-      apiFetch<any>(`/skills/${encodeURIComponent(name!)}`, {}, serverUrl),
+      apiFetch<SkillResponse>(
+        `/skills/${encodeURIComponent(name!)}`,
+        {},
+        serverUrl,
+      ),
     enabled: !!name,
   });
 }

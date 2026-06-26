@@ -1,4 +1,4 @@
-import { CohereClientV2 } from "cohere-ai";
+import { type Cohere, CohereClientV2 } from "cohere-ai";
 
 import type { LLMProvider } from "../provider";
 import type { UnifiedMessage } from "../types";
@@ -16,8 +16,11 @@ export class CohereAdapter implements LLMProvider {
 
     const stream = await client.chatStream({
       model,
-      messages: toCohereMessages(params.messages, params.system) as any,
-      tools: toCohereTools(params.tools) as any,
+      messages: toCohereMessages(
+        params.messages,
+        params.system,
+      ) as unknown as Cohere.ChatMessageV2[],
+      tools: toCohereTools(params.tools),
     });
 
     const toolCallAccumulators: Map<
@@ -27,16 +30,22 @@ export class CohereAdapter implements LLMProvider {
 
     for await (const event of stream) {
       if (event.type === "content-delta") {
-        const text = (event as any).delta?.message?.content?.text;
+        const text = event.delta?.message?.content?.text;
         if (text) {
           yield { type: "text", delta: text };
         }
       }
 
       if (event.type === "tool-call-start") {
-        const e = event as any;
-        const idx = e.index ?? 0;
-        const tc = e.delta?.message?.toolCalls?.[0];
+        const idx = event.index ?? 0;
+        const toolCalls = (
+          event.delta?.message as
+            | {
+                toolCalls?: Array<{ id: string; function?: { name?: string } }>;
+              }
+            | undefined
+        )?.toolCalls;
+        const tc = toolCalls?.[0];
         if (tc) {
           toolCallAccumulators.set(idx, {
             id: tc.id ?? "",
@@ -47,12 +56,15 @@ export class CohereAdapter implements LLMProvider {
       }
 
       if (event.type === "tool-call-delta") {
-        const e = event as any;
-        const idx = e.index ?? 0;
+        const idx = event.index ?? 0;
         const acc = toolCallAccumulators.get(idx);
         if (acc) {
           const argDelta =
-            e.delta?.message?.toolCalls?.[0]?.function?.arguments ?? "";
+            (
+              event.delta?.message as
+                | { toolCalls?: { function?: { arguments?: string } } }
+                | undefined
+            )?.toolCalls?.function?.arguments ?? "";
           acc.arguments += argDelta;
         }
       }
@@ -82,7 +94,7 @@ export class CohereAdapter implements LLMProvider {
 
 function toCohereTools(
   tools: Parameters<LLMProvider["streamResponse"]>[0]["tools"],
-) {
+): Cohere.ToolV2[] {
   return tools.map((t) => ({
     type: "function" as const,
     function: {
@@ -96,10 +108,13 @@ function toCohereTools(
 function toCohereMessages(
   messages: UnifiedMessage[],
   system: string,
-): Record<string, unknown>[] {
-  const result: Record<string, unknown>[] = [];
+): Cohere.ChatMessageV2[] {
+  const result: Cohere.ChatMessageV2[] = [];
 
-  result.push({ role: "system", content: system });
+  result.push({
+    role: "system",
+    content: system,
+  } as unknown as Cohere.ChatMessageV2);
 
   for (const msg of messages) {
     if (msg.role === "system") continue;
@@ -112,7 +127,7 @@ function toCohereMessages(
           typeof msg.content === "string"
             ? msg.content
             : JSON.stringify(msg.content),
-      });
+      } as unknown as Cohere.ChatMessageV2);
       continue;
     }
 
@@ -145,7 +160,7 @@ function toCohereMessages(
         role: "assistant",
         content: text || undefined,
         tool_calls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
-      });
+      } as unknown as Cohere.ChatMessageV2);
       continue;
     }
 
@@ -155,7 +170,7 @@ function toCohereMessages(
         typeof msg.content === "string"
           ? msg.content
           : JSON.stringify(msg.content),
-    });
+    } as unknown as Cohere.ChatMessageV2);
   }
 
   return result;
