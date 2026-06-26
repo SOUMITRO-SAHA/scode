@@ -132,7 +132,6 @@ export function App({ serverUrl, model: initialModel }: { serverUrl: string; mod
           <Landing
             onSubmit={handleSubmit}
             streaming={streaming}
-            width={width}
             height={height}
             modelDisplay={modelDisplay}
           />

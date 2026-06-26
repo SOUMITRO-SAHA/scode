@@ -8,41 +8,40 @@ import { TipSection } from "./TipSection"
 interface LandingProps {
   onSubmit: (value: string) => void
   streaming: boolean
-  width: number
   height: number
   modelDisplay?: string
 }
 
-export function Landing({ onSubmit, streaming, width, height, modelDisplay }: LandingProps) {
+export function Landing({ onSubmit, streaming, height, modelDisplay }: LandingProps) {
   const serverUrl = useAppStore((s) => s.serverUrl)
   const { data: health } = useHealth(serverUrl)
-  const showFullLogo = width >= 60 && height >= 28
-  const showSmallLogo = width >= 60 && height >= 20
+  const showFullLogo = height >= 28
+  const showSmallLogo = height >= 20
   const showTips = height >= 24
   const composerLines = height < 20 ? 1 : height < 28 ? 2 : 3
 
   return (
-    <box flexDirection="column" width={width} height={height} alignItems="center" justifyContent="center">
+    <box flexDirection="column" width="100%" flexGrow={1} alignItems="center" justifyContent="center">
       {showFullLogo && (
-        <>
+        <box flexDirection="column" alignItems="center">
           <ascii-font text="SCODE" font="huge" color={theme.brand.primary} />
           <text fg={theme.text.muted}>Local AI Coding Assistant</text>
           <box height={1} />
-        </>
+        </box>
       )}
       {!showFullLogo && showSmallLogo && (
-        <>
+        <box flexDirection="column" alignItems="center">
           <ascii-font text="SCODE" font="block" color={theme.brand.primary} />
           <text fg={theme.text.muted}>Local AI Coding Assistant</text>
           <box height={1} />
-        </>
+        </box>
       )}
       {!showSmallLogo && (
-        <>
+        <box flexDirection="column" alignItems="center">
           <text fg={theme.brand.primary}><strong>SCode</strong></text>
           <text fg={theme.text.muted}>Local AI Coding Assistant</text>
           <box height={1} />
-        </>
+        </box>
       )}
       <box flexDirection="row" justifyContent="center" paddingBottom={1}>
         <text fg={health?.healthy ? theme.success : theme.danger}>
@@ -54,7 +53,7 @@ export function Landing({ onSubmit, streaming, width, height, modelDisplay }: La
           </text>
         )}
       </box>
-      <Composer onSubmit={onSubmit} streaming={streaming} width={width} lines={composerLines} modelDisplay={modelDisplay} />
+      <Composer onSubmit={onSubmit} streaming={streaming} width={80} lines={composerLines} modelDisplay={modelDisplay} />
       <KeyboardHints />
       <TipSection show={showTips} />
     </box>
