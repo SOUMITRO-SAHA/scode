@@ -70,25 +70,7 @@ export function ErrorComponent({
       padding={2}
       gap={1}
     >
-      <box flexDirection="row" gap={1} alignItems="center">
-        <text attributes={TextAttributes.BOLD} fg={theme.text.primary}>
-          Fatal Error
-        </text>
-        <box
-          onMouseUp={copyIssueURL}
-          backgroundColor={theme.brand.primary}
-          paddingX={1}
-          paddingY={0}
-        >
-          <text attributes={TextAttributes.BOLD} fg={theme.background.primary}>
-            Copy Issue URL
-          </text>
-        </box>
-        {copied && <text fg={theme.success}>Copied!</text>}
-      </box>
-
-      <text fg={theme.text.primary}>{error.message}</text>
-
+      {/* Top Buttons */}
       <box flexDirection="row" gap={2} alignItems="center">
         <box
           onMouseUp={reset}
@@ -110,39 +92,54 @@ export function ErrorComponent({
             Exit (Esc/Ctrl+C)
           </text>
         </box>
+        <box
+          onMouseUp={copyIssueURL}
+          backgroundColor={theme.brand.primary}
+          paddingX={1}
+          paddingY={0}
+        >
+          <text attributes={TextAttributes.BOLD} fg={theme.background.primary}>
+            Raise an Issue
+          </text>
+        </box>
+        {copied && <text fg={theme.success}>Copied!</text>}
+      </box>
+
+      {/*Error Short Summary */}
+      <box
+        flexDirection="row"
+        gap={1}
+        alignItems="center"
+        justifyContent="space-between"
+      >
+        <text attributes={TextAttributes.BOLD} fg={theme.text.primary}>
+          Fatal Error
+        </text>
+
+        <box
+          onMouseUp={copyError}
+          backgroundColor={theme.brand.primary}
+          paddingX={1}
+          paddingY={0}
+        >
+          <text attributes={TextAttributes.BOLD} fg={theme.background.primary}>
+            Copy
+          </text>
+        </box>
       </box>
 
       <box
         flexDirection="column"
         flexGrow={1}
-        overflow="hidden"
         borderStyle="single"
         borderColor={theme.danger}
-        marginTop={1}
       >
-        <box
-          flexDirection="row"
-          justifyContent="flex-end"
-          paddingX={1}
-          paddingTop={1}
-        >
-          <box
-            onMouseUp={copyError}
-            backgroundColor={theme.brand.primary}
-            paddingX={1}
-            paddingY={0}
-          >
-            <text
-              attributes={TextAttributes.BOLD}
-              fg={theme.background.primary}
-            >
-              Copy
-            </text>
-          </box>
-        </box>
+        <text fg={theme.text.primary} paddingX={1} paddingTop={1}>
+          {error.message}
+        </text>
 
         <scrollbox
-          height={Math.max(1, height - 12)}
+          flexGrow={1}
           stickyScroll
           stickyStart="bottom"
           paddingLeft={1}
