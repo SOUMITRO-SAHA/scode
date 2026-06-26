@@ -50,11 +50,11 @@ async function main() {
       );
     } catch (err) {
       logger.error(`Prompt failed: ${(err as Error).message}`);
-      await gracefulShutdown(1);
+      await gracefulShutdown(1, serverUrl);
       return;
     }
     stdout.write("\n");
-    await gracefulShutdown(0);
+    await gracefulShutdown(0, serverUrl);
     return;
   }
 
@@ -77,22 +77,22 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
     setRendererCleanup(() => renderer.destroy());
 
     process.on("SIGINT", () => {
-      void gracefulShutdown(0);
+      void gracefulShutdown(0, serverUrl);
     });
 
     process.on("uncaughtException", (err) => {
       logger.error(`Uncaught exception: ${err.message}`);
-      void gracefulShutdown(1);
+      void gracefulShutdown(1, serverUrl);
     });
 
     process.on("unhandledRejection", (reason) => {
       const message = reason instanceof Error ? reason.message : String(reason);
       logger.error(`Unhandled rejection: ${message}`);
-      void gracefulShutdown(1);
+      void gracefulShutdown(1, serverUrl);
     });
 
     const handleExit = () => {
-      void gracefulShutdown(0);
+      void gracefulShutdown(0, serverUrl);
     };
 
     createRoot(renderer).render(
@@ -132,7 +132,7 @@ async function repl(serverUrl: string, model?: string): Promise<void> {
   });
 
   rl.on("close", () => {
-    void gracefulShutdown(0);
+    void gracefulShutdown(0, serverUrl);
   });
 
   rl.prompt();

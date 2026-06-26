@@ -6,12 +6,7 @@ import type { UnregisterClientResponse } from "@scode/shared/types";
 const logger = new Logger({ stderr: true });
 
 let clientId: string | null = null;
-let apiBaseUrl = "";
 let rendererDestroy: (() => void) | null = null;
-
-export function setApiBaseUrl(baseUrl: string) {
-  apiBaseUrl = `${baseUrl}/api/v1`;
-}
 
 export function setRendererCleanup(destroy: () => void) {
   rendererDestroy = destroy;
@@ -25,13 +20,16 @@ export function getClientId(): string | null {
   return clientId;
 }
 
-export async function gracefulShutdown(exitCode: number = 0): Promise<void> {
-  if (clientId) {
+export async function gracefulShutdown(
+  exitCode: number = 0,
+  baseUrl?: string,
+): Promise<void> {
+  if (clientId && baseUrl) {
     const id = clientId;
     clientId = null;
     try {
       const res = await fetch(
-        `${apiBaseUrl}/active-clients/${encodeURIComponent(id)}`,
+        `${baseUrl}/api/v1/active-clients/${encodeURIComponent(id)}`,
         { method: "DELETE" },
       );
       if (res.ok) {
