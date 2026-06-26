@@ -22,6 +22,7 @@
 
 ## Layout tokens (`layout.ts`)
 
+- Layout is re-exported through the root `"."` export — there is **no `@scode/theme/layout` subpath** despite CLI AGENTS.md referencing it conceptually. Import as `import { layout } from "@scode/theme"`.
 - `breakpoints` — terminal width thresholds (`sm: 80`, `md: 100`, `lg: 120` columns). Used for responsive layout switching in CLI.
 - `sidebar.width` — fixed sidebar width (30 columns). Single source of truth for both CLI sidebar and future web sidebar.
 - `content.maxWidth` / `content.minWidth` — content area constraints. `promptMaxWidth` for the composer/input.
