@@ -1,4 +1,11 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  Fragment,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 
 import fuzzysort from "fuzzysort";
 import { filter as filterArray, pipe } from "remeda";
@@ -423,7 +430,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       <box paddingLeft={4} paddingRight={4}>
         <box flexDirection="row" justifyContent="space-between">
           {props.titleView ?? (
-            <text fg={theme.text.primary} attributes={TextAttributes.BOLD}>
+            <text fg={theme.text.secondary} attributes={TextAttributes.BOLD}>
               {props.title}
             </text>
           )}
@@ -460,7 +467,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
             maxHeight={height}
           >
             {grouped.map(([category, options], groupIndex) => (
-              <box key={category || groupIndex}>
+              <Fragment key={category || groupIndex}>
                 {category && (
                   <box paddingTop={groupIndex > 0 ? 1 : 0} paddingLeft={3}>
                     {options[0]?.categoryView ?? (
@@ -547,7 +554,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     </box>
                   );
                 })}
-              </box>
+              </Fragment>
             ))}
           </scrollbox>
         ) : (
