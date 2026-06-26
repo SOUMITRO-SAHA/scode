@@ -51,6 +51,12 @@ Always import from `@scode/shared/utils` — never import `axios` directly. This
 
 - Uses TypeScript 6.x while consuming apps (CLI, server) use 5.x — resolution and emit behavior may differ between `tsx` runtime and `tsc`.
 
+## apiFetchStream quirks
+
+- Returns a `Readable` stream regardless of HTTP status code — **no 2xx check**. Callers must handle error-page bodies during iteration.
+- No abort signal / timeout support (unlike `apiFetch<T>` which accepts `RequestInit` with `signal`).
+- Internally casts `res.data as Readable` — type lie with no runtime validation. At runtime axios with `responseType: "stream"` does return a `stream.Readable` from the HTTP response.
+
 ## Testing (TDD)
 
 - All logic modules have vitest coverage: metrics, model, logger, types/stream, constants, logger/utils.

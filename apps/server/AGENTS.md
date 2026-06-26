@@ -34,3 +34,15 @@
 
 - All file tools (read, write, edit) validate path safety — prevents workspace escape.
 - bash tool uses `execSync` with 10MB max buffer and configurable timeout.
+
+## Route redundancy
+
+- `/process` (legacy root mount at `POST /process` in `index.ts`) and `/api/v1/chat`, `/api/v1/process` in the v1 router all share the same `chatStream` handler function. Three routes, identical behavior.
+
+## Effect language service plugin
+
+- `tsconfig.json` includes `@effect/language-service` plugin with `namespaceImportPackages: ["effect", "@effect/platform-node"]`. Server doesn't use Effect directly in its own code — this only matters if an LLM adapter's type declarations reference Effect types.
+
+## Dev mode
+
+- Server uses `tsx watch src/index.ts` for dev (no native FFI). Unlike CLI, there's no bun-based watcher workaround needed.

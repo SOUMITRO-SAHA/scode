@@ -15,3 +15,13 @@
 
 - Zero internal monorepo dependencies — does NOT depend on `@scode/theme`, `shared`, or any local packages.
 - Only external deps: react 19, react-dom 19, with dev tooling (vite, eslint, typescript).
+
+## Test/workspace exclusion
+
+- **Excluded from `vitest.workspace.ts`** — not part of the 4-package test suite. No `test` script, no vitest config.
+- Not in turbo's effective scope: `build` task outputs glob (`.next/**`) doesn't match web output.
+
+## Build tooling
+
+- **Vite 8.x** with `@rolldown/plugin-babel` — very new, uses Rolldown (Rust-based bundler) instead of esbuild.
+- Only package that uses `tsc -b` (TypeScript project references build mode) for type checking.

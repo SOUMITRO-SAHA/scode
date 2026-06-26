@@ -74,7 +74,7 @@
 
 ### Web vs CLI context
 
-- `@scode/theme/layout` exports platform-agnostic tokens. In CLI they drive Yoga flexbox props; in the future web app they could drive CSS container queries or Tailwind breakpoints.
+- `@scode/theme` (root export, `import { layout } from "@scode/theme"`) exports platform-agnostic layout tokens. There is no `@scode/theme/layout` subpath export. In CLI they drive Yoga flexbox props; in the future web app they could drive CSS container queries or Tailwind breakpoints.
 - When adding a new layout-sensitive component, prefer deriving its dimensions from `theme.layout` rather than hardcoding numbers.
 
 ## Testing (TDD)
@@ -92,3 +92,20 @@
 
 - `pnpm cli` at root tries `bun` first (silent failure), falls back to `tsx` — bun is faster for dev startup.
 - Three modes: `--prompt` (single-shot stdout), TUI (interactive), REPL fallback if TUI fails.
+
+## Stream cleanup asymmetry
+
+- `client.ts` (used in `--prompt` mode) properly destroys the stream in a `finally` block: `(stream as Readable).destroy()`.
+- `useStreamChat.ts` (used in TUI mode) **does not** destroy the stream — its `finally` block only resets state and invalidates queries. If the read loop breaks on exception, the stream is orphaned.
+
+## OpenTUI TextArea content access
+
+- The canonical way to get a `TextArea`'s content is `ref.current.plainText`. After removing `any` casts, the fallback chain was simplified from `ta?.plainText ?? ta?.value ?? ""` to `ta?.plainText ?? ""` — `ta?.value` was dead code (OpenTUI's `TextArea` exposes content exclusively through `plainText`).
+
+## Dialog scroll behavior
+
+- OpenTUI's `ScrollBox` does not auto-scroll to focused/selected children. The `DialogSelect` component tracks `selectedIndex` and manually calls `.scrollIntoView()` on option element refs when selection changes. Without this, the selected item scrolls out of view.
+
+## Store access pattern
+
+- `useAppStore.getState()` is used to read Zustand state outside React render cycle (e.g., in `useStreamChat` event handlers, `setTimeout` callbacks, and imperative code). This avoids `useStore()` hook dependency constraints in non-component contexts.

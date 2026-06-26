@@ -174,3 +174,26 @@ Component directories (when used) also follow kebab-case: `ui/button.tsx`, `form
 ## Disconnected web app
 
 - `apps/web/` is a standalone Vite+React scaffold with zero internal monorepo dependencies. NOT integrated with the scode server. Uses React Compiler for auto-memoization.
+
+## Three routes, one handler
+
+- Server has 3 routes that all call the same `chatStream` handler: `POST /process` (legacy, mounted in `apps/server/src/index.ts`), `POST /api/v1/chat`, and `POST /api/v1/process` (both in the v1 router). They are identical.
+
+## Dead tsconfig aliases
+
+- Both `apps/cli/tsconfig.json` and `apps/server/tsconfig.json` define `paths: {"@/*": ["./src/*"]}` but **zero imports** use `@/` anywhere in either package. All imports use relative paths. Inert/config deadweight.
+
+## Dev mode divergence (CLI vs Server)
+
+- `pnpm dev:cli` uses `bun scripts/dev-cli.ts` (custom `node:fs.watch` script) because OpenTUI's native FFI crashes under `tsx watch` (Node runtime).
+- `pnpm dev:server` uses `tsx watch src/index.ts` — server has no native FFI so `tsx watch` works fine.
+
+## Stream API quirks
+
+- `apiFetchStream` returns a `Readable` stream regardless of HTTP status code — **no 2xx check**. Callers discover 4xx/5xx errors only when reading chunks.
+- `apiFetchStream` lacks abort signal / timeout support (unlike `apiFetch<T>` which accepts `RequestInit` with `signal`).
+- Server sends raw text chunks (not SSE/JSON). Both CLI callers decode raw `Uint8Array` via `TextDecoder` with `{ stream: true }` for multi-byte UTF-8 safety.
+
+## TypeScript version convergence
+
+- Previous "5.x vs 6.x divergence" is obsoleted: all packages now use `"typescript": "catalog:"` → `^6.0.3` via pnpm catalog (except root which also uses catalog). Resolution differences between `tsx` and `tsc` may still occur but the version gap is gone.
