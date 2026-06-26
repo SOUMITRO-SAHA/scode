@@ -52,9 +52,11 @@ export function ErrorComponent({
   }
 
   const copyIssueURL = () => {
-    const url = issueURL.toString();
-    // In a real TUI, we'd use clipboard API if available
-    // For now, just show the URL
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2000);
+  };
+
+  const copyError = () => {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
@@ -85,9 +87,7 @@ export function ErrorComponent({
         {copied && <text fg={theme.success}>Copied!</text>}
       </box>
 
-      <box flexDirection="row" gap={2} alignItems="center">
-        <text fg={theme.text.primary}>{error.message}</text>
-      </box>
+      <text fg={theme.text.primary}>{error.message}</text>
 
       <box flexDirection="row" gap={2} alignItems="center">
         <box
@@ -112,14 +112,41 @@ export function ErrorComponent({
         </box>
       </box>
 
-      <box flexDirection="column" flexGrow={1} overflow="hidden" paddingTop={1}>
-        <text attributes={TextAttributes.BOLD} fg={theme.text.secondary}>
-          Stack Trace:
-        </text>
+      <box
+        flexDirection="column"
+        flexGrow={1}
+        overflow="hidden"
+        borderStyle="single"
+        borderColor={theme.danger}
+        marginTop={1}
+      >
+        <box
+          flexDirection="row"
+          justifyContent="flex-end"
+          paddingX={1}
+          paddingTop={1}
+        >
+          <box
+            onMouseUp={copyError}
+            backgroundColor={theme.brand.primary}
+            paddingX={1}
+            paddingY={0}
+          >
+            <text
+              attributes={TextAttributes.BOLD}
+              fg={theme.background.primary}
+            >
+              Copy
+            </text>
+          </box>
+        </box>
+
         <scrollbox
-          height={Math.max(1, height - 10)}
+          height={Math.max(1, height - 12)}
           stickyScroll
           stickyStart="bottom"
+          paddingLeft={1}
+          paddingRight={1}
         >
           <text fg={theme.text.muted}>{error.stack}</text>
         </scrollbox>
