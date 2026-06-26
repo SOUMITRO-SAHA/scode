@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 
+import { execSync } from "node:child_process";
+
 import { TextAttributes } from "@opentui/core";
 import {
   useKeyboard,
@@ -51,14 +53,22 @@ export function ErrorComponent({
     );
   }
 
+  const copyToClipboard = (text: string) => {
+    try {
+      execSync("pbcopy", { input: text });
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+    } catch {
+      setCopied(false);
+    }
+  };
+
   const copyIssueURL = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(issueURL.toString());
   };
 
   const copyError = () => {
-    setCopied(true);
-    setTimeout(() => setCopied(false), 2000);
+    copyToClipboard(error.stack || error.message);
   };
 
   return (
@@ -92,17 +102,6 @@ export function ErrorComponent({
             Exit (Esc/Ctrl+C)
           </text>
         </box>
-        <box
-          onMouseUp={copyIssueURL}
-          backgroundColor={theme.brand.primary}
-          paddingX={1}
-          paddingY={0}
-        >
-          <text attributes={TextAttributes.BOLD} fg={theme.background.primary}>
-            Raise an Issue
-          </text>
-        </box>
-        {copied && <text fg={theme.success}>Copied!</text>}
       </box>
 
       {/*Error Short Summary */}
@@ -116,15 +115,21 @@ export function ErrorComponent({
           Fatal Error
         </text>
 
-        <box
-          onMouseUp={copyError}
-          backgroundColor={theme.brand.primary}
-          paddingX={1}
-          paddingY={0}
-        >
-          <text attributes={TextAttributes.BOLD} fg={theme.background.primary}>
-            Copy
-          </text>
+        <box flexDirection="row" gap={1} alignItems="center">
+          {copied && <text fg={theme.success}>Copied!</text>}
+          <box
+            onMouseUp={copyError}
+            backgroundColor={theme.brand.primary}
+            paddingX={1}
+            paddingY={0}
+          >
+            <text
+              attributes={TextAttributes.BOLD}
+              fg={theme.background.primary}
+            >
+              Copy
+            </text>
+          </box>
         </box>
       </box>
 
