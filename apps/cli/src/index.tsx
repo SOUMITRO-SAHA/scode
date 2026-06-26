@@ -2,6 +2,7 @@ import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline";
 
 import { App } from "./app";
+import { ErrorBoundary } from "./components/error-boundary";
 import { sendPrompt } from "./services/client";
 import { ensureServer, stopServer } from "./services/daemon";
 
@@ -36,14 +37,21 @@ async function main() {
   if (directPrompt) {
     logger.info(`Single-shot mode: "${directPrompt.slice(0, 60)}..."`);
     if (model) logger.info(`Using model: ${model}`);
-    await sendPrompt(
-      directPrompt,
-      serverUrl,
-      (token) => {
-        stdout.write(token);
-      },
-      model,
-    );
+    try {
+      await sendPrompt(
+        directPrompt,
+        serverUrl,
+        (token) => {
+          stdout.write(token);
+        },
+        model,
+      );
+    } catch (err) {
+      logger.error(`Prompt failed: ${(err as Error).message}`);
+      stopServer();
+      logger.close();
+      process.exit(1);
+    }
     stdout.write("\n");
     stopServer();
     logger.close();
@@ -71,9 +79,29 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
       process.exit(0);
     });
 
+    // Handle uncaught exceptions and unhandled rejections
+    process.on("uncaughtException", (err) => {
+      logger.error(`Uncaught exception: ${err.message}`);
+      renderer.destroy();
+      stopServer();
+      logger.close();
+      process.exit(1);
+    });
+
+    process.on("unhandledRejection", (reason) => {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      logger.error(`Unhandled rejection: ${message}`);
+      renderer.destroy();
+      stopServer();
+      logger.close();
+      process.exit(1);
+    });
+
     createRoot(renderer).render(
       <QueryClientProvider client={queryClient}>
-        <App serverUrl={serverUrl} model={model} />
+        <ErrorBoundary>
+          <App serverUrl={serverUrl} model={model} />
+        </ErrorBoundary>
       </QueryClientProvider>,
     );
     return true;
@@ -113,6 +141,9 @@ async function repl(serverUrl: string, model?: string): Promise<void> {
 
 main().catch((err) => {
   logger.error(`Fatal: ${(err as Error).message}`);
+  if (err instanceof Error && err.stack) {
+    logger.error(err.stack);
+  }
   stopServer();
   logger.close();
   process.exit(1);
