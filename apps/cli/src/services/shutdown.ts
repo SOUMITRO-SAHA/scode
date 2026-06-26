@@ -2,6 +2,7 @@ import { stopServer } from "./daemon";
 
 import { Logger } from "@scode/shared/logger";
 import type { UnregisterClientResponse } from "@scode/shared/types";
+import { apiFetch } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
@@ -28,16 +29,14 @@ export async function gracefulShutdown(
     const id = clientId;
     clientId = null;
     try {
-      const res = await fetch(
-        `${baseUrl}/api/v1/active-clients/${encodeURIComponent(id)}`,
+      const data = await apiFetch<UnregisterClientResponse>(
+        `/active-clients/${encodeURIComponent(id)}`,
         { method: "DELETE" },
+        baseUrl,
       );
-      if (res.ok) {
-        const data = (await res.json()) as UnregisterClientResponse;
-        if (data.wasLast) {
-          logger.info("Last client — shutting down server");
-          stopServer();
-        }
+      if (data.wasLast) {
+        logger.info("Last client — shutting down server");
+        stopServer();
       }
     } catch {
       /* server may already be down */

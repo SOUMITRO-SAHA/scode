@@ -10,6 +10,8 @@ import {
   serverBase,
 } from "@scode/shared/constants";
 import { Logger } from "@scode/shared/logger";
+import type { RegisterClientResponse } from "@scode/shared/types";
+import { apiFetch } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 let serverProcess: ChildProcess | null = null;
@@ -93,15 +95,12 @@ export async function ensureServer(): Promise<string> {
 
 export async function registerActiveClient(): Promise<string | null> {
   try {
-    const apiBaseUrl = `${baseUrl}/api/v1`;
-    const res = await fetch(`${apiBaseUrl}/active-clients`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-    });
-    if (res.ok) {
-      const data = (await res.json()) as { clientId: string };
-      return data.clientId;
-    }
+    const data = await apiFetch<RegisterClientResponse>(
+      "/active-clients",
+      { method: "POST" },
+      baseUrl,
+    );
+    return data.clientId;
   } catch (err) {
     logger.warn(`Failed to register client: ${err}`);
   }
