@@ -166,6 +166,48 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
     [flatList, selectedIndex],
   );
 
+  const scrollToIndex = useCallback(
+    (index: number, center = false) => {
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+
+      let remaining = index;
+      let rowIndex = 0;
+
+      for (const [category, options] of grouped) {
+        if (category) rowIndex++;
+        if (remaining < options.length) {
+          rowIndex += remaining;
+          break;
+        }
+        rowIndex += options.length;
+        remaining -= options.length;
+      }
+
+      const children = scroll.getChildren();
+      const target = children[rowIndex];
+      if (!target) return;
+
+      const y = target.y - scroll.y;
+
+      if (center) {
+        const centerOffset = Math.floor(scroll.height / 2);
+        scroll.scrollBy(y - centerOffset);
+      } else {
+        if (y >= scroll.height) {
+          scroll.scrollBy(y - scroll.height + 1);
+        }
+        if (y < 0) {
+          scroll.scrollBy(y);
+          if (index === 0) {
+            scroll.scrollTo(0);
+          }
+        }
+      }
+    },
+    [grouped],
+  );
+
   useEffect(() => {
     if (props.current !== undefined) {
       const idx = flatList.findIndex((opt) => {
@@ -176,9 +218,12 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
           return false;
         }
       });
-      if (idx >= 0) setSelectedIndex(idx);
+      if (idx >= 0) {
+        setSelectedIndex(idx);
+        setTimeout(() => scrollToIndex(idx, true), 0);
+      }
     }
-  }, [props.current, flatList]);
+  }, [props.current, flatList, scrollToIndex]);
 
   useEffect(() => {
     const r = inputRef.current;
@@ -189,7 +234,20 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
   useEffect(() => {
     setSelectedIndex(0);
     setFocusedActionIdx(undefined);
-  }, [filter]);
+    setTimeout(() => scrollToIndex(0, false), 0);
+  }, [filter, scrollToIndex]);
+
+  const moveTo = useCallback(
+    (next: number, center = false) => {
+      if (props.locked || flatList.length === 0) return;
+      setSelectedIndex(next);
+      setFocusedActionIdx(undefined);
+      const opt = flatList[next];
+      if (opt) props.onMove?.(opt);
+      scrollToIndex(next, center);
+    },
+    [props.locked, flatList, props.onMove, scrollToIndex],
+  );
 
   const move = useCallback(
     (direction: number) => {
@@ -197,35 +255,31 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
       let next = selectedIndex + direction;
       if (next < 0) next = flatList.length - 1;
       if (next >= flatList.length) next = 0;
-      setSelectedIndex(next);
-      setFocusedActionIdx(undefined);
-      const opt = flatList[next];
-      if (opt) props.onMove?.(opt);
+      moveTo(next, true);
     },
-    [props.locked, flatList, selectedIndex, props.onMove],
+    [props.locked, flatList, selectedIndex, moveTo],
   );
 
   const movePage = useCallback(
-    (direction: number) => move(direction * 10),
-    [move],
+    (direction: number) => {
+      if (props.locked || flatList.length === 0) return;
+      let next = selectedIndex + direction * 10;
+      if (next < 0) next = 0;
+      if (next >= flatList.length) next = flatList.length - 1;
+      moveTo(next, true);
+    },
+    [props.locked, flatList, selectedIndex, moveTo],
   );
 
   const moveHome = useCallback(() => {
     if (props.locked || flatList.length === 0) return;
-    setSelectedIndex(0);
-    setFocusedActionIdx(undefined);
-    const opt = flatList[0];
-    if (opt) props.onMove?.(opt);
-  }, [props.locked, flatList, props.onMove]);
+    moveTo(0, false);
+  }, [props.locked, flatList, moveTo]);
 
   const moveEnd = useCallback(() => {
     if (props.locked || flatList.length === 0) return;
-    const last = flatList.length - 1;
-    setSelectedIndex(last);
-    setFocusedActionIdx(undefined);
-    const opt = flatList[last];
-    if (opt) props.onMove?.(opt);
-  }, [props.locked, flatList, props.onMove]);
+    moveTo(flatList.length - 1, false);
+  }, [props.locked, flatList, moveTo]);
 
   const submit = useCallback(() => {
     if (props.locked) return;
