@@ -15,7 +15,7 @@ scode/
 │   │   │   ├── index.tsx      # CLI entrypoint — creates renderer, handles --prompt mode
 │   │   │   ├── app.tsx        # React TUI component with OpenTUI (header, output, input, streaming)
 │   │   │   ├── daemon.ts      # Server lifecycle (health check, spawn, poll, stop)
-│   │   │   └── client.ts      # HTTP fetch client with streaming via ReadableStream.getReader()
+│   │   │   └── client.ts      # HTTP client via apiFetchStream from @scode/shared/utils
 │   │   ├── package.json       # @scode/cli — deps: @opentui/core, @opentui/react, react
 │   │   └── tsconfig.json      # JSX with @opentui/react
 │   └── server/
@@ -151,6 +151,12 @@ Component directories (when used) also follow kebab-case: `ui/button.tsx`, `form
 ## Prompt redundancy
 
 - Prompt builder starts system prompt with "You are scode..." AND MAIN_SKILL body also starts with "You are scode..." — slightly different wording, both end up in context.
+
+## API calling convention
+
+- All HTTP calls use `apiFetch<T>()` or `apiFetchStream()` from `@scode/shared/utils`
+- `axios` is imported in exactly one place: `packages/shared/src/utils/api.ts`
+- Never import `axios` directly in callers — always go through the shared utils
 
 ## Two separate skill systems
 

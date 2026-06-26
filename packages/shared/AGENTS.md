@@ -17,7 +17,7 @@
 | `./logger`    | Pino logger with daily rotation                          |
 | `./constants` | Ports, URLs, paths, provider env map, defaults           |
 | `./types`     | Entities, API request/response types, stream chunk codec |
-| `./utils`     | `apiUrl`, `apiFetch`, `generateId`                       |
+| `./utils`     | `apiUrl`, `apiFetch`, `apiFetchStream`, `generateId`     |
 
 ## constants/ submodules
 
@@ -28,9 +28,17 @@
 
 ## utils/ submodules
 
-- `api.ts` — `apiUrl(path, base?)` and `apiFetch<T>(path, opts?, base?)`
+- `api.ts` — `apiUrl(path, base?)`, `apiFetch<T>(path, opts?, base?)`, `apiFetchStream(path, body, base?)`
+  - Both use `axios` internally (single import point — no raw `axios` anywhere else)
+  - `apiFetch<T>` handles JSON request/response, accepts `RequestInit`-style opts
+  - `apiFetchStream` POSTs a body, returns `NodeJS.ReadableStream` — caller iterates with `for await (const chunk of stream)`
+  - URL is constructed via `apiUrl(path, base)` → `${apiV1Base(base)}${path}`
 - `id.ts` — `generateId()` UUID v4 via `uuid` package
 - `model.ts` — `parseModelString(input)` returns `{providerId, model}` or null; `formatModelName(modelId)` human-readable model label
+
+## API calling convention
+
+Always import from `@scode/shared/utils` — never import `axios` directly. This ensures a single HTTP client entry point for consistent error handling, base URL resolution, and future changes.
 
 ## Logger
 

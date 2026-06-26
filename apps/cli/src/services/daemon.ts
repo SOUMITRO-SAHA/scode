@@ -20,10 +20,8 @@ const baseUrl = serverBase();
 
 async function healthCheck(): Promise<boolean> {
   try {
-    const res = await fetch(healthCheckUrl, {
-      signal: AbortSignal.timeout(1500),
-    });
-    return res.ok;
+    await apiFetch("/health", {}, baseUrl);
+    return true;
   } catch {
     return false;
   }

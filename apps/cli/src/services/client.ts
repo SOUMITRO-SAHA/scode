@@ -1,5 +1,7 @@
-import { processUrl } from "@scode/shared/constants";
+import { Readable } from "node:stream";
+
 import { Logger } from "@scode/shared/logger";
+import { apiFetchStream } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
@@ -9,27 +11,13 @@ export async function sendPrompt(
   onToken: (token: string) => void,
   model?: string,
 ): Promise<string> {
-  const url = processUrl(serverUrl);
-  logger.debug(`Sending prompt to ${url} (${prompt.slice(0, 60)}...)`);
+  logger.debug(`Sending prompt to ${serverUrl} (${prompt.slice(0, 60)}...)`);
 
   const startTime = Date.now();
   const body: Record<string, unknown> = { prompt };
   if (model) body.model = model;
-  const response = await fetch(url, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify(body),
-  });
 
-  if (!response.ok) {
-    const text = await response.text();
-    logger.error(`Server error ${response.status}: ${text}`);
-    throw new Error(`Server error ${response.status}: ${text}`);
-  }
-
-  const reader = response.body?.getReader();
-  if (!reader) throw new Error("No response body");
-
+  const stream = await apiFetchStream("/process", body, serverUrl);
   const decoder = new TextDecoder();
   let full = "";
   const buffer: string[] = [];
@@ -45,11 +33,8 @@ export async function sendPrompt(
   }
 
   try {
-    while (true) {
-      const { done, value } = await reader.read();
-      if (done) break;
-
-      const text = decoder.decode(value, { stream: true });
+    for await (const chunk of stream as Readable) {
+      const text = decoder.decode(chunk as Uint8Array, { stream: true });
       full += text;
       buffer.push(text);
 
@@ -58,7 +43,7 @@ export async function sendPrompt(
       }
     }
   } finally {
-    reader.releaseLock();
+    (stream as Readable).destroy();
   }
 
   if (flushTimer) clearTimeout(flushTimer);

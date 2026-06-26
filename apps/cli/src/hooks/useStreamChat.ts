@@ -1,8 +1,10 @@
 import { useCallback, useRef } from "react";
 
+import { Readable } from "node:stream";
+
 import { useAppStore } from "../store/index";
 
-import { apiV1Base } from "@scode/shared/constants";
+import { apiFetch, apiFetchStream } from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
 const decoder = new TextDecoder();
@@ -27,55 +29,49 @@ export function useStreamChat(serverUrl: string) {
       useAppStore.getState().setStreaming(true);
       statusRef.current = "streaming";
 
-      const base = apiV1Base(serverUrl);
       let sessionId = sessionIdRef.current;
 
       try {
         if (!sessionId) {
-          const configRes = await fetch(`${base}/config`);
-          const config = (await configRes.json()) as { defaultModel: string };
+          const config = await apiFetch<{ defaultModel: string }>(
+            "/config",
+            {},
+            serverUrl,
+          );
           const m = useAppStore.getState().model ?? config.defaultModel;
           if (!m) {
             throw new Error(
               "No model selected. Use Ctrl+M or /models command to select a model.",
             );
           }
-          const sessionRes = await fetch(`${base}/sessions`, {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ name: text.slice(0, 60), model: m }),
-          });
-          const session = (await sessionRes.json()) as { id: string };
+          const session = await apiFetch<{ id: string }>(
+            "/sessions",
+            {
+              method: "POST",
+              body: JSON.stringify({ name: text.slice(0, 60), model: m }),
+            },
+            serverUrl,
+          );
           sessionId = session.id;
           sessionIdRef.current = sessionId;
           useAppStore.getState().setCurrentSessionId(sessionId);
         }
 
-        const chatRes = await fetch(`${base}/chat`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({
+        const stream = await apiFetchStream(
+          "/chat",
+          {
             message: text,
             model: useAppStore.getState().model,
             sessionId,
-          }),
-        });
-
-        if (!chatRes.ok) {
-          const errText = await chatRes.text();
-          throw new Error(errText || `HTTP ${chatRes.status}`);
-        }
-
-        const reader = chatRes.body?.getReader();
-        if (!reader) throw new Error("No response body");
+          },
+          serverUrl,
+        );
 
         useAppStore.getState().addAssistantMessage();
 
-        while (true) {
-          const { done, value } = await reader.read();
-          if (done) break;
-          const chunk = decoder.decode(value, { stream: true });
-          useAppStore.getState().appendAssistantChunk(chunk);
+        for await (const chunk of stream as Readable) {
+          const t = decoder.decode(chunk as Uint8Array, { stream: true });
+          useAppStore.getState().appendAssistantChunk(t);
         }
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
