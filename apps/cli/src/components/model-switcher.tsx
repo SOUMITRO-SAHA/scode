@@ -45,7 +45,7 @@ export function ModelSwitcher() {
   const cols = process.stdout.columns ?? 80;
   const rows = process.stdout.rows ?? 24;
   const w = Math.min(50, cols - 10);
-  const h = Math.min(filtered.length + 4, 16);
+  const h = Math.min(filtered.length + 6, 18);
 
   return (
     <box
@@ -62,6 +62,11 @@ export function ModelSwitcher() {
       <box paddingLeft={1} height={1}>
         <text fg={theme.brand.primary}>Select Model</text>
       </box>
+      {!model && (
+        <box paddingLeft={1} height={1}>
+          <text fg={theme.warning}>No model selected</text>
+        </box>
+      )}
       <input
         value={search}
         onChange={(v: string) => setSearch(v)}
@@ -75,9 +80,14 @@ export function ModelSwitcher() {
             Loading...
           </text>
         )}
+        {filtered.length === 0 && !isLoading && (
+          <text fg={theme.text.muted} paddingLeft={1}>
+            {search ? "No matching models" : "No models available"}
+          </text>
+        )}
         {filtered.slice(0, 12).map((m) => {
           const modelStr = `${m.provider}/${m.defaultModel}`;
-          const active = modelStr === (model ?? data?.defaultModel);
+          const active = modelStr === model;
           return (
             <box
               key={modelStr}

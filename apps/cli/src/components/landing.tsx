@@ -15,12 +15,12 @@ interface LandingProps {
 
 function parseModelString(
   modelStr: string,
-): { providerId: string; modelId: string } | null {
+): { providerId: string; model: string } | null {
   const idx = modelStr.indexOf("/");
   if (idx === -1) return null;
   return {
     providerId: modelStr.slice(0, idx),
-    modelId: modelStr.slice(idx + 1),
+    model: modelStr.slice(idx + 1),
   };
 }
 
@@ -49,8 +49,9 @@ export function Landing({
 
   const modelStr = model ?? modelDisplay ?? health?.defaultModel;
   const parsed = modelStr ? parseModelString(modelStr) : null;
-  const modelName = parsed ? formatModelName(parsed.modelId) : "";
+  const modelName = parsed ? formatModelName(parsed.model) : "";
   const providerName = parsed ? parsed.providerId : "";
+  const hasModel = !!modelName;
 
   return (
     <box
@@ -77,13 +78,18 @@ export function Landing({
         </box>
       )}
       <box flexDirection="row" justifyContent="center" paddingBottom={1}>
-        {health?.healthy && modelName && (
+        {health?.healthy && hasModel && (
           <text paddingLeft={2}>
             <text fg={theme.text.primary}>
               <strong>{modelName}</strong>
             </text>
             {providerName && <text fg={theme.text.muted}> {providerName}</text>}
             <text fg={theme.warning}> {effortLevel}</text>
+          </text>
+        )}
+        {health?.healthy && !hasModel && (
+          <text paddingLeft={2}>
+            <text fg={theme.warning}>No model selected — Ctrl+M to choose</text>
           </text>
         )}
       </box>

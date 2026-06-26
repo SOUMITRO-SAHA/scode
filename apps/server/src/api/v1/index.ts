@@ -8,7 +8,6 @@ import {
   statSync,
   writeFileSync,
 } from "node:fs";
-import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { handleChat } from "../../chat/handler";
@@ -18,6 +17,12 @@ import type { SessionManager } from "../../session/manager";
 import { discover } from "../../skill/discover";
 import { loadSkill } from "../../skill/loader";
 import type { Registry as ToolRegistry } from "../../tool/registry";
+
+import {
+  SCODE_AUTH_PATH,
+  SCODE_DIR,
+  SCODE_LOGS_DIR,
+} from "@scode/shared/constants";
 
 interface RouterDeps {
   toolRegistry: ToolRegistry;
@@ -61,29 +66,26 @@ export function createV1Router(deps: RouterDeps): Hono {
     if (!provider || !apiKey) {
       return c.json({ error: "provider and apiKey required" }, 400);
     }
-    const authPath = join(homedir(), ".scode", "auth.json");
     let auth: Record<string, { apiKey?: string }> = {};
     try {
-      if (existsSync(authPath))
-        auth = JSON.parse(readFileSync(authPath, "utf-8"));
+      if (existsSync(SCODE_AUTH_PATH))
+        auth = JSON.parse(readFileSync(SCODE_AUTH_PATH, "utf-8"));
     } catch {}
     auth[provider] = { apiKey };
-    const dir = join(homedir(), ".scode");
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(authPath, JSON.stringify(auth, null, 2));
+    if (!existsSync(SCODE_DIR)) mkdirSync(SCODE_DIR, { recursive: true });
+    writeFileSync(SCODE_AUTH_PATH, JSON.stringify(auth, null, 2));
     return c.json({ ok: true, provider });
   });
 
   router.delete("/providers/:provider", (c) => {
     const { provider } = c.req.param();
-    const authPath = join(homedir(), ".scode", "auth.json");
     try {
-      if (existsSync(authPath)) {
+      if (existsSync(SCODE_AUTH_PATH)) {
         const auth: Record<string, unknown> = JSON.parse(
-          readFileSync(authPath, "utf-8"),
+          readFileSync(SCODE_AUTH_PATH, "utf-8"),
         );
         delete auth[provider];
-        writeFileSync(authPath, JSON.stringify(auth, null, 2));
+        writeFileSync(SCODE_AUTH_PATH, JSON.stringify(auth, null, 2));
       }
     } catch {}
     return c.json({ ok: true, provider });
@@ -230,7 +232,7 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/logs", (c) => {
-    const logsDir = join(homedir(), ".scode", "logs");
+    const logsDir = SCODE_LOGS_DIR;
     try {
       const files = readdirSync(logsDir)
         .filter((f: string) => f.endsWith(".log"))
@@ -265,6 +267,16 @@ export function createV1Router(deps: RouterDeps): Hono {
       const modelStr =
         model ||
         (provider ? `${provider}/` + config.defaultModel : config.defaultModel);
+      if (!modelStr) {
+        s.write(
+          JSON.stringify({
+            type: "error",
+            message:
+              "No model selected. Use Ctrl+M or /models command to select a model.",
+          }),
+        );
+        return;
+      }
       await handleChat(message, modelStr, sessionId, deps, (chunk: string) =>
         s.write(chunk),
       );

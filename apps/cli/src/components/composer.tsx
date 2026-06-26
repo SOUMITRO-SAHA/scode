@@ -7,6 +7,7 @@ import { AGENT_LABELS, useAppStore } from "../store/index";
 
 import type { KeyEvent, TextareaRenderable } from "@opentui/core";
 import { useTerminalDimensions } from "@opentui/react";
+import { parseModelString } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 interface ComposerProps {
@@ -23,17 +24,6 @@ const AGENT_COLORS: Record<string, string> = {
   write: theme.success,
   chat: theme.brand.primary,
 };
-
-function parseModelString(
-  modelStr: string,
-): { providerId: string; modelId: string } | null {
-  const idx = modelStr.indexOf("/");
-  if (idx === -1) return null;
-  return {
-    providerId: modelStr.slice(0, idx),
-    modelId: modelStr.slice(idx + 1),
-  };
-}
 
 function formatModelName(modelId: string): string {
   return modelId
@@ -69,12 +59,11 @@ export function Composer({
   const [autoIdx, setAutoIdx] = useState(0);
   const { width: termWidth } = useTerminalDimensions();
 
-  const modelStr = modelDisplay ?? "";
-  const parsed = parseModelString(modelStr);
-  const modelName = parsed
-    ? formatModelName(parsed.modelId)
-    : modelStr || "scode";
+  const modelStr = modelDisplay;
+  const parsed = modelStr ? parseModelString(modelStr) : null;
+  const modelName = parsed ? formatModelName(parsed.model) : "";
   const providerName = parsed?.providerId ?? "";
+  const hasModel = !!modelName;
 
   const filtered = useMemo(() => {
     if (!autoQuery) return COMMANDS;
@@ -312,9 +301,15 @@ export function Composer({
                 {AGENT_LABELS[currentAgent]}
               </text>
               <text fg={theme.text.disabled}> · </text>
-              <text fg={theme.text.primary}>{modelName}</text>
-              {providerName && (
-                <text fg={theme.text.muted}> {providerName}</text>
+              {hasModel ? (
+                <>
+                  <text fg={theme.text.primary}>{modelName}</text>
+                  {providerName && (
+                    <text fg={theme.text.muted}> {providerName}</text>
+                  )}
+                </>
+              ) : (
+                <text fg={theme.warning}>No model selected</text>
               )}
               <text fg={theme.text.disabled}> · </text>
               <text fg={theme.warning}>{effortLevel}</text>

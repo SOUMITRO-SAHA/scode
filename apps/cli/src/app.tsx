@@ -170,7 +170,7 @@ export function App({
     }
   });
 
-  const modelDisplay = model;
+  const modelDisplay = model || undefined;
 
   return (
     <box flexDirection="row" width={width} height={height}>

@@ -29,6 +29,12 @@ export async function handleChat(
   const config = deps.configManager.get();
   const resolvedModel = modelStr || config.defaultModel;
 
+  if (!resolvedModel) {
+    throw new Error(
+      "No model selected. Use Ctrl+M or /models command to select a model.",
+    );
+  }
+
   const { provider, model } = deps.providerRegistry.resolve(resolvedModel);
   const apiKey = resolveApiKey(provider.id);
 

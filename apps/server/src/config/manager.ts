@@ -1,23 +1,16 @@
 import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
-import { homedir } from "node:os";
-import { join } from "node:path";
+import { dirname } from "node:path";
 
+import { DEFAULT_APP_CONFIG, SCODE_CONFIG_PATH } from "@scode/shared/constants";
 import type { AppConfig } from "@scode/shared/types";
 
-const CONFIG_PATH = join(homedir(), ".scode", "config.json");
-
-const DEFAULT_CONFIG: AppConfig = {
-  theme: "dark",
-  defaultProvider: "claude",
-  defaultModel: "claude-sonnet-4-20250515",
-  maxTokens: 8192,
-};
+const DEFAULT_CONFIG: AppConfig = { ...DEFAULT_APP_CONFIG };
 
 export class ConfigManager {
   get(): AppConfig {
     try {
-      if (!existsSync(CONFIG_PATH)) return { ...DEFAULT_CONFIG };
-      const raw = readFileSync(CONFIG_PATH, "utf-8");
+      if (!existsSync(SCODE_CONFIG_PATH)) return { ...DEFAULT_CONFIG };
+      const raw = readFileSync(SCODE_CONFIG_PATH, "utf-8");
       return { ...DEFAULT_CONFIG, ...JSON.parse(raw) } as AppConfig;
     } catch {
       return { ...DEFAULT_CONFIG };
@@ -27,9 +20,9 @@ export class ConfigManager {
   update(partial: Partial<AppConfig>): AppConfig {
     const current = this.get();
     const updated = { ...current, ...partial };
-    const dir = join(homedir(), ".scode");
+    const dir = dirname(SCODE_CONFIG_PATH);
     if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
-    writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2));
+    writeFileSync(SCODE_CONFIG_PATH, JSON.stringify(updated, null, 2));
     return updated;
   }
 

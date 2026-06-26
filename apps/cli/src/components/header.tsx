@@ -11,12 +11,12 @@ interface HeaderProps {
 
 function parseModelString(
   modelStr: string,
-): { providerId: string; modelId: string } | null {
+): { providerId: string; model: string } | null {
   const idx = modelStr.indexOf("/");
   if (idx === -1) return null;
   return {
     providerId: modelStr.slice(0, idx),
-    modelId: modelStr.slice(idx + 1),
+    model: modelStr.slice(idx + 1),
   };
 }
 
@@ -46,15 +46,16 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
   const { data: modelsData } = useModels(serverUrl);
   const connected = health?.healthy;
 
-  const modelStr = model ?? modelDisplay ?? "";
-  const parsed = parseModelString(modelStr);
+  const modelStr = model ?? modelDisplay;
+  const parsed = modelStr ? parseModelString(modelStr) : null;
   const models = modelsData?.models ?? [];
 
   const providerName = parsed
     ? (models.find((m) => m.provider === parsed.providerId)?.providerName ??
       parsed.providerId)
     : "";
-  const modelName = parsed ? formatModelName(parsed.modelId) : modelStr;
+  const modelName = parsed ? formatModelName(parsed.model) : "";
+  const hasModel = !!modelName;
 
   const agentLabel =
     currentAgent === "chat"
@@ -88,7 +89,7 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
           <text fg={connected ? theme.success : theme.danger}>
             {connected ? "●" : "○"}
           </text>
-          {modelName && (
+          {hasModel ? (
             <text paddingLeft={1}>
               <text fg={theme.text.primary}>
                 <strong>{modelName}</strong>
@@ -97,10 +98,9 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
                 <text fg={theme.text.muted}> {providerName}</text>
               )}
             </text>
-          )}
-          {!modelName && (
-            <text fg={theme.text.muted} paddingLeft={1}>
-              No Model
+          ) : (
+            <text fg={theme.warning} paddingLeft={1}>
+              No model selected
             </text>
           )}
           <text

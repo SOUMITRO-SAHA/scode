@@ -85,7 +85,14 @@ export const COMMANDS: Command[] = [
     category: "session",
     handler: async (_args, api, ctx) => {
       const config = await api.getConfig();
-      const session = await api.createSession("", config.defaultModel);
+      const model = ctx.model ?? config.defaultModel;
+      if (!model) {
+        return {
+          type: "error",
+          text: "No model selected. Use Ctrl+M or /models command to select a model first.",
+        };
+      }
+      const session = await api.createSession("", model);
       ctx.setCurrentSessionId?.(session.id);
       ctx.clearMessages?.();
       ctx.setModel?.(`${session.provider}/${session.model}`);
@@ -214,7 +221,10 @@ export const COMMANDS: Command[] = [
         (p) =>
           `  ${p.id}${p.id === def ? " (default)" : ""} — ${p.name} [${p.defaultModel}]`,
       );
-      return { type: "message", text: `\nProviders:\n${lines.join("\n")}\n` };
+      return {
+        type: "message",
+        text: `\nProviders:\n${lines.join("\n")}\nDefault: ${def || "None"}\n`,
+      };
     },
   },
   {
@@ -249,7 +259,7 @@ export const COMMANDS: Command[] = [
       );
       return {
         type: "message",
-        text: `\nModels:\n${lines.join("\n")}\nDefault: ${defaultModel}\n`,
+        text: `\nModels:\n${lines.join("\n")}\nDefault: ${defaultModel || "No model selected"}\n`,
       };
     },
   },
@@ -356,7 +366,7 @@ export const COMMANDS: Command[] = [
         `  Uptime: ${health.uptime}s`,
         `  Providers: ${health.providers}`,
         `  Sessions: ${health.sessions}`,
-        `  Default: ${health.defaultProvider}/${health.defaultModel}`,
+        `  Default: ${health.defaultProvider || "None"}/${health.defaultModel || "No model selected"}`,
       ];
       return {
         type: "message",
@@ -380,9 +390,10 @@ export const COMMANDS: Command[] = [
     category: "general",
     handler: async (_args, api, ctx) => {
       const config = await api.getConfig();
+      const modelStr = ctx.model ?? config.defaultModel;
       return {
         type: "message",
-        text: `\nAgent: scode\n  Model: ${ctx.model ?? config.defaultModel}\n  Provider: ${config.defaultProvider}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n`,
+        text: `\nAgent: scode\n  Model: ${modelStr || "No model selected"}\n  Provider: ${config.defaultProvider || "None"}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n`,
       };
     },
   },
@@ -394,9 +405,10 @@ export const COMMANDS: Command[] = [
     category: "general",
     handler: async (_args, api, ctx) => {
       const config = await api.getConfig();
+      const modelStr = ctx.model ?? config.defaultModel;
       return {
         type: "message",
-        text: `\nContext:\n  Model: ${ctx.model ?? config.defaultModel}\n  Provider: ${config.defaultProvider}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n  Debug: ${ctx.debugEnabled ? "on" : "off"}\n`,
+        text: `\nContext:\n  Model: ${modelStr || "No model selected"}\n  Provider: ${config.defaultProvider || "None"}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n  Debug: ${ctx.debugEnabled ? "on" : "off"}\n`,
       };
     },
   },

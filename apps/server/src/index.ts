@@ -23,8 +23,6 @@ import { serve } from "@hono/node-server";
 import { DEFAULT_PORT, healthUrl } from "@scode/shared/constants";
 import { Logger } from "@scode/shared/logger";
 
-const DEFAULT_MODEL = "claude/claude-sonnet-4-20250515";
-
 function buildRegistry(): Registry {
   const reg = new Registry();
   reg.register("read", readTool.definition, readTool.handler);
@@ -114,7 +112,16 @@ app.post("/process", (c) =>
       return;
     }
     const config = configManager.get();
-    const modelStr = modelString ?? config.defaultModel ?? DEFAULT_MODEL;
+    const modelStr = modelString || config.defaultModel;
+    if (!modelStr) {
+      c.status(400);
+      await s.write(
+        JSON.stringify({
+          error: "No model selected. Use /models to select a model.",
+        }),
+      );
+      return;
+    }
     await handleChat(
       text,
       modelStr,

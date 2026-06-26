@@ -35,6 +35,11 @@ export function useStreamChat(serverUrl: string) {
           const configRes = await fetch(`${base}/config`);
           const config = (await configRes.json()) as { defaultModel: string };
           const m = useAppStore.getState().model ?? config.defaultModel;
+          if (!m) {
+            throw new Error(
+              "No model selected. Use Ctrl+M or /models command to select a model.",
+            );
+          }
           const sessionRes = await fetch(`${base}/sessions`, {
             method: "POST",
             headers: { "Content-Type": "application/json" },
