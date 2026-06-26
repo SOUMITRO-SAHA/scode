@@ -197,6 +197,7 @@ export function App({
                 lines={composerLines}
                 placeholder={streaming ? "Waiting..." : "Ask anything..."}
                 modelDisplay={modelDisplay}
+                serverUrl={serverUrl}
               />
             )}
             <CommandPalette

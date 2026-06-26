@@ -80,6 +80,7 @@ export function Landing({
         width={80}
         lines={composerLines}
         modelDisplay={modelDisplay}
+        serverUrl={serverUrl}
       />
       <KeyboardHints />
       <TipSection show={showTips} />
