@@ -1,6 +1,9 @@
 import {
   Fragment,
+  type ReactNode,
+  createContext,
   useCallback,
+  useContext,
   useEffect,
   useMemo,
   useRef,
@@ -746,5 +749,58 @@ function Option(props: {
         </box>
       )}
     </>
+  );
+}
+
+export interface DialogContextValue {
+  clear: () => void;
+  replace: (element: ReactNode, onClose?: () => void) => void;
+  stack: Array<{ element: ReactNode; onClose?: () => void }>;
+  size: "medium" | "large" | "xlarge";
+  setSize: (size: "medium" | "large" | "xlarge") => void;
+}
+
+const DialogContext = createContext<DialogContextValue | null>(null);
+
+export function useDialog() {
+  const value = useContext(DialogContext);
+  if (!value) {
+    throw new Error("useDialog must be used within a DialogProvider");
+  }
+  return value;
+}
+
+export function DialogProvider({ children }: { children: ReactNode }) {
+  const [stack, setStack] = useState<
+    Array<{ element: ReactNode; onClose?: () => void }>
+  >([]);
+  const [size, setSize] = useState<"medium" | "large" | "xlarge">("medium");
+
+  const clear = useCallback(() => {
+    for (const item of stack) {
+      item.onClose?.();
+    }
+    setStack([]);
+    setSize("medium");
+  }, [stack]);
+
+  const replace = useCallback(
+    (element: ReactNode, onClose?: () => void) => {
+      for (const item of stack) {
+        item.onClose?.();
+      }
+      setStack([{ element, onClose }]);
+      setSize("medium");
+    },
+    [stack],
+  );
+
+  const value = useMemo<DialogContextValue>(
+    () => ({ clear, replace, stack, size, setSize }),
+    [clear, replace, stack, size],
+  );
+
+  return (
+    <DialogContext.Provider value={value}>{children}</DialogContext.Provider>
   );
 }
