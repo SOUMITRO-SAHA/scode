@@ -4,12 +4,8 @@ import { createInterface } from "node:readline";
 import { App } from "./app";
 import { ErrorBoundary } from "./components/error-boundary";
 import { sendPrompt } from "./services/client";
-import { ensureServer, registerActiveClient } from "./services/daemon";
-import {
-  gracefulShutdown,
-  initShutdown,
-  setClientId,
-} from "./services/shutdown";
+import { initializeApp } from "./services/init";
+import { gracefulShutdown, initShutdown } from "./services/shutdown";
 
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
@@ -33,16 +29,12 @@ async function main() {
 
   let serverUrl: string;
   try {
-    serverUrl = await ensureServer();
+    const result = await initializeApp();
+    serverUrl = result.serverUrl;
   } catch (err) {
     logger.error(`Failed to connect to server: ${(err as Error).message}`);
     process.exit(1);
   }
-
-  initShutdown(serverUrl);
-
-  const id = await registerActiveClient();
-  if (id) setClientId(id);
 
   if (directPrompt) {
     logger.info(`Single-shot mode: "${directPrompt.slice(0, 60)}..."`);
