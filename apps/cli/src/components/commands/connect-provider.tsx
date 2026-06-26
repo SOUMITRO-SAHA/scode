@@ -51,25 +51,52 @@ export function ConnectProvider() {
         },
       );
       if (!apiKey) return;
-      await connectProvider.mutateAsync({
-        provider: provider.id,
-        apiKey,
-      });
+      try {
+        await connectProvider.mutateAsync({
+          provider: provider.id,
+          apiKey,
+        });
+        useAppStore
+          .getState()
+          .addSystemMessage(`Connected to ${provider.name}`);
+      } catch (err) {
+        useAppStore
+          .getState()
+          .addSystemMessage(`Failed to connect: ${(err as Error).message}`);
+      }
     },
     [dialog, connectProvider],
   );
 
   const handleDisconnect = useCallback(
     async (provider: ProviderInfo) => {
-      await disconnectProvider.mutateAsync(provider.id);
+      try {
+        await disconnectProvider.mutateAsync(provider.id);
+        useAppStore
+          .getState()
+          .addSystemMessage(`Disconnected from ${provider.name}`);
+      } catch (err) {
+        useAppStore
+          .getState()
+          .addSystemMessage(`Failed to disconnect: ${(err as Error).message}`);
+      }
     },
     [disconnectProvider],
   );
 
   const handleSetDefault = useCallback(
     async (provider: ProviderInfo) => {
-      const result = await setDefaultProvider.mutateAsync(provider.id);
-      setModel(`${result.provider}/${result.defaultModel}`);
+      try {
+        const result = await setDefaultProvider.mutateAsync(provider.id);
+        setModel(`${result.provider}/${result.defaultModel}`);
+        useAppStore
+          .getState()
+          .addSystemMessage(`Default provider: ${provider.name}`);
+      } catch (err) {
+        useAppStore
+          .getState()
+          .addSystemMessage(`Failed to set default: ${(err as Error).message}`);
+      }
     },
     [setDefaultProvider, setModel],
   );
@@ -118,13 +145,13 @@ export function ConnectProvider() {
           options={options}
           flat
           current={defaultProvider}
-          onSelect={(option) => {
+          onSelect={async (option) => {
             const provider = data?.providers.find((p) => p.id === option.value);
             if (!provider) return;
             if (provider.connected) {
-              handleDisconnect(provider);
+              await handleDisconnect(provider);
             } else {
-              handleConnect(provider);
+              await handleConnect(provider);
             }
             setOpen(false);
           }}
@@ -138,11 +165,11 @@ export function ConnectProvider() {
                 const p = data?.providers.find((x) => x.id === opt?.value);
                 return !p || !!p.connected;
               },
-              onTrigger: (option) => {
+              onTrigger: async (option) => {
                 const provider = data?.providers.find(
                   (p) => p.id === option.value,
                 );
-                if (provider) handleConnect(provider);
+                if (provider) await handleConnect(provider);
                 setOpen(false);
               },
             },
@@ -155,11 +182,11 @@ export function ConnectProvider() {
                 return !p || !p.connected;
               },
 
-              onTrigger: (option) => {
+              onTrigger: async (option) => {
                 const provider = data?.providers.find(
                   (p) => p.id === option.value,
                 );
-                if (provider) handleDisconnect(provider);
+                if (provider) await handleDisconnect(provider);
                 setOpen(false);
               },
             },
@@ -167,11 +194,11 @@ export function ConnectProvider() {
               command: "s",
               title: "set default",
               side: "left",
-              onTrigger: (option) => {
+              onTrigger: async (option) => {
                 const provider = data?.providers.find(
                   (p) => p.id === option.value,
                 );
-                if (provider) handleSetDefault(provider);
+                if (provider) await handleSetDefault(provider);
                 setOpen(false);
               },
             },
