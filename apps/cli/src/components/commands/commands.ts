@@ -1,3 +1,4 @@
+import type { DialogContextValue } from "@/components/ui/dialog.js";
 import type { ApiClient } from "@/services/api";
 import type { AppConfig } from "@scode/shared/types";
 
@@ -32,6 +33,7 @@ export interface CommandContext {
   clearMessages?: () => void;
   toggleDebug?: () => void;
   openModelPicker?: () => void;
+  openProviderPicker?: () => void;
   addSystemMessage?: (text: string) => void;
   onExit?: () => void;
 }
@@ -212,11 +214,21 @@ export const COMMANDS: Command[] = [
   {
     name: "providers",
     aliases: ["provider"],
-    description: "List all providers and their status",
-    usage: "/providers [use <name>]",
+    description: "Manage providers — connect, disconnect, set default",
+    usage: "/providers [connect <id> <key>|disconnect <id>|use <id>]",
     category: "provider",
     handler: async (args, api, ctx) => {
-      const { providers, default: def } = await api.listProviders();
+      if (args[0] === "connect" && args[1] && args[2]) {
+        const result = await api.connectProvider(args[1], args[2]);
+        return {
+          type: "message",
+          text: `Provider connected: ${result.provider}`,
+        };
+      }
+      if (args[0] === "disconnect" && args[1]) {
+        await api.disconnectProvider(args[1]);
+        return { type: "message", text: `Provider disconnected: ${args[1]}` };
+      }
       if (args[0] === "use" && args[1]) {
         const result = await api.setDefaultProvider(args[1]);
         ctx.setModel?.(`${result.provider}/${result.defaultModel}`);
@@ -225,14 +237,7 @@ export const COMMANDS: Command[] = [
           text: `Default provider: ${result.provider} (model: ${result.defaultModel})`,
         };
       }
-      const lines = providers.map(
-        (p) =>
-          `  ${p.id}${p.id === def ? " (default)" : ""} — ${p.name} [${p.defaultModel}]`,
-      );
-      return {
-        type: "message",
-        text: `\nProviders:\n${lines.join("\n")}\nDefault: ${def || "None"}\n`,
-      };
+      ctx.openProviderPicker?.();
     },
   },
   {

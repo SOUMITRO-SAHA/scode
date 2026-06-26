@@ -8,6 +8,7 @@ import {
   parseCommand,
 } from "@/components/commands/commands.js";
 import { CommandPalette } from "@/components/commands/index.js";
+import { ConnectProvider } from "@/components/commands/index.js";
 import { ModelSwitcher } from "@/components/commands/index.js";
 import { Composer } from "@/components/composer/index.js";
 import { Header } from "@/components/layout/index.js";
@@ -19,6 +20,7 @@ import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
 import { useAppStore } from "@/store/index";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { theme } from "@scode/theme";
 
 export function App({
   serverUrl,
@@ -54,6 +56,12 @@ export function App({
 
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
+  const [providerPickerOpen, setProviderPickerOpen] = useState(false);
+  const handleOpenModelPicker = useCallback(() => setModelPickerOpen(true), []);
+  const handleOpenProviderPicker = useCallback(
+    () => setProviderPickerOpen(true),
+    [],
+  );
   const apiRef = useRef(new ApiClient(serverUrl));
 
   // Initialize model from props on first render if not set
@@ -92,6 +100,8 @@ export function App({
           setCurrentSessionId: handleSetSessionId,
           clearMessages,
           toggleDebug,
+          openModelPicker: handleOpenModelPicker,
+          openProviderPicker: handleOpenProviderPicker,
           addSystemMessage,
           onExit,
         };
@@ -114,14 +124,15 @@ export function App({
       handleSetSessionId,
       clearMessages,
       toggleDebug,
+      handleOpenModelPicker,
+      handleOpenProviderPicker,
       addSystemMessage,
       chatSubmit,
     ],
   );
 
   const handlePaletteSelect = useCallback(
-    (cmd: Command) => {
-      addSystemMessage(`Running /${cmd.name}...`);
+    async (cmd: Command) => {
       const ctx: CommandContext = {
         model,
         serverUrl,
@@ -131,10 +142,15 @@ export function App({
         setCurrentSessionId: handleSetSessionId,
         clearMessages,
         toggleDebug,
+        openModelPicker: handleOpenModelPicker,
+        openProviderPicker: handleOpenProviderPicker,
         addSystemMessage,
         onExit,
       };
-      executeCommand(`/${cmd.name}`, apiRef.current, ctx);
+      const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
+      if (result?.type === "message" && result.text) {
+        addSystemMessage(result.text);
+      }
     },
     [
       model,
@@ -145,6 +161,8 @@ export function App({
       handleSetSessionId,
       clearMessages,
       toggleDebug,
+      handleOpenModelPicker,
+      handleOpenProviderPicker,
       addSystemMessage,
     ],
   );
@@ -153,6 +171,7 @@ export function App({
     if (key.name === "escape") {
       if (paletteVisible) setPaletteVisible(false);
       else if (modelPickerOpen) setModelPickerOpen(false);
+      else if (providerPickerOpen) setProviderPickerOpen(false);
       else if (sidebarVisible) toggleSidebar();
     } else if (key.ctrl && key.name === "p") {
       setPaletteVisible((v) => !v);
@@ -164,6 +183,8 @@ export function App({
       toggleSidebar();
     } else if (key.ctrl && key.name === "m") {
       setModelPickerOpen((v) => !v);
+    } else if (key.ctrl && key.shift && key.name === "p") {
+      setProviderPickerOpen((v) => !v);
     } else if (key.ctrl && (key.name === "c" || key.name === "q")) {
       onExit?.();
     }
@@ -174,7 +195,12 @@ export function App({
   return (
     <DialogProvider>
       <ToastProvider>
-        <box flexDirection="row" width={width} height={height}>
+        <box
+          flexDirection="row"
+          width={width}
+          height={height}
+          backgroundColor={theme.background.surface}
+        >
           <SessionSidebar />
           <box flexDirection="column" flexGrow={1}>
             {hasConversation && <Header modelDisplay={modelDisplay} />}
@@ -205,6 +231,7 @@ export function App({
               onSelect={handlePaletteSelect}
             />
             {modelPickerOpen && <ModelSwitcher />}
+            {providerPickerOpen && <ConnectProvider />}
           </box>
         </box>
       </ToastProvider>

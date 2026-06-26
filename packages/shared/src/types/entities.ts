@@ -2,6 +2,7 @@ export interface ProviderInfo {
   id: string;
   name: string;
   defaultModel: string;
+  connected?: boolean;
 }
 
 export interface ModelInfo {

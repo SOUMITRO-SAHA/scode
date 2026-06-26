@@ -52,11 +52,17 @@ export function createV1Router(deps: RouterDeps): Hono {
 
   router.get("/providers", (c) => {
     const providers = deps.providerRegistry.listProviders();
+    let auth: Record<string, unknown> = {};
+    try {
+      if (existsSync(SCODE_AUTH_PATH))
+        auth = JSON.parse(readFileSync(SCODE_AUTH_PATH, "utf-8"));
+    } catch {}
     return c.json({
       providers: providers.map((p) => ({
         id: p.id,
         name: p.name,
         defaultModel: p.defaultModel,
+        connected: !!auth[p.id],
       })),
       default: deps.configManager.get().defaultProvider,
     });

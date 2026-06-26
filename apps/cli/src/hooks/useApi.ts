@@ -49,6 +49,7 @@ export function useProviders(serverUrl?: string) {
 }
 
 export function useConnectProvider(serverUrl?: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ provider, apiKey }: { provider: string; apiKey: string }) =>
       apiFetch<{ ok: boolean; provider: string }>(
@@ -59,10 +60,14 @@ export function useConnectProvider(serverUrl?: string) {
         },
         serverUrl,
       ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["providers", serverUrl] });
+    },
   });
 }
 
 export function useDisconnectProvider(serverUrl?: string) {
+  const qc = useQueryClient();
   return useMutation({
     mutationFn: (provider: string) =>
       apiFetch<{ ok: boolean; provider: string }>(
@@ -70,6 +75,9 @@ export function useDisconnectProvider(serverUrl?: string) {
         { method: "DELETE" },
         serverUrl,
       ),
+    onSuccess: () => {
+      qc.invalidateQueries({ queryKey: ["providers", serverUrl] });
+    },
   });
 }
 
