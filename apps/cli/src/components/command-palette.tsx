@@ -3,6 +3,7 @@ import { useMemo } from "react";
 import { COMMANDS, type Command } from "../commands/commands";
 import { DialogSelect, type DialogSelectOption } from "./ui/dialog";
 
+import type { KeyEvent } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";
 
@@ -25,7 +26,7 @@ export function CommandPalette({
 }: CommandPaletteProps) {
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
 
-  useKeyboard((event: any) => {
+  useKeyboard((event: KeyEvent) => {
     if (!visible) return;
     if (event.name === "escape") {
       onClose();
@@ -71,31 +72,37 @@ export function CommandPalette({
   if (!visible) return null;
 
   const paletteWidth = Math.min(Math.floor(termWidth * 0.6), 64);
-  const left = Math.floor((termWidth - paletteWidth) / 2);
-  const top = Math.floor(termHeight / 4);
 
   return (
     <box
       position="absolute"
-      left={left}
-      top={top}
-      width={paletteWidth}
-      height={Math.floor(termHeight / 2) - 2}
-      borderStyle="rounded"
-      borderColor={theme.border.focus}
-      backgroundColor={theme.background.surface}
+      left={0}
+      top={0}
+      width={termWidth}
+      height={termHeight}
+      alignItems="center"
+      paddingTop={Math.floor(termHeight / 4)}
+      zIndex={3000}
       flexDirection="column"
     >
-      <DialogSelect
-        title="Commands"
-        placeholder="Search commands..."
-        options={options}
-        flat
-        onSelect={handleSelect}
-        onClose={onClose}
-        footer={<text fg={theme.text.disabled}>↑↓ navigate</text>}
-        footerHints={[{ title: "↵", label: "select", side: "right" }]}
-      />
+      <box
+        width={paletteWidth}
+        maxWidth={termWidth - 2}
+        backgroundColor={theme.background.surface}
+        paddingTop={1}
+        flexDirection="column"
+      >
+        <DialogSelect
+          title="Commands"
+          placeholder="Search commands..."
+          options={options}
+          flat
+          onSelect={handleSelect}
+          onClose={onClose}
+          footer={<text fg={theme.text.disabled}>↑↓ navigate</text>}
+          footerHints={[{ title: "↵", label: "select", side: "right" }]}
+        />
+      </box>
     </box>
   );
 }
