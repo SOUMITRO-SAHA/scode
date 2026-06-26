@@ -1,4 +1,4 @@
-import { useCallback, useState, useRef } from "react"
+import { useCallback, useEffect, useState, useRef } from "react"
 import { useKeyboard, useRenderer, useTerminalDimensions } from "@opentui/react"
 import { Landing } from "./components/Landing"
 import { Header } from "./components/Header"
@@ -28,6 +28,10 @@ export function App({ serverUrl, model: initialModel }: { serverUrl: string; mod
   const toggleSidebar = useAppStore((s) => s.toggleSidebar)
   const addSystemMessage = useAppStore((s) => s.addSystemMessage)
   const clearMessages = useAppStore((s) => s.clearMessages)
+
+  useEffect(() => {
+    if (serverUrl) useAppStore.getState().setServerUrl(serverUrl)
+  }, [serverUrl])
 
   const [paletteVisible, setPaletteVisible] = useState(false)
   const [modelPickerOpen, setModelPickerOpen] = useState(false)
