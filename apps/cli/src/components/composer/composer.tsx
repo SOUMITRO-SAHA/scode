@@ -50,6 +50,7 @@ export function Composer({
   const [autoVisible, setAutoVisible] = useState(false);
   const [autoQuery, setAutoQuery] = useState("");
   const [autoIdx, setAutoIdx] = useState(0);
+  const [inputMode, setInputMode] = useState<"keyboard" | "mouse">("keyboard");
   const { width: termWidth } = useTerminalDimensions();
 
   const { modelName, providerName, hasModel } = parseModelDisplay(modelDisplay);
@@ -63,7 +64,7 @@ export function Composer({
     setComposerKey,
   });
 
-  const layout = calculateLayout(termWidth, categories.length, items.length);
+  const layout = calculateLayout(termWidth);
 
   function handleAutoSelect(cmd: Command) {
     const ta = ref.current!;
@@ -81,11 +82,13 @@ export function Composer({
     (event: KeyEvent) => {
       if (autoVisible && items.length > 0) {
         if (event.name === "down") {
-          setAutoIdx((i) => Math.min(i + 1, items.length - 1));
+          setInputMode("keyboard");
+          setAutoIdx((i) => (i + 1) % items.length);
           return;
         }
         if (event.name === "up") {
-          setAutoIdx((i) => Math.max(i - 1, 0));
+          setInputMode("keyboard");
+          setAutoIdx((i) => (i - 1 + items.length) % items.length);
           return;
         }
         if (event.name === "return" || event.name === "tab") {
@@ -161,6 +164,17 @@ export function Composer({
                 if (!autoVisible) setAutoVisible(true);
                 return;
               }
+              if (afterSlash.includes(" ") && afterSlash.trim().length > 0) {
+                const cmdPart = afterSlash.split(" ")[0];
+                const matchingCmd = items.find(
+                  (c) => c.name === cmdPart || c.aliases.includes(cmdPart),
+                );
+                if (matchingCmd) {
+                  setAutoVisible(false);
+                  setAutoQuery("");
+                  return;
+                }
+              }
             }
             if (autoVisible) {
               setAutoVisible(false);
@@ -180,12 +194,11 @@ export function Composer({
         {autoVisible && (
           <AutocompleteDropdown
             items={items}
-            categories={categories}
             maxNameLen={maxNameLen}
             selectedIndex={autoIdx}
             width={layout.autoWidth}
-            height={layout.autoHeight}
             onSelect={handleAutoSelect}
+            onMouseMove={() => setInputMode("mouse")}
           />
         )}
         <ComposerFooter

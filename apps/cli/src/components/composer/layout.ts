@@ -2,23 +2,17 @@ import type { ComposerLayout, ModelInfo } from "./types";
 
 import { formatModelName, parseModelString } from "@scode/shared/utils";
 
-export function calculateLayout(
-  terminalWidth: number,
-  categoriesCount: number,
-  itemsCount: number,
-): ComposerLayout {
+export function calculateLayout(terminalWidth: number): ComposerLayout {
   const boxWidth = Math.min(terminalWidth - 4, 80);
   const inputWidth = boxWidth - 4;
   const borderPad = Math.max(0, Math.floor((terminalWidth - boxWidth) / 2));
-  const autoWidth = boxWidth - 2;
-  const autoHeight = Math.min(itemsCount + categoriesCount + 1, 12);
+  const autoWidth = boxWidth;
 
   return {
     boxWidth,
     inputWidth,
     borderPad,
     autoWidth,
-    autoHeight,
   };
 }
 

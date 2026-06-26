@@ -25,13 +25,40 @@ export function useAutocomplete({
   const { data: skillsData } = useSkills(serverUrl);
 
   const filteredCommands = useMemo(() => {
-    if (!query) return COMMANDS;
+    if (!query) {
+      return COMMANDS.map((c) => ({
+        ...c,
+        suggested: c.suggested,
+      }));
+    }
     return fuzzysort
       .go(query, COMMANDS, {
-        keys: ["name", (c) => c.aliases.join(" "), "description", "category"],
+        keys: [
+          (c) => "/" + c.name,
+          (c) => c.aliases.map((a) => "/" + a).join(" "),
+          "description",
+          "category",
+        ],
         limit: 10,
+        scoreFn: (objResults) => {
+          const nameResult = objResults[0];
+          let score = objResults.score;
+          if (nameResult) {
+            const target = nameResult.target.toLowerCase();
+            const q = query.toLowerCase();
+            if (target === "/" + q || target === q) {
+              score *= 4;
+            } else if (target.startsWith("/" + q) || target.startsWith(q)) {
+              score *= 2;
+            }
+          }
+          return score;
+        },
       })
-      .map((r) => r.obj);
+      .map((r) => ({
+        ...r.obj,
+        suggested: r.obj.suggested,
+      }));
   }, [query]);
 
   const filteredSkills = useMemo(() => {
@@ -44,20 +71,29 @@ export function useAutocomplete({
       .map((r) => r.obj);
   }, [query, skillsData]);
 
-  const items = useMemo(
-    () => [
-      ...filteredCommands,
-      ...filteredSkills.map((s) => ({
-        name: s.name,
-        description: s.description,
-        category: "skill" as const,
-        aliases: [],
-        usage: `/skill ${s.name}`,
-        handler: async () => {},
-      })),
-    ],
-    [filteredCommands, filteredSkills],
-  );
+  const items = useMemo(() => {
+    const cmdItems: AutocompleteItem[] = filteredCommands.map((c) => ({
+      name: c.name,
+      description: c.description,
+      category: c.category,
+      aliases: c.aliases,
+      usage: c.usage,
+      handler: c.handler,
+      suggested: c.suggested,
+    }));
+
+    const skillItems: AutocompleteItem[] = filteredSkills.map((s) => ({
+      name: s.name,
+      description: s.description,
+      category: "skill" as const,
+      aliases: [],
+      usage: `/skill ${s.name}`,
+      handler: async () => {},
+      suggested: false,
+    }));
+
+    return [...cmdItems, ...skillItems];
+  }, [filteredCommands, filteredSkills]);
 
   const categories = useMemo(() => {
     return [...new Set(items.map((c) => c.category))];

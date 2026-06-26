@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import type { AutocompleteItem } from "./types";
 
 import { TextAttributes } from "@opentui/core";
@@ -5,97 +7,108 @@ import { theme } from "@scode/theme";
 
 interface AutocompleteDropdownProps {
   items: AutocompleteItem[];
-  categories: string[];
   maxNameLen: number;
   selectedIndex: number;
   width: number;
-  height: number;
   onSelect: (item: AutocompleteItem) => void;
+  onMouseMove?: () => void;
 }
+
+const MAX_VISIBLE_ITEMS = 10;
 
 export function AutocompleteDropdown({
   items,
-  categories,
   maxNameLen,
   selectedIndex,
   width,
-  height,
   onSelect,
+  onMouseMove,
 }: AutocompleteDropdownProps) {
+  const height = useMemo(() => {
+    return Math.min(items.length || 1, MAX_VISIBLE_ITEMS);
+  }, [items.length]);
+
   if (items.length === 0) {
     return (
       <box
         position="absolute"
         top={-3}
-        left={1}
+        left={0}
         width={width}
         height={3}
         borderStyle="rounded"
-        borderColor={theme.border.focus}
+        borderColor={theme.border.weak}
         backgroundColor={theme.background.surface}
         flexDirection="column"
         justifyContent="center"
         alignItems="center"
       >
-        <text fg={theme.text.disabled}>No matching commands</text>
+        <text fg={theme.text.muted}>No matching items</text>
       </box>
     );
   }
+
+  const paddedNameLen = Math.max(maxNameLen + 1, 12);
 
   return (
     <box
       position="absolute"
       top={-height - 1}
-      left={1}
+      left={-1}
       width={width}
       height={height}
       borderStyle="rounded"
-      borderColor={theme.border.focus}
+      borderColor={theme.border.strong}
       backgroundColor={theme.background.surface}
       flexDirection="column"
     >
-      <scrollbox flexGrow={1} flexDirection="column">
-        {categories.map((cat, catIdx) => {
-          const catItems = items.filter((c) => c.category === cat);
-          if (catItems.length === 0) return null;
+      <scrollbox
+        flexGrow={1}
+        flexDirection="column"
+        scrollbarOptions={{ visible: false }}
+      >
+        {items.map((cmd, index) => {
+          const isActive = index === selectedIndex;
+          const nameDisplay = `/${cmd.name}`;
+          const paddedName = nameDisplay.padEnd(paddedNameLen);
+          const aliasStr =
+            cmd.aliases.length > 0
+              ? cmd.aliases.map((a) => `/${a}`).join(" ")
+              : "";
           return (
-            <box key={cat} flexDirection="column">
-              <box height={1} paddingLeft={1} paddingTop={catIdx > 0 ? 1 : 0}>
-                <text fg={theme.brand.primary} attributes={TextAttributes.BOLD}>
-                  {cat}
+            <box
+              key={cmd.name}
+              height={1}
+              paddingLeft={1}
+              paddingRight={1}
+              flexDirection="row"
+              backgroundColor={isActive ? theme.brand.primary : undefined}
+              onMouseMove={onMouseMove}
+              onMouseUp={() => onSelect(cmd)}
+            >
+              <text
+                fg={isActive ? theme.text.inverse : theme.text.muted}
+                attributes={isActive ? TextAttributes.BOLD : undefined}
+                wrapMode="none"
+                flexShrink={0}
+              >
+                {paddedName}
+              </text>
+              {aliasStr ? (
+                <text
+                  fg={isActive ? theme.text.inverse : theme.text.disabled}
+                  wrapMode="none"
+                  flexShrink={0}
+                >
+                  {aliasStr.padEnd(8)}
                 </text>
-              </box>
-              {catItems.map((cmd) => {
-                const idx = items.indexOf(cmd);
-                const isActive = idx === selectedIndex;
-                const nameDisplay = `/${cmd.name}`;
-                const paddedName = nameDisplay.padEnd(maxNameLen + 1);
-                return (
-                  <box
-                    key={cmd.name}
-                    height={1}
-                    paddingLeft={1}
-                    paddingRight={1}
-                    backgroundColor={
-                      isActive ? theme.background.hover : "transparent"
-                    }
-                    onMouseUp={() => onSelect(cmd)}
-                  >
-                    <text
-                      fg={isActive ? theme.text.primary : theme.text.muted}
-                      wrapMode="none"
-                    >
-                      {paddedName}
-                    </text>
-                    <text
-                      fg={isActive ? theme.text.secondary : theme.text.disabled}
-                      wrapMode="none"
-                    >
-                      {cmd.description}
-                    </text>
-                  </box>
-                );
-              })}
+              ) : null}
+              <text
+                fg={isActive ? theme.text.inverse : theme.text.disabled}
+                wrapMode="none"
+              >
+                {cmd.description}
+              </text>
             </box>
           );
         })}

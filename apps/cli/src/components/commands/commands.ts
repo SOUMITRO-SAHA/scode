@@ -14,6 +14,7 @@ export interface Command {
     | "skill"
     | "config"
     | "debug";
+  suggested?: boolean;
   handler: (
     args: string[],
     api: ApiClient,
@@ -30,6 +31,7 @@ export interface CommandContext {
   setCurrentSessionId?: (id: string | undefined) => void;
   clearMessages?: () => void;
   toggleDebug?: () => void;
+  openModelPicker?: () => void;
   addSystemMessage?: (text: string) => void;
   onExit?: () => void;
 }
@@ -55,6 +57,7 @@ export const COMMANDS: Command[] = [
     description: "Display all available commands",
     usage: "/help",
     category: "general",
+    suggested: true,
     handler: async (_args, _api, ctx) => {
       const lines = COMMANDS.map((c) => {
         const aliases = c.aliases.length
@@ -74,6 +77,7 @@ export const COMMANDS: Command[] = [
     description: "Clear the current conversation window",
     usage: "/clear",
     category: "general",
+    suggested: true,
     handler: async (_args, _api, ctx) => {
       ctx.clearMessages?.();
       ctx.addSystemMessage?.("Conversation cleared");
@@ -85,6 +89,7 @@ export const COMMANDS: Command[] = [
     description: "Create a new conversation session",
     usage: "/new",
     category: "session",
+    suggested: true,
     handler: async (_args, api, ctx) => {
       const config = await api.getConfig();
       const model = ctx.model ?? config.defaultModel;
@@ -159,6 +164,7 @@ export const COMMANDS: Command[] = [
     description: "List, switch, or delete chat sessions",
     usage: "/session [switch|delete] [id]",
     category: "session",
+    suggested: true,
     handler: async (args, api, ctx) => {
       if ((args[0] === "switch" || args[0] === "s") && args[1]) {
         const session = await api.getSession(args[1]);
@@ -249,20 +255,12 @@ export const COMMANDS: Command[] = [
     usage: "/models or /model use <model>",
     category: "model",
     handler: async (args, api, ctx) => {
-      const { models, defaultModel } = await api.listModels();
       if (args[0] === "use" && args[1]) {
         const result = await api.setDefaultModel(args[1]);
         ctx.setModel?.(args[1]);
         return { type: "message", text: `Default model: ${result.model}` };
       }
-      const lines = models.map(
-        (m) =>
-          `  ${m.provider}/${m.defaultModel}${m.provider + "/" + m.defaultModel === defaultModel ? " (default)" : ""}`,
-      );
-      return {
-        type: "message",
-        text: `\nModels:\n${lines.join("\n")}\nDefault: ${defaultModel || "No model selected"}\n`,
-      };
+      ctx.openModelPicker?.();
     },
   },
   {

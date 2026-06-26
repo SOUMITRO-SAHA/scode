@@ -7,6 +7,7 @@ export interface AutocompleteItem {
   aliases: string[];
   usage: string;
   handler: Command["handler"];
+  suggested?: boolean;
 }
 
 export interface AutocompleteState {
@@ -23,7 +24,6 @@ export interface ComposerLayout {
   inputWidth: number;
   borderPad: number;
   autoWidth: number;
-  autoHeight: number;
 }
 
 export interface ModelInfo {
