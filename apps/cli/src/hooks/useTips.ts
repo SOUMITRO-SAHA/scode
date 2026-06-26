@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react"
+import { useEffect, useState } from "react";
 
 const TIPS = [
   "Run /skills to list available skills.",
@@ -6,17 +6,19 @@ const TIPS = [
   "Press Tab to switch models.",
   "Type /help for all available commands.",
   "Use Ctrl+L to clear the conversation.",
-]
+];
 
 export function useTips() {
-  const [index, setIndex] = useState(() => Math.floor(Math.random() * TIPS.length))
+  const [index, setIndex] = useState(() =>
+    Math.floor(Math.random() * TIPS.length),
+  );
 
   useEffect(() => {
     const interval = setInterval(() => {
-      setIndex((prev) => (prev + 1) % TIPS.length)
-    }, 15000)
-    return () => clearInterval(interval)
-  }, [])
+      setIndex((prev) => (prev + 1) % TIPS.length);
+    }, 15000);
+    return () => clearInterval(interval);
+  }, []);
 
-  return TIPS[index]
+  return TIPS[index];
 }

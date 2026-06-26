@@ -1,27 +1,34 @@
-import { useCallback, useRef, useState } from "react"
-import type { TextareaRenderable, KeyEvent } from "@opentui/core"
-import { theme } from "@scode/theme"
-import { useAppStore, AGENT_LABELS } from "../store/index"
+import { useCallback, useRef, useState } from "react";
+
+import { AGENT_LABELS, useAppStore } from "../store/index";
+
+import type { KeyEvent, TextareaRenderable } from "@opentui/core";
+import { theme } from "@scode/theme";
 
 interface ComposerProps {
-  onSubmit: (value: string) => void
-  streaming: boolean
-  width: number
-  lines?: number
-  placeholder?: string
-  modelDisplay?: string
+  onSubmit: (value: string) => void;
+  streaming: boolean;
+  width: number;
+  lines?: number;
+  placeholder?: string;
+  modelDisplay?: string;
 }
 
 const AGENT_COLORS: Record<string, string> = {
   plan: theme.warning,
   write: theme.success,
   chat: theme.brand.primary,
-}
+};
 
-function parseModelString(modelStr: string): { providerId: string; modelId: string } | null {
-  const idx = modelStr.indexOf("/")
-  if (idx === -1) return null
-  return { providerId: modelStr.slice(0, idx), modelId: modelStr.slice(idx + 1) }
+function parseModelString(
+  modelStr: string,
+): { providerId: string; modelId: string } | null {
+  const idx = modelStr.indexOf("/");
+  if (idx === -1) return null;
+  return {
+    providerId: modelStr.slice(0, idx),
+    modelId: modelStr.slice(idx + 1),
+  };
 }
 
 function formatModelName(modelId: string): string {
@@ -30,80 +37,101 @@ function formatModelName(modelId: string): string {
     .replace(/-\d{8}$/, "")
     .split("-")
     .map((w) => w.charAt(0).toUpperCase() + w.slice(1))
-    .join(" ")
+    .join(" ");
 }
 
 export function Composer({
-  onSubmit, streaming, width, lines = 3,
-  placeholder = "Ask anything...", modelDisplay,
+  onSubmit,
+  streaming,
+  width,
+  lines = 3,
+  placeholder = "Ask anything...",
+  modelDisplay,
 }: ComposerProps) {
-  const boxWidth = Math.min(width - 4, 80)
-  const inputWidth = boxWidth - 4
-  const borderPad = Math.max(0, Math.floor((width - boxWidth) / 2))
-  const [composerKey, setComposerKey] = useState(0)
-  const [initialVal, setInitialVal] = useState("")
-  const ref = useRef<TextareaRenderable | null>(null)
-  const historyRef = useRef<string[]>([])
-  const draftRef = useRef("")
-  const histIdxRef = useRef(-1)
-  const currentAgent = useAppStore((s) => s.currentAgent)
-  const cycleAgent = useAppStore((s) => s.cycleAgent)
-  const effortLevel = useAppStore((s) => s.effortLevel)
+  const boxWidth = Math.min(width - 4, 80);
+  const inputWidth = boxWidth - 4;
+  const borderPad = Math.max(0, Math.floor((width - boxWidth) / 2));
+  const [composerKey, setComposerKey] = useState(0);
+  const [initialVal, setInitialVal] = useState("");
+  const ref = useRef<TextareaRenderable | null>(null);
+  const historyRef = useRef<string[]>([]);
+  const draftRef = useRef("");
+  const histIdxRef = useRef(-1);
+  const currentAgent = useAppStore((s) => s.currentAgent);
+  const cycleAgent = useAppStore((s) => s.cycleAgent);
+  const effortLevel = useAppStore((s) => s.effortLevel);
 
-  const modelStr = modelDisplay ?? ""
-  const parsed = parseModelString(modelStr)
-  const modelName = parsed ? formatModelName(parsed.modelId) : (modelStr || "scode")
-  const providerName = parsed?.providerId ?? ""
+  const modelStr = modelDisplay ?? "";
+  const parsed = parseModelString(modelStr);
+  const modelName = parsed
+    ? formatModelName(parsed.modelId)
+    : modelStr || "scode";
+  const providerName = parsed?.providerId ?? "";
 
   const goHistory = useCallback((dir: -1 | 1) => {
-    const ta = ref.current as any
-    const hist = historyRef.current
-    if (hist.length === 0) return
+    const ta = ref.current as any;
+    const hist = historyRef.current;
+    if (hist.length === 0) return;
     if (dir === -1) {
-      if (histIdxRef.current === -1) draftRef.current = ta?.plainText ?? ta?.value ?? ""
+      if (histIdxRef.current === -1)
+        draftRef.current = ta?.plainText ?? ta?.value ?? "";
       if (histIdxRef.current < hist.length - 1) {
-        histIdxRef.current++
-        setInitialVal(hist[hist.length - 1 - histIdxRef.current])
-        setComposerKey((c) => c + 1)
+        histIdxRef.current++;
+        setInitialVal(hist[hist.length - 1 - histIdxRef.current]);
+        setComposerKey((c) => c + 1);
       }
     } else {
-      if (histIdxRef.current === -1) return
+      if (histIdxRef.current === -1) return;
       if (histIdxRef.current === 0) {
-        histIdxRef.current = -1
-        setInitialVal(draftRef.current)
+        histIdxRef.current = -1;
+        setInitialVal(draftRef.current);
       } else {
-        histIdxRef.current--
-        setInitialVal(hist[hist.length - 1 - histIdxRef.current])
+        histIdxRef.current--;
+        setInitialVal(hist[hist.length - 1 - histIdxRef.current]);
       }
-      setComposerKey((c) => c + 1)
+      setComposerKey((c) => c + 1);
     }
-  }, [])
+  }, []);
 
-  const handleKeyDown = useCallback((event: KeyEvent) => {
-    if (event.name === "up") { goHistory(-1); return }
-    if (event.name === "down") { goHistory(1); return }
-    if (event.name === "tab") { cycleAgent(); return }
-  }, [goHistory, cycleAgent])
+  const handleKeyDown = useCallback(
+    (event: KeyEvent) => {
+      if (event.name === "up") {
+        goHistory(-1);
+        return;
+      }
+      if (event.name === "down") {
+        goHistory(1);
+        return;
+      }
+      if (event.name === "tab") {
+        cycleAgent();
+        return;
+      }
+    },
+    [goHistory, cycleAgent],
+  );
 
   const handleSubmit = useCallback(() => {
-    const ta = ref.current as any
-    const val = (ta?.plainText ?? ta?.value ?? "").trim()
-    if (!val || streaming) return
-    historyRef.current.push(val)
-    histIdxRef.current = -1
-    draftRef.current = ""
-    onSubmit(val)
-    setInitialVal("")
-    setComposerKey((c) => c + 1)
-  }, [onSubmit, streaming])
+    const ta = ref.current as any;
+    const val = (ta?.plainText ?? ta?.value ?? "").trim();
+    if (!val || streaming) return;
+    historyRef.current.push(val);
+    histIdxRef.current = -1;
+    draftRef.current = "";
+    onSubmit(val);
+    setInitialVal("");
+    setComposerKey((c) => c + 1);
+  }, [onSubmit, streaming]);
 
-  const isCommand = initialVal.trim().startsWith("/")
+  const isCommand = initialVal.trim().startsWith("/");
 
   return (
     <box paddingLeft={borderPad} paddingRight={borderPad} paddingBottom={1}>
       <box
         borderStyle="rounded"
-        borderColor={isCommand ? theme.brand.primary : AGENT_COLORS[currentAgent]}
+        borderColor={
+          isCommand ? theme.brand.primary : AGENT_COLORS[currentAgent]
+        }
         width={boxWidth}
         flexDirection="column"
       >
@@ -128,17 +156,24 @@ export function Composer({
             <text fg={theme.brand.primary}>Command</text>
           ) : (
             <box flexDirection="row">
-              <text fg={AGENT_COLORS[currentAgent]}>{AGENT_LABELS[currentAgent]}</text>
+              <text fg={AGENT_COLORS[currentAgent]}>
+                {AGENT_LABELS[currentAgent]}
+              </text>
               <text fg={theme.text.disabled}> · </text>
               <text fg={theme.text.primary}>{modelName}</text>
-              {providerName && <text fg={theme.text.muted}> {providerName}</text>}
+              {providerName && (
+                <text fg={theme.text.muted}> {providerName}</text>
+              )}
               <text fg={theme.text.disabled}> · </text>
               <text fg={theme.warning}>{effortLevel}</text>
-              <text fg={theme.text.disabled}> | {streaming ? "Processing..." : "Ready"}</text>
+              <text fg={theme.text.disabled}>
+                {" "}
+                | {streaming ? "Processing..." : "Ready"}
+              </text>
             </box>
           )}
         </box>
       </box>
     </box>
-  )
+  );
 }

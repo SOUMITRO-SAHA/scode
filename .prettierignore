@@ -1,0 +1,15 @@
+node_modules
+.opencode/
+.next
+.turbo
+dist
+build
+coverage
+.pnp
+.pnp.js
+pnpm-lock.yaml
+*.lock
+.env
+.env.*
+*.pem
+.DS_Store

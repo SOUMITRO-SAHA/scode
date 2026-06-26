@@ -6,10 +6,10 @@ Built with [Hono](https://hono.dev) on `@hono/node-server`.
 
 ## API
 
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/health` | GET | Health check (`{ healthy: true }`) |
-| `/process` | POST | Send prompt, receive streamed response |
+| Endpoint   | Method | Description                            |
+| ---------- | ------ | -------------------------------------- |
+| `/health`  | GET    | Health check (`{ healthy: true }`)     |
+| `/process` | POST   | Send prompt, receive streamed response |
 
 ### POST /process
 
@@ -35,23 +35,23 @@ POST /process
 
 ## Tools
 
-| Tool | Handler | Description |
-|------|---------|-------------|
-| `read` | `tool/read.ts` | Read files/dirs (path safety enforced) |
-| `write` | `tool/write.ts` | Create/overwrite files |
-| `edit` | `tool/edit.ts` | Exact string replacement |
-| `bash` | `tool/bash.ts` | Shell commands with timeout |
-| `grep` | `tool/grep.ts` | Regex content search |
-| `glob` | `tool/glob.ts` | Glob pattern file search |
+| Tool    | Handler         | Description                            |
+| ------- | --------------- | -------------------------------------- |
+| `read`  | `tool/read.ts`  | Read files/dirs (path safety enforced) |
+| `write` | `tool/write.ts` | Create/overwrite files                 |
+| `edit`  | `tool/edit.ts`  | Exact string replacement               |
+| `bash`  | `tool/bash.ts`  | Shell commands with timeout            |
+| `grep`  | `tool/grep.ts`  | Regex content search                   |
+| `glob`  | `tool/glob.ts`  | Glob pattern file search               |
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Watch mode with tsx |
-| `pnpm build` | Compile with tsc |
-| `pnpm check-types` | Type-check |
-| `pnpm start` | Run compiled server |
+| Command            | Description         |
+| ------------------ | ------------------- |
+| `pnpm dev`         | Watch mode with tsx |
+| `pnpm build`       | Compile with tsc    |
+| `pnpm check-types` | Type-check          |
+| `pnpm start`       | Run compiled server |
 
 ## Configuration
 

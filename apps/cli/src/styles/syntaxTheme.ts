@@ -1,5 +1,5 @@
-import { SyntaxStyle, RGBA } from "@opentui/core"
-import { colors } from "@scode/theme"
+import { RGBA, SyntaxStyle } from "@opentui/core";
+import { colors } from "@scode/theme";
 
 const mdConfig = {
   "markup.heading.1": { fg: RGBA.fromHex(colors.blue[500]), bold: true },
@@ -14,14 +14,14 @@ const mdConfig = {
   "markup.link": { fg: RGBA.fromHex(colors.blue[500]), underline: true },
   "markup.link.url": { fg: RGBA.fromHex(colors.blue[500]), underline: true },
   default: { fg: RGBA.fromHex(colors.gray[100]) },
-}
+};
 
 const codeConfig = {
   keyword: { fg: RGBA.fromHex(colors.syntax.keyword), bold: true },
   string: { fg: RGBA.fromHex(colors.syntax.string) },
   comment: { fg: RGBA.fromHex(colors.syntax.comment), italic: true },
   number: { fg: RGBA.fromHex(colors.syntax.number) },
-  "function": { fg: RGBA.fromHex(colors.syntax.function) },
+  function: { fg: RGBA.fromHex(colors.syntax.function) },
   "function.call": { fg: RGBA.fromHex(colors.syntax.function) },
   "function.method.call": { fg: RGBA.fromHex(colors.syntax.function) },
   type: { fg: RGBA.fromHex(colors.syntax.type) },
@@ -34,17 +34,17 @@ const codeConfig = {
   "punctuation.bracket": { fg: RGBA.fromHex(colors.gray[50]) },
   "punctuation.delimiter": { fg: RGBA.fromHex(colors.gray[200]) },
   default: { fg: RGBA.fromHex(colors.gray[100]) },
-}
+};
 
-let _mdStyle: SyntaxStyle | null = null
-let _codeStyle: SyntaxStyle | null = null
+let _mdStyle: SyntaxStyle | null = null;
+let _codeStyle: SyntaxStyle | null = null;
 
 export function getMarkdownStyle(): SyntaxStyle {
-  if (!_mdStyle) _mdStyle = SyntaxStyle.fromStyles(mdConfig)
-  return _mdStyle
+  if (!_mdStyle) _mdStyle = SyntaxStyle.fromStyles(mdConfig);
+  return _mdStyle;
 }
 
 export function getCodeStyle(): SyntaxStyle {
-  if (!_codeStyle) _codeStyle = SyntaxStyle.fromStyles(codeConfig)
-  return _codeStyle
+  if (!_codeStyle) _codeStyle = SyntaxStyle.fromStyles(codeConfig);
+  return _codeStyle;
 }

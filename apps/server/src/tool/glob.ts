@@ -1,8 +1,9 @@
-import { execSync } from "node:child_process"
-import { resolve } from "node:path"
-import type { ToolDefinition, ToolHandler } from "../types"
+import { execSync } from "node:child_process";
+import { resolve } from "node:path";
 
-const WORKSPACE = process.cwd()
+import type { ToolDefinition, ToolHandler } from "../types";
+
+const WORKSPACE = process.cwd();
 
 export const definition: ToolDefinition = {
   name: "glob",
@@ -10,27 +11,33 @@ export const definition: ToolDefinition = {
   inputSchema: {
     type: "object",
     properties: {
-      pattern: { type: "string", description: "Glob pattern to match (e.g. '**/*.ts')" },
-      path: { type: "string", description: "Directory to search in (default: workspace root)" },
+      pattern: {
+        type: "string",
+        description: "Glob pattern to match (e.g. '**/*.ts')",
+      },
+      path: {
+        type: "string",
+        description: "Directory to search in (default: workspace root)",
+      },
     },
     required: ["pattern"],
   },
-}
+};
 
 export const handler: ToolHandler = async (input: Record<string, unknown>) => {
-  const pattern = input.pattern as string
+  const pattern = input.pattern as string;
   const searchPath = input.path
     ? resolve(WORKSPACE, input.path as string)
-    : WORKSPACE
+    : WORKSPACE;
 
   try {
     const stdout = execSync(
       `find "${searchPath}" -path '*/node_modules' -prune -o -path "${pattern}" -print`,
       { encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
-    )
-    const files = stdout.trim().split("\n").filter(Boolean)
-    return { files }
+    );
+    const files = stdout.trim().split("\n").filter(Boolean);
+    return { files };
   } catch {
-    return { files: [] }
+    return { files: [] };
   }
-}
+};

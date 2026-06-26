@@ -1,5 +1,6 @@
-import type { ReactNode } from "react"
-import { theme } from "@scode/theme"
+import type { ReactNode } from "react";
+
+import { theme } from "@scode/theme";
 
 export type IconName =
   | "lightbulb"
@@ -14,7 +15,7 @@ export type IconName =
   | "magic-wand"
   | "terminal-window"
   | "gear"
-  | "sparkle"
+  | "sparkle";
 
 const ICONS: Record<IconName, string> = {
   lightbulb: "\u{1F4A1}",
@@ -30,12 +31,12 @@ const ICONS: Record<IconName, string> = {
   "terminal-window": "\u276F",
   gear: "\u2699",
   sparkle: "\u2728",
-}
+};
 
 interface IconProps {
-  name: IconName
-  color?: string
-  padRight?: number
+  name: IconName;
+  color?: string;
+  padRight?: number;
 }
 
 export function Icon({ name, color, padRight = 0 }: IconProps) {
@@ -43,9 +44,9 @@ export function Icon({ name, color, padRight = 0 }: IconProps) {
     <text fg={color ?? theme.text.muted} paddingRight={padRight}>
       {ICONS[name]}
     </text>
-  )
+  );
 }
 
 export function icon(name: IconName): ReactNode {
-  return ICONS[name]
+  return ICONS[name];
 }

@@ -8,12 +8,12 @@ export type {
   HealthStatus,
   Stats,
   LogEntry,
-} from "@scode/shared/types"
+} from "@scode/shared/types";
 
 export interface AppState {
-  serverUrl: string
-  currentSessionId: string | undefined
-  model: string | undefined
-  debug: boolean
-  sidebarVisible: boolean
+  serverUrl: string;
+  currentSessionId: string | undefined;
+  model: string | undefined;
+  debug: boolean;
+  sidebarVisible: boolean;
 }

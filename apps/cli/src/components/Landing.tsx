@@ -1,9 +1,10 @@
-import { theme } from "@scode/theme";
 import { useHealth } from "../hooks/useApi";
 import { useAppStore } from "../store/index";
 import { Composer } from "./Composer";
 import { KeyboardHints } from "./KeyboardHints";
 import { TipSection } from "./TipSection";
+
+import { theme } from "@scode/theme";
 
 interface LandingProps {
   onSubmit: (value: string) => void;

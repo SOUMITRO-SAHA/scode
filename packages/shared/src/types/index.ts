@@ -17,7 +17,7 @@ export type {
   ToolHandler,
   Tool,
   ServerConfig,
-} from "./entities"
+} from "./entities";
 
 export type {
   ChatRequest,
@@ -47,7 +47,7 @@ export type {
   LogsResponse,
   StatsResponse,
   DeleteSessionResponse,
-} from "./api"
+} from "./api";
 
-export type { StreamChunk, StreamEvent } from "./stream"
-export { encodeStreamChunk, decodeStreamChunk } from "./stream"
+export type { StreamChunk, StreamEvent } from "./stream";
+export { encodeStreamChunk, decodeStreamChunk } from "./stream";

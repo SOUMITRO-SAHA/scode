@@ -47,7 +47,9 @@ export function isWide(width: number): boolean {
 }
 
 export function getComposerLines(height: number): number {
-  if (height < composer.heightThresholds.compact) return composer.linesByHeight.compact;
-  if (height < composer.heightThresholds.normal) return composer.linesByHeight.normal;
+  if (height < composer.heightThresholds.compact)
+    return composer.linesByHeight.compact;
+  if (height < composer.heightThresholds.normal)
+    return composer.linesByHeight.normal;
   return composer.linesByHeight.spacious;
 }

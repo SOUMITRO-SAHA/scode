@@ -1,23 +1,23 @@
-import type { ToolCall } from "./entities"
+import type { ToolCall } from "./entities";
 
 export type StreamEvent =
   | { type: "text"; delta: string }
   | { type: "tool_use"; toolCall: ToolCall }
-  | { type: "done" }
+  | { type: "done" };
 
 export type StreamChunk =
   | { type: "text"; delta: string }
   | { type: "error"; message: string }
-  | { type: "meta"; sessionId: string; model?: string }
+  | { type: "meta"; sessionId: string; model?: string };
 
 export function encodeStreamChunk(chunk: StreamChunk): string {
-  return JSON.stringify(chunk) + "\n"
+  return JSON.stringify(chunk) + "\n";
 }
 
 export function decodeStreamChunk(line: string): StreamChunk | null {
   try {
-    return JSON.parse(line) as StreamChunk
+    return JSON.parse(line) as StreamChunk;
   } catch {
-    return null
+    return null;
   }
 }

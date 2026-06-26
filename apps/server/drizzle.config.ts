@@ -1,6 +1,6 @@
-import { defineConfig } from "drizzle-kit"
-import { homedir } from "os"
-import { join } from "path"
+import { defineConfig } from "drizzle-kit";
+import { homedir } from "os";
+import { join } from "path";
 
 export default defineConfig({
   schema: "./src/db/schema.ts",
@@ -9,4 +9,4 @@ export default defineConfig({
   dbCredentials: {
     url: join(homedir(), ".scode", "scode.db"),
   },
-})
+});

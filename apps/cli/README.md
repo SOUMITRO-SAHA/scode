@@ -13,11 +13,11 @@ Built with [OpenTUI](https://opentui.org) + React for the terminal UI.
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm dev` | Watch mode with tsx |
-| `pnpm build` | Compile with tsc |
-| `pnpm check-types` | Type-check |
+| Command            | Description         |
+| ------------------ | ------------------- |
+| `pnpm dev`         | Watch mode with tsx |
+| `pnpm build`       | Compile with tsc    |
+| `pnpm check-types` | Type-check          |
 
 ## How It Works
 

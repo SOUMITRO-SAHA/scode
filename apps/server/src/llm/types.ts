@@ -1,4 +1,1 @@
-export type {
-  UnifiedMessage,
-  ContentBlock,
-} from "@scode/shared/types"
+export type { UnifiedMessage, ContentBlock } from "@scode/shared/types";

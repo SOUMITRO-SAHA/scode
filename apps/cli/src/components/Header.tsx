@@ -1,7 +1,8 @@
-import { theme } from "@scode/theme";
 import { useHealth, useModels } from "../hooks/useApi";
 import { useAppStore } from "../store/index";
 import { EFFORT_LEVELS, type EffortLevel } from "../store/index";
+
+import { theme } from "@scode/theme";
 
 interface HeaderProps {
   modelDisplay?: string;

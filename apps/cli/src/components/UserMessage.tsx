@@ -1,4 +1,4 @@
-import { theme } from "@scode/theme"
+import { theme } from "@scode/theme";
 
 export function UserMessage({ content }: { content: string }) {
   return (
@@ -15,5 +15,5 @@ export function UserMessage({ content }: { content: string }) {
       </box>
       <text fg={theme.chat.user.text}>{content}</text>
     </box>
-  )
+  );
 }

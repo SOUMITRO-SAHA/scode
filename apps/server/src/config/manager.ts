@@ -1,39 +1,39 @@
-import { readFileSync, writeFileSync, existsSync, mkdirSync } from "node:fs"
-import { join } from "node:path"
-import { homedir } from "node:os"
+import { existsSync, mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-const CONFIG_PATH = join(homedir(), ".scode", "config.json")
+import type { AppConfig } from "@scode/shared/types";
 
-import type { AppConfig } from "@scode/shared/types"
+const CONFIG_PATH = join(homedir(), ".scode", "config.json");
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: "dark",
   defaultProvider: "claude",
   defaultModel: "claude-sonnet-4-20250515",
   maxTokens: 8192,
-}
+};
 
 export class ConfigManager {
   get(): AppConfig {
     try {
-      if (!existsSync(CONFIG_PATH)) return { ...DEFAULT_CONFIG }
-      const raw = readFileSync(CONFIG_PATH, "utf-8")
-      return { ...DEFAULT_CONFIG, ...JSON.parse(raw) } as AppConfig
+      if (!existsSync(CONFIG_PATH)) return { ...DEFAULT_CONFIG };
+      const raw = readFileSync(CONFIG_PATH, "utf-8");
+      return { ...DEFAULT_CONFIG, ...JSON.parse(raw) } as AppConfig;
     } catch {
-      return { ...DEFAULT_CONFIG }
+      return { ...DEFAULT_CONFIG };
     }
   }
 
   update(partial: Partial<AppConfig>): AppConfig {
-    const current = this.get()
-    const updated = { ...current, ...partial }
-    const dir = join(homedir(), ".scode")
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
-    writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2))
-    return updated
+    const current = this.get();
+    const updated = { ...current, ...partial };
+    const dir = join(homedir(), ".scode");
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(CONFIG_PATH, JSON.stringify(updated, null, 2));
+    return updated;
   }
 
   set<K extends keyof AppConfig>(key: K, value: AppConfig[K]): AppConfig {
-    return this.update({ [key]: value })
+    return this.update({ [key]: value });
   }
 }

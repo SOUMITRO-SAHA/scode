@@ -1,11 +1,19 @@
-import { useMemo } from "react"
-import { theme } from "@scode/theme"
-import { getMarkdownStyle } from "../styles/syntaxTheme"
+import { useMemo } from "react";
 
-export function AssistantMessage({ content, isStreaming }: { content: string; isStreaming: boolean }) {
-  const style = useMemo(() => getMarkdownStyle(), [])
+import { getMarkdownStyle } from "../styles/syntaxTheme";
 
-  if (!content && !isStreaming) return null
+import { theme } from "@scode/theme";
+
+export function AssistantMessage({
+  content,
+  isStreaming,
+}: {
+  content: string;
+  isStreaming: boolean;
+}) {
+  const style = useMemo(() => getMarkdownStyle(), []);
+
+  if (!content && !isStreaming) return null;
 
   return (
     <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
@@ -28,5 +36,5 @@ export function AssistantMessage({ content, isStreaming }: { content: string; is
         )}
       </box>
     </box>
-  )
+  );
 }

@@ -24,19 +24,25 @@ Daily-rotating logger built on [Pino](https://getpino.io) + [pino-roll](https://
 ### Usage
 
 ```typescript
-import { Logger } from "@scode/shared/logger"
+import { Logger } from "@scode/shared/logger";
 
-const logger = new Logger()
-logger.info("Server started")
-logger.warn("Deprecated config", { key: "old-key" })
-logger.error("Connection failed", { error: err.message })
-logger.close()
+const logger = new Logger();
+logger.info("Server started");
+logger.warn("Deprecated config", { key: "old-key" });
+logger.error("Connection failed", { error: err.message });
+logger.close();
 ```
 
 ### Log file format
 
 ```json
-{"level":30,"time":1719323588000,"pid":12345,"hostname":"...","msg":"Server starting up"}
+{
+  "level": 30,
+  "time": 1719323588000,
+  "pid": 12345,
+  "hostname": "...",
+  "msg": "Server starting up"
+}
 ```
 
 Levels: 20=debug, 30=info, 40=warn, 50=error

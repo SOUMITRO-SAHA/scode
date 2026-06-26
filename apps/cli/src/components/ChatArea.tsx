@@ -1,23 +1,33 @@
-import { useRef, useEffect } from "react"
-import type { ScrollBoxRenderable } from "@opentui/core"
-import type { Message } from "@scode/shared/types"
-import { UserMessage } from "./UserMessage"
-import { AssistantMessage } from "./AssistantMessage"
-import { theme } from "@scode/theme"
+import { useEffect, useRef } from "react";
 
-export function ChatArea({ messages, streaming }: { messages: Message[]; streaming: boolean }) {
-  const scrollRef = useRef<ScrollBoxRenderable>(null)
+import { AssistantMessage } from "./AssistantMessage";
+import { UserMessage } from "./UserMessage";
+
+import type { ScrollBoxRenderable } from "@opentui/core";
+import type { Message } from "@scode/shared/types";
+import { theme } from "@scode/theme";
+
+export function ChatArea({
+  messages,
+  streaming,
+}: {
+  messages: Message[];
+  streaming: boolean;
+}) {
+  const scrollRef = useRef<ScrollBoxRenderable>(null);
 
   useEffect(() => {
-    if (scrollRef.current) scrollRef.current.scrollTop = 99999
-  }, [messages])
+    if (scrollRef.current) scrollRef.current.scrollTop = 99999;
+  }, [messages]);
 
   if (messages.length === 0) {
     return (
       <box flexGrow={1} alignItems="center" justifyContent="center">
-        <text fg={theme.text.disabled}>No messages yet. Type something below to start.</text>
+        <text fg={theme.text.disabled}>
+          No messages yet. Type something below to start.
+        </text>
       </box>
-    )
+    );
   }
 
   return (
@@ -40,10 +50,12 @@ export function ChatArea({ messages, streaming }: { messages: Message[]; streami
           <AssistantMessage
             key={i}
             content={msg.content}
-            isStreaming={streaming && i === messages.length - 1 && msg.content === ""}
+            isStreaming={
+              streaming && i === messages.length - 1 && msg.content === ""
+            }
           />
         ),
       )}
     </scrollbox>
-  )
+  );
 }

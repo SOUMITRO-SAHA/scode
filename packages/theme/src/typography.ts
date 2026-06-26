@@ -1,7 +1,13 @@
 export const typography = {
   fontFamily: {
     sans: ["Inter", "system-ui", "sans-serif"],
-    mono: ["Geist Mono", "JetBrains Mono", "SFMono-Regular", "Consolas", "monospace"],
+    mono: [
+      "Geist Mono",
+      "JetBrains Mono",
+      "SFMono-Regular",
+      "Consolas",
+      "monospace",
+    ],
   },
   fontSize: {
     display: "48px",
@@ -25,4 +31,4 @@ export const typography = {
     normal: 1.5,
     relaxed: 1.7,
   },
-} as const
+} as const;

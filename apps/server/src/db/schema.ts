@@ -1,4 +1,4 @@
-import { sqliteTable, text } from "drizzle-orm/sqlite-core"
+import { sqliteTable, text } from "drizzle-orm/sqlite-core";
 
 export const sessions = sqliteTable("sessions", {
   id: text("id").primaryKey(),
@@ -8,4 +8,4 @@ export const sessions = sqliteTable("sessions", {
   model: text("model").notNull(),
   provider: text("provider").notNull(),
   messages: text("messages").notNull().default("[]"),
-})
+});

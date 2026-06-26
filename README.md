@@ -42,13 +42,13 @@ scode/
 
 ## Scripts
 
-| Command | Description |
-|---------|-------------|
-| `pnpm cli --prompt "..."` | Single-shot mode (stdout) |
-| `pnpm cli` | Interactive TUI mode |
-| `pnpm server` | Start server standalone |
-| `pnpm demo` | Quick demo: spawns server + sends prompt |
-| `pnpm check-types` | Type-check both apps |
+| Command                   | Description                              |
+| ------------------------- | ---------------------------------------- |
+| `pnpm cli --prompt "..."` | Single-shot mode (stdout)                |
+| `pnpm cli`                | Interactive TUI mode                     |
+| `pnpm server`             | Start server standalone                  |
+| `pnpm demo`               | Quick demo: spawns server + sends prompt |
+| `pnpm check-types`        | Type-check both apps                     |
 
 ## How It Works
 
@@ -63,14 +63,14 @@ scode/
 
 ## Tools
 
-| Tool | Description |
-|------|-------------|
-| `read` | Read files or list directories |
-| `write` | Create/overwrite files |
-| `edit` | Exact string replacement |
-| `bash` | Execute shell commands |
-| `grep` | Regex content search |
-| `glob` | Glob pattern file search |
+| Tool    | Description                    |
+| ------- | ------------------------------ |
+| `read`  | Read files or list directories |
+| `write` | Create/overwrite files         |
+| `edit`  | Exact string replacement       |
+| `bash`  | Execute shell commands         |
+| `grep`  | Regex content search           |
+| `glob`  | Glob pattern file search       |
 
 ## Skills
 

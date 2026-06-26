@@ -1,7 +1,7 @@
-export type LogLevel = "debug" | "info" | "warn" | "error"
+export type LogLevel = "debug" | "info" | "warn" | "error";
 
 export interface LoggerOptions {
-  logDir?: string
-  level?: LogLevel
-  stderr?: boolean
+  logDir?: string;
+  level?: LogLevel;
+  stderr?: boolean;
 }

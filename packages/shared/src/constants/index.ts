@@ -23,7 +23,7 @@ export {
   v1ConfigUrl,
   v1LogsUrl,
   v1StatsUrl,
-} from "./endpoints"
+} from "./endpoints";
 
-export const POLL_INTERVAL = 200
-export const MAX_POLLS = 25
+export const POLL_INTERVAL = 200;
+export const MAX_POLLS = 25;

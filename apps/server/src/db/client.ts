@@ -1,21 +1,22 @@
-import Database from "better-sqlite3"
-import { drizzle } from "drizzle-orm/better-sqlite3"
-import { join } from "node:path"
-import { homedir } from "node:os"
-import { mkdirSync, existsSync } from "node:fs"
-import * as schema from "./schema"
+import Database from "better-sqlite3";
+import { drizzle } from "drizzle-orm/better-sqlite3";
+import { existsSync, mkdirSync } from "node:fs";
+import { homedir } from "node:os";
+import { join } from "node:path";
 
-const DB_PATH = join(homedir(), ".scode", "scode.db")
+import * as schema from "./schema";
 
-let _db: ReturnType<typeof drizzle> | null = null
+const DB_PATH = join(homedir(), ".scode", "scode.db");
+
+let _db: ReturnType<typeof drizzle> | null = null;
 
 export function getDb() {
   if (!_db) {
-    const dir = join(homedir(), ".scode")
-    if (!existsSync(dir)) mkdirSync(dir, { recursive: true })
+    const dir = join(homedir(), ".scode");
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
 
-    const sqlite = new Database(DB_PATH)
-    sqlite.pragma("journal_mode = WAL")
+    const sqlite = new Database(DB_PATH);
+    sqlite.pragma("journal_mode = WAL");
 
     sqlite.exec(`
       CREATE TABLE IF NOT EXISTS sessions (
@@ -27,9 +28,9 @@ export function getDb() {
         provider TEXT NOT NULL,
         messages TEXT NOT NULL DEFAULT '[]'
       )
-    `)
+    `);
 
-    _db = drizzle(sqlite, { schema })
+    _db = drizzle(sqlite, { schema });
   }
-  return _db
+  return _db;
 }

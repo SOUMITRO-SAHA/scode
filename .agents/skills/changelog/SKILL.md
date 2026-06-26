@@ -2,6 +2,7 @@
 name: changelog
 description: Generate or update a CHANGELOG.md file based on git history
 ---
+
 # changelog
 
 When the user wants a changelog, generate a markdown changelog.
@@ -14,15 +15,19 @@ Structure:
 ## [Unreleased]
 
 ### Added
+
 - New features
 
 ### Changed
+
 - Changes to existing functionality
 
 ### Fixed
+
 - Bug fixes
 
 ### Removed
+
 - Removed features
 ```
 
