@@ -4,13 +4,7 @@ import { homedir } from "node:os"
 
 const CONFIG_PATH = join(homedir(), ".scode", "config.json")
 
-export interface AppConfig {
-  theme: "dark" | "light"
-  defaultProvider: string
-  defaultModel: string
-  maxTokens: number
-  systemPrompt?: string
-}
+import type { AppConfig } from "@scode/shared/types"
 
 const DEFAULT_CONFIG: AppConfig = {
   theme: "dark",

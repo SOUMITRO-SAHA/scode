@@ -1,5 +1,5 @@
 import { create } from "zustand"
-import type { Message } from "../types/index"
+import type { Message } from "@scode/shared/types"
 
 export type AgentId = "plan" | "write" | "chat"
 

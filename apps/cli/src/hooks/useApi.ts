@@ -3,7 +3,7 @@ import { apiV1Base } from "@scode/shared/constants"
 import type {
   HealthStatus, Stats, ProviderInfo, ModelInfo,
   SessionInfo, SkillInfo, ServerConfig, LogEntry,
-} from "../types/index"
+} from "@scode/shared/types"
 
 function apiUrl(path: string, base?: string): string {
   return `${apiV1Base(base)}${path}`

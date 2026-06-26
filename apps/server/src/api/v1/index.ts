@@ -223,17 +223,16 @@ export function createV1Router(deps: RouterDeps): Hono {
     }
   })
 
-  function chatStream(c: any) {
+  async function chatStream(c: any) {
+    const body = await c.req.json().catch(() => ({}))
+    const message = body.message ?? body.prompt
+    if (!message) {
+      return c.json({ error: "message or prompt required" }, 400)
+    }
     return stream(c, async (s: any) => {
-      const body = await c.req.json().catch(() => ({}))
-      const message = body.message ?? body.prompt
       const model = body.model
       const provider = body.provider
       const sessionId = body.sessionId
-      if (!message) {
-        await s.write(JSON.stringify({ error: "message or prompt required" }))
-        return
-      }
       const config = deps.configManager.get()
       const modelStr = model || (provider ? `${provider}/` + config.defaultModel : config.defaultModel)
       await handleChat(message, modelStr, sessionId, deps, (chunk: string) => s.write(chunk))

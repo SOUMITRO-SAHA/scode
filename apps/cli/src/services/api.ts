@@ -1,56 +1,13 @@
 import { apiV1Base } from "@scode/shared/constants"
-
-interface SessionInfo {
-  id: string
-  name: string
-  createdAt: string
-  updatedAt: string
-  messageCount: number
-  model: string
-  provider: string
-}
-
-interface ProviderInfo {
-  id: string
-  name: string
-  defaultModel: string
-}
-
-interface ModelInfo {
-  provider: string
-  providerName: string
-  defaultModel: string
-}
-
-interface SkillInfo {
-  name: string
-  description: string
-}
-
-interface ServerConfig {
-  theme: string
-  defaultProvider: string
-  defaultModel: string
-  maxTokens: number
-}
-
-interface HealthStatus {
-  healthy: boolean
-  uptime: number
-  providers: number
-  sessions: number
-  defaultProvider: string
-  defaultModel: string
-}
-
-interface Stats {
-  sessions: number
-  messages: number
-  providers: number
-  models: number
-  skills: number
-  uptime: number
-}
+import type {
+  SessionInfo,
+  ProviderInfo,
+  ModelInfo,
+  SkillInfo,
+  ServerConfig,
+  HealthStatus,
+  Stats,
+} from "@scode/shared/types"
 
 function apiUrl(path: string, base?: string): string {
   return `${apiV1Base(base)}${path}`

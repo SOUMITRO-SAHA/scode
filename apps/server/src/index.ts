@@ -82,11 +82,17 @@ app.get("/health", (c) => c.json({ healthy: true }))
 // Legacy process endpoint
 app.post("/process", (c) =>
   stream(c, async (s) => {
-    const { prompt, model: modelString, sessionId } = await c.req.json<{ prompt: string; model?: string; sessionId?: string }>()
+    const { prompt, message, model: modelString, sessionId } = await c.req.json<{ prompt?: string; message?: string; model?: string; sessionId?: string }>()
+    const text = message ?? prompt
+    if (!text) {
+      c.status(400)
+      await s.write(JSON.stringify({ error: "message or prompt required" }))
+      return
+    }
     const config = configManager.get()
     const modelStr = modelString ?? config.defaultModel ?? DEFAULT_MODEL
     await handleChat(
-      prompt,
+      text,
       modelStr,
       sessionId,
       { providerRegistry, toolRegistry, sessionManager, configManager },
