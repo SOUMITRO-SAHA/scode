@@ -86,6 +86,18 @@ Once a task is completed:
 1. Move `tasks/PLAN.md` and `tasks/TODO.md` into `tasks/completed/<task_name>/`
 2. Then start the new task by creating fresh `tasks/TODO.md` and `tasks/PLAN.md`
 
+# Code Conventions
+
+## React component file naming (shadcn style)
+
+All React component files use **kebab-case** naming — lowercase words separated by hyphens, no PascalCase for file names.
+
+**Correct:** `dialog.tsx`, `command-palette.tsx`, `login-form.tsx`, `use-debounce.ts`, `format-date.ts`
+
+**Incorrect:** `Dialog.tsx`, `CommandPalette.tsx`, `LoginForm.tsx`
+
+Component directories (when used) also follow kebab-case: `ui/button.tsx`, `forms/login-form.tsx`.
+
 # Key Design Decisions
 
 - **CLI is client-only** — no AI logic in CLI. Thin client that forwards prompts to server and streams responses.

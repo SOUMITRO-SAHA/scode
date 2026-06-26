@@ -20,7 +20,9 @@
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.27",
     "openai": "^6.45.0",
-    "yaml": "^2.9.0"
+    "yaml": "^2.9.0",
+    "effect": "catalog:",
+    "@effect/platform-node": "catalog:"
   },
   "devDependencies": {
     "@types/better-sqlite3": "^7.6.13",

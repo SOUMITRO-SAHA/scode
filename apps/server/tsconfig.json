@@ -6,8 +6,12 @@
     "strict": true,
     "verbatimModuleSyntax": true,
     "skipLibCheck": true,
-    "types": [
-      "node"
+    "types": ["node"],
+    "plugins": [
+      {
+        "name": "@effect/language-service",
+        "namespaceImportPackages": ["effect", "@effect/platform-node"]
+      }
     ],
     "jsx": "react-jsx",
     "jsxImportSource": "hono/jsx",

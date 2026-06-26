@@ -4,3 +4,6 @@ packages:
 
 catalog:
   typescript: "^6.0.3"
+  effect: "4.0.0-beta.90"
+  "@effect/language-service": "0.86.2"
+  "@effect/platform-node": "4.0.0-beta.90"
