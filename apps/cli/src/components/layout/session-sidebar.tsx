@@ -1,19 +1,25 @@
-import { useCallback } from "react";
+import { useCallback, useEffect } from "react";
 
+import { Spinner } from "@/components/ui/spinner";
 import {
   useCreateSession,
   useDeleteSession,
   useSessions,
 } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
+import { RGBA } from "@opentui/core";
+import { useKeyboard } from "@opentui/react";
 import { theme } from "@scode/theme";
 
 export function SessionSidebar() {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const currentSessionId = useAppStore((s) => s.currentSessionId);
+  const streamingSessionId = useAppStore((s) => s.streamingSessionId);
   const setCurrentSessionId = useAppStore((s) => s.setCurrentSessionId);
   const sidebarVisible = useAppStore((s) => s.sidebarVisible);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
+  const sidebarSelectedIndex = useAppStore((s) => s.sidebarSelectedIndex);
+  const setSidebarSelectedIndex = useAppStore((s) => s.setSidebarSelectedIndex);
   const { data, isLoading, isError } = useSessions(serverUrl);
   const createSession = useCreateSession(serverUrl);
   const deleteSession = useDeleteSession(serverUrl);
@@ -38,20 +44,45 @@ export function SessionSidebar() {
     [setCurrentSessionId],
   );
 
-  if (!sidebarVisible) return null;
+  const sessions = data?.sessions ?? [];
 
-  const s = data?.sessions ?? [];
+  // Keyboard navigation for sidebar
+  useKeyboard((key) => {
+    if (!sidebarVisible) return;
+
+    if (key.name === "up") {
+      setSidebarSelectedIndex(Math.max(0, sidebarSelectedIndex - 1));
+    } else if (key.name === "down") {
+      setSidebarSelectedIndex(
+        Math.min(sessions.length - 1, sidebarSelectedIndex + 1),
+      );
+    } else if (key.name === "return") {
+      // Enter key - switch to selected session
+      if (sessions[sidebarSelectedIndex]) {
+        handleSwitch(sessions[sidebarSelectedIndex].id);
+      }
+    }
+  });
+
+  // Reset selected index when sessions change
+  useEffect(() => {
+    if (sessions.length > 0 && sidebarSelectedIndex >= sessions.length) {
+      setSidebarSelectedIndex(sessions.length - 1);
+    }
+  }, [sessions.length, sidebarSelectedIndex, setSidebarSelectedIndex]);
+
+  if (!sidebarVisible) return null;
 
   return (
     <box
       width={30}
       height="100%"
       flexDirection="column"
-      borderStyle="rounded"
-      borderColor={theme.border.secondary}
       backgroundColor={theme.background.primary}
     >
       <box
+        flexDirection="row"
+        alignItems="center"
         paddingLeft={1}
         paddingRight={1}
         height={1}
@@ -60,15 +91,18 @@ export function SessionSidebar() {
         <text fg={theme.brand.primary}>
           <strong>Sessions</strong>
         </text>
+
         <box onMouseDown={toggleSidebar}>
           <text fg={theme.text.muted}>✕</text>
         </box>
       </box>
+
       <box paddingLeft={1} paddingRight={1} height={1}>
         <box onMouseDown={handleCreate}>
           <text fg={theme.text.disabled}>+ New Session</text>
         </box>
       </box>
+
       <box flexDirection="column" flexGrow={1}>
         {isLoading && (
           <text fg={theme.text.muted} paddingLeft={1}>
@@ -80,24 +114,50 @@ export function SessionSidebar() {
             Failed to load
           </text>
         )}
-        {!isLoading && !isError && s.length === 0 && (
+        {!isLoading && !isError && sessions.length === 0 && (
           <text fg={theme.text.disabled} paddingLeft={1}>
             No sessions
           </text>
         )}
-        {s.map((sess) => {
+        {sessions.map((sess, index) => {
           const active = sess.id === currentSessionId;
+          const isStreaming = sess.id === streamingSessionId;
+          const isSelected = index === sidebarSelectedIndex;
           return (
             <box
               key={sess.id}
               height={1}
               paddingLeft={1}
-              backgroundColor={active ? theme.background.hover : "transparent"}
+              backgroundColor={
+                isSelected
+                  ? theme.background.hover
+                  : active
+                    ? theme.background.active
+                    : "transparent"
+              }
             >
-              <box onMouseDown={() => handleSwitch(sess.id)}>
-                <text fg={active ? theme.brand.primary : theme.text.primary}>
-                  {active ? ">" : " "} {sess.name.slice(0, 18)}
+              <box
+                flexDirection="row"
+                width="100%"
+                onMouseDown={() => handleSwitch(sess.id)}
+              >
+                <text
+                  fg={active ? theme.brand.primary : theme.text.primary}
+                  width={2}
+                >
+                  {active ? ">" : " "}
                 </text>
+                <text
+                  fg={active ? theme.brand.primary : theme.text.primary}
+                  flexGrow={1}
+                >
+                  {sess.name.slice(0, 16)}
+                </text>
+                {isStreaming && (
+                  <box width={2} justifyContent="flex-end">
+                    <Spinner fg={RGBA.fromHex(theme.brand.primary)} />
+                  </box>
+                )}
               </box>
             </box>
           );

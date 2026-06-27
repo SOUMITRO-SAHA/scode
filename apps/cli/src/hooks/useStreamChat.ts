@@ -31,6 +31,11 @@ export function useStreamChat(serverUrl: string) {
 
       let sessionId = sessionIdRef.current;
 
+      // Set streaming session ID after we have the session
+      const setStreamingSession = (id: string | undefined) => {
+        useAppStore.getState().setStreamingSessionId(id);
+      };
+
       try {
         if (!sessionId) {
           const config = await apiFetch<{ defaultModel: string }>(
@@ -57,6 +62,9 @@ export function useStreamChat(serverUrl: string) {
           useAppStore.getState().setCurrentSessionId(sessionId);
         }
 
+        // Set streaming session ID
+        setStreamingSession(sessionId);
+
         const stream = await apiFetchStream(
           "/chat",
           {
@@ -78,6 +86,7 @@ export function useStreamChat(serverUrl: string) {
         useAppStore.getState().setLastAssistantError(errMsg);
       } finally {
         useAppStore.getState().setStreaming(false);
+        setStreamingSession(undefined);
         statusRef.current = "idle";
         qc.invalidateQueries({ queryKey: ["sessions", serverUrl] });
       }

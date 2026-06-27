@@ -18,6 +18,7 @@ export const AGENT_LABELS: Record<AgentId, string> = {
 interface AppStore {
   serverUrl: string;
   currentSessionId: string | undefined;
+  streamingSessionId: string | undefined;
   model: string | undefined;
   effortLevel: EffortLevel;
   debug: boolean;
@@ -25,9 +26,11 @@ interface AppStore {
   messages: Message[];
   streaming: boolean;
   currentAgent: AgentId;
+  sidebarSelectedIndex: number;
 
   setServerUrl: (url: string) => void;
   setCurrentSessionId: (id: string | undefined) => void;
+  setStreamingSessionId: (id: string | undefined) => void;
   setModel: (m: string | undefined) => void;
   setEffortLevel: (level: EffortLevel) => void;
   toggleDebug: () => void;
@@ -40,11 +43,13 @@ interface AppStore {
   clearMessages: () => void;
   setStreaming: (s: boolean) => void;
   cycleAgent: () => void;
+  setSidebarSelectedIndex: (i: number) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
   serverUrl: "",
   currentSessionId: undefined,
+  streamingSessionId: undefined,
   model: undefined,
   effortLevel: "high",
   debug: false,
@@ -52,9 +57,11 @@ export const useAppStore = create<AppStore>((set) => ({
   messages: [],
   streaming: false,
   currentAgent: "chat",
+  sidebarSelectedIndex: 0,
 
   setServerUrl: (url) => set({ serverUrl: url }),
   setCurrentSessionId: (id) => set({ currentSessionId: id }),
+  setStreamingSessionId: (id) => set({ streamingSessionId: id }),
   setModel: (m) => set({ model: m }),
   setEffortLevel: (level) => set({ effortLevel: level }),
   toggleDebug: () => set((s) => ({ debug: !s.debug })),
@@ -96,4 +103,5 @@ export const useAppStore = create<AppStore>((set) => ({
       const idx = AGENTS.indexOf(s.currentAgent);
       return { currentAgent: AGENTS[(idx + 1) % AGENTS.length] };
     }),
+  setSidebarSelectedIndex: (i) => set({ sidebarSelectedIndex: i }),
 }));
