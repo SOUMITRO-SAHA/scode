@@ -242,6 +242,9 @@ importers:
       axios:
         specifier: 'catalog:'
         version: 1.18.1
+      effect:
+        specifier: 'catalog:'
+        version: 4.0.0-beta.90
       pino:
         specifier: ^10.3.1
         version: 10.3.1

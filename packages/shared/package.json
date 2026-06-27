@@ -5,7 +5,8 @@
     "./logger": "./src/logger/index.ts",
     "./constants": "./src/constants/index.ts",
     "./types": "./src/types/index.ts",
-    "./utils": "./src/utils/index.ts"
+    "./utils": "./src/utils/index.ts",
+    "./effect": "./src/effect/index.ts"
   },
   "scripts": {
     "check-types": "tsc --noEmit",
@@ -21,6 +22,7 @@
   },
   "dependencies": {
     "axios": "catalog:",
+    "effect": "catalog:",
     "pino": "^10.3.1",
     "pino-roll": "^4.0.0",
     "uuid": "^11.1.1"
