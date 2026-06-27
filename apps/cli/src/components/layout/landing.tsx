@@ -1,7 +1,7 @@
 import { Composer } from "@/components/composer/index.js";
 import { KeyboardHints } from "@/components/feedback/keyboard-hints";
 import { TipSection } from "@/components/feedback/tip-section";
-import { useHealth } from "@/hooks/useApi";
+import { useConnectionStatus, useHealth } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
 import { formatModelName, parseModelString } from "@scode/shared/utils";
 import { layout, theme } from "@scode/theme";
@@ -29,6 +29,7 @@ export function Landing({
   const model = useAppStore((s) => s.model);
   const effortLevel = useAppStore((s) => s.effortLevel);
   const { data: health } = useHealth(serverUrl);
+  const { status } = useConnectionStatus(serverUrl);
   const showLogo = height >= 20;
   const showTips = height >= 24;
   const composerLines = height < 20 ? 1 : height < 28 ? 2 : 3;
@@ -75,8 +76,21 @@ export function Landing({
       />
       <KeyboardHints />
       <TipSection show={showTips} />
-      <text fg={health?.healthy ? theme.success : theme.danger} marginTop={1}>
-        {health?.healthy ? "● Connected" : "○ Connecting..."}
+      <text
+        fg={
+          status === "initializing"
+            ? theme.warning
+            : status === "connected"
+              ? theme.success
+              : theme.danger
+        }
+        marginTop={1}
+      >
+        {status === "initializing"
+          ? "◌ Initializing..."
+          : status === "connected"
+            ? "● Server Connected"
+            : "○ Connection Failed"}
       </text>
     </box>
   );

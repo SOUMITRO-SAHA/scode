@@ -27,6 +27,7 @@ interface AppStore {
   streaming: boolean;
   currentAgent: AgentId;
   sidebarSelectedIndex: number;
+  selectedSkills: string[];
 
   setServerUrl: (url: string) => void;
   setCurrentSessionId: (id: string | undefined) => void;
@@ -45,6 +46,9 @@ interface AppStore {
   cycleAgent: () => void;
   setSidebarSelectedIndex: (i: number) => void;
   setMessages: (messages: UnifiedMessage[]) => void;
+  addSelectedSkill: (name: string) => void;
+  removeSelectedSkill: (name: string) => void;
+  clearSelectedSkills: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -59,6 +63,7 @@ export const useAppStore = create<AppStore>((set) => ({
   streaming: false,
   currentAgent: "chat",
   sidebarSelectedIndex: 0,
+  selectedSkills: [],
 
   setServerUrl: (url) => set({ serverUrl: url }),
   setCurrentSessionId: (id) => set({ currentSessionId: id }),
@@ -119,4 +124,15 @@ export const useAppStore = create<AppStore>((set) => ({
         }));
       return { messages };
     }),
+  addSelectedSkill: (name) =>
+    set((s) => ({
+      selectedSkills: s.selectedSkills.includes(name)
+        ? s.selectedSkills
+        : [...s.selectedSkills, name],
+    })),
+  removeSelectedSkill: (name) =>
+    set((s) => ({
+      selectedSkills: s.selectedSkills.filter((n) => n !== name),
+    })),
+  clearSelectedSkills: () => set({ selectedSkills: [] }),
 }));

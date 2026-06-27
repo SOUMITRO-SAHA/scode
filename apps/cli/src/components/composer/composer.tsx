@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
 import { ComposerFooter } from "./composer-footer.js";
 import { calculateLayout, parseModelDisplay } from "./layout.js";
+import { SkillPills } from "./skill-pills.js";
 import { useAutocomplete } from "./useAutocomplete.js";
 import { useHistory } from "./useHistory.js";
 
@@ -56,6 +57,9 @@ export function Composer({
   const currentAgent = useAppStore((s) => s.currentAgent);
   const cycleAgent = useAppStore((s) => s.cycleAgent);
   const effortLevel = useAppStore((s) => s.effortLevel);
+  const selectedSkills = useAppStore((s) => s.selectedSkills);
+  const removeSelectedSkill = useAppStore((s) => s.removeSelectedSkill);
+  const clearSelectedSkills = useAppStore((s) => s.clearSelectedSkills);
   const [autoVisible, setAutoVisible] = useState(false);
   const [autoQuery, setAutoQuery] = useState("");
   const [autoIdx, setAutoIdx] = useState(0);
@@ -147,8 +151,24 @@ export function Composer({
         cycleAgent();
         return;
       }
+      if (event.name === "backspace") {
+        const ta = ref.current;
+        const val = (ta?.plainText ?? "").trim();
+        if (val === "" && selectedSkills.length > 0) {
+          removeSelectedSkill(selectedSkills[selectedSkills.length - 1]);
+          return;
+        }
+      }
     },
-    [autoVisible, items, autoIdx, goHistory, cycleAgent],
+    [
+      autoVisible,
+      items,
+      autoIdx,
+      goHistory,
+      cycleAgent,
+      selectedSkills,
+      removeSelectedSkill,
+    ],
   );
 
   const handleSubmit = useCallback(() => {
@@ -159,13 +179,17 @@ export function Composer({
     const ta = ref.current;
     const val = (ta?.plainText ?? "").trim();
     if (!val || streaming) return;
-    pushToHistory(val);
-    onSubmit(val);
+    const skillPrefix = selectedSkills.map((s) => `@{skill: ${s}}`).join(" ");
+    const fullVal = skillPrefix ? `${skillPrefix} ${val}` : val;
+    pushToHistory(fullVal);
+    onSubmit(fullVal);
+    clearSelectedSkills();
     setInitialVal("");
     setComposerKey((c) => c + 1);
-  }, [onSubmit, streaming, pushToHistory]);
+  }, [onSubmit, streaming, pushToHistory, selectedSkills, clearSelectedSkills]);
 
   const isCommand = initialVal.trim().startsWith("/");
+  const hasActiveSkills = selectedSkills.length > 0;
 
   return (
     <box
@@ -178,12 +202,17 @@ export function Composer({
       <box
         borderStyle="rounded"
         borderColor={
-          isCommand ? theme.brand.primary : AGENT_COLORS[currentAgent]
+          isCommand
+            ? theme.brand.primary
+            : hasActiveSkills
+              ? theme.brand.primary
+              : AGENT_COLORS[currentAgent]
         }
         width="100%"
         flexDirection="column"
       >
-        <box paddingLeft={1}>
+        <SkillPills skills={selectedSkills} />
+        <box paddingLeft={1} flexDirection="column">
           <textarea
             key={composerKey}
             ref={ref}

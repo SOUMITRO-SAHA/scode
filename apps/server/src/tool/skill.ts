@@ -1,10 +1,9 @@
-import { readFileSync, readdirSync, statSync } from "node:fs";
-import { join, resolve } from "node:path";
+import { readdirSync } from "node:fs";
+import { join } from "node:path";
 
+import { discover } from "../skill/discover";
+import { loadSkill } from "../skill/loader";
 import type { ToolDefinition, ToolHandler } from "../types";
-
-const WORKSPACE = process.cwd();
-const SKILLS_GLOB = ".agents/skills";
 
 export const definition: ToolDefinition = {
   name: "skill",
@@ -27,34 +26,30 @@ export const handler: ToolHandler = async (input: Record<string, unknown>) => {
   const name = input.name as string;
   if (!name) return { error: "Skill name required" };
 
-  const skillDir = resolve(WORKSPACE, SKILLS_GLOB, name);
-  const skillPath = join(skillDir, "SKILL.md");
+  const dirs = discover();
+  const dir = dirs.find((d) => d.name === name);
+  if (!dir) return { error: `Skill "${name}" not found` };
 
+  const skill = loadSkill(dir);
+  if (!skill) return { error: `Skill "${name}" failed to parse` };
+
+  let extraFiles: string[] = [];
   try {
-    statSync(skillPath);
-  } catch {
-    return { error: `Skill "${name}" not found` };
-  }
-
-  const content = readFileSync(skillPath, "utf-8");
-
-  let files: string[] = [];
-  try {
-    files = readdirSync(skillDir)
+    extraFiles = readdirSync(dir.path)
       .filter((f) => f !== "SKILL.md")
-      .map((f) => join(skillDir, f));
+      .map((f) => join(dir.path, f));
   } catch {
     /* no extra files */
   }
 
   const fileList =
-    files.length > 0
-      ? `<skill_files>\n${files.map((f) => `<file>${f}</file>`).join("\n")}\n</skill_files>`
+    extraFiles.length > 0
+      ? `<skill_files>\n${extraFiles.map((f) => `<file>${f}</file>`).join("\n")}\n</skill_files>`
       : "";
 
   return {
     name,
-    directory: skillDir,
-    output: `<skill_content name="${name}">\n${content}\n\nBase directory: ${skillDir}\n${fileList}\n</skill_content>`,
+    directory: dir.path,
+    output: `<skill_content name="${name}">\n${skill.body}\n\nBase directory: ${dir.path}\n${fileList}\n</skill_content>`,
   };
 };

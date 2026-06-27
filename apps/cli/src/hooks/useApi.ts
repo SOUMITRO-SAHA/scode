@@ -27,6 +27,19 @@ export function useHealth(serverUrl?: string) {
   });
 }
 
+export type ConnectionStatus = "initializing" | "connected" | "failed";
+
+export function useConnectionStatus(serverUrl?: string): {
+  status: ConnectionStatus;
+  healthy: boolean;
+} {
+  const { data: health, isLoading, isError } = useHealth(serverUrl);
+
+  if (isLoading) return { status: "initializing", healthy: false };
+  if (isError || !health?.healthy) return { status: "failed", healthy: false };
+  return { status: "connected", healthy: true };
+}
+
 // ── Stats ──
 export function useStats(serverUrl?: string) {
   return useQuery({

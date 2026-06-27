@@ -121,8 +121,7 @@ function AppInner({
     [],
   );
   const handleSkillSelect = useCallback((skillName: string) => {
-    setPrefill(`/${skillName} `);
-    setTimeout(() => setPrefill(undefined), 0);
+    useAppStore.getState().addSelectedSkill(skillName);
   }, []);
   const apiRef = useRef(new ApiClient(serverUrl));
 
