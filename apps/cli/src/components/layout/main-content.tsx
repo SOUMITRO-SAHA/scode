@@ -1,3 +1,5 @@
+import { useState } from "react";
+
 import { Header } from "./header.js";
 import { Landing } from "./landing.js";
 
@@ -52,6 +54,13 @@ export function MainContent({
   sessionName,
   mainContentWidth,
 }: MainContentProps) {
+  const [composerClearTrigger, setComposerClearTrigger] = useState(0);
+
+  const handlePaletteSelectWrap = (cmd: Command) => {
+    setComposerClearTrigger((c) => c + 1);
+    handlePaletteSelect(cmd);
+  };
+
   return (
     <box flexDirection="column" flexGrow={1}>
       {hasConversation && (
@@ -73,6 +82,7 @@ export function MainContent({
             height={height}
             modelDisplay={modelDisplay}
             mainContentWidth={mainContentWidth}
+            clearTrigger={composerClearTrigger}
           />
         )}
         {hasConversation && (
@@ -84,6 +94,7 @@ export function MainContent({
             modelDisplay={modelDisplay}
             serverUrl={serverUrl}
             focusTrigger={focusTrigger}
+            clearTrigger={composerClearTrigger}
             containerWidth={mainContentWidth}
           />
         )}
@@ -93,7 +104,7 @@ export function MainContent({
             setPaletteVisible(false);
             bumpFocus();
           }}
-          onSelect={handlePaletteSelect}
+          onSelect={handlePaletteSelectWrap}
         />
         {modelPickerOpen && (
           <ModelSwitcher

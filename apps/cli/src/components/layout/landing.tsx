@@ -12,6 +12,7 @@ interface LandingProps {
   height: number;
   modelDisplay?: string;
   mainContentWidth: number;
+  clearTrigger?: number;
 }
 
 export function Landing({
@@ -20,6 +21,7 @@ export function Landing({
   height,
   modelDisplay,
   mainContentWidth,
+  clearTrigger,
 }: LandingProps) {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const model = useAppStore((s) => s.model);
@@ -66,6 +68,7 @@ export function Landing({
         lines={composerLines}
         modelDisplay={modelDisplay}
         serverUrl={serverUrl}
+        clearTrigger={clearTrigger}
       />
       <KeyboardHints />
       <TipSection show={showTips} />

@@ -24,6 +24,7 @@ export interface ComposerProps {
   modelDisplay?: string;
   serverUrl?: string;
   focusTrigger?: number;
+  clearTrigger?: number;
   containerWidth?: number;
 }
 
@@ -42,11 +43,13 @@ export function Composer({
   modelDisplay,
   serverUrl,
   focusTrigger,
+  clearTrigger,
   containerWidth,
 }: ComposerProps) {
   const [composerKey, setComposerKey] = useState(0);
   const [initialVal, setInitialVal] = useState("");
   const ref = useRef<TextareaRenderable | null>(null);
+  const clearTriggerRef = useRef(clearTrigger);
   const currentAgent = useAppStore((s) => s.currentAgent);
   const cycleAgent = useAppStore((s) => s.cycleAgent);
   const effortLevel = useAppStore((s) => s.effortLevel);
@@ -63,6 +66,14 @@ export function Composer({
       ref.current.focus();
     }
   }, [focusTrigger]);
+
+  useEffect(() => {
+    if (clearTriggerRef.current !== clearTrigger) {
+      clearTriggerRef.current = clearTrigger;
+      setInitialVal("");
+      setComposerKey((c) => c + 1);
+    }
+  }, [clearTrigger]);
   const { items, categories, maxNameLen } = useAutocomplete({
     query: autoQuery,
     serverUrl,
@@ -77,15 +88,12 @@ export function Composer({
   const layout = calculateLayout(effectiveWidth ?? 80);
 
   function handleAutoSelect(cmd: Command) {
-    const ta = ref.current!;
-    const newText = `/${cmd.name} `;
-    const cursor = ta.logicalCursor;
-    ta.deleteRange(0, 0, cursor.row, cursor.col);
-    ta.insertText(newText);
-    ta.cursorOffset = newText.length;
     setAutoVisible(false);
     setAutoQuery("");
     setAutoIdx(0);
+    onSubmit(`/${cmd.name}`);
+    setInitialVal("");
+    setComposerKey((c) => c + 1);
   }
 
   const handleKeyDown = useCallback(
