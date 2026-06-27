@@ -6,6 +6,7 @@ import {
   useDialog,
 } from "@/components/ui/dialog";
 import { DialogPrompt } from "@/components/ui/dialog-prompt";
+import { useToast } from "@/components/ui/toast";
 import {
   useConnectProvider,
   useDisconnectProvider,
@@ -27,6 +28,7 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
   const connectProvider = useConnectProvider(serverUrl);
   const disconnectProvider = useDisconnectProvider(serverUrl);
   const setDefaultProvider = useSetDefaultProvider(serverUrl);
+  const toast = useToast();
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
   const [open, setOpen] = useState(true);
   const [view, setView] = useState<View>("providers");
@@ -65,19 +67,25 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
           provider: selectedProvider.id,
           apiKey,
         });
-        useAppStore
-          .getState()
-          .addSystemMessage(`Connected to ${selectedProvider.name}`);
+        const result = await setDefaultProvider.mutateAsync(
+          selectedProvider.id,
+        );
+        setModel(`${result.provider}/${result.defaultModel}`);
+        toast.show({
+          variant: "success",
+          message: `Connected to ${selectedProvider.name}`,
+        });
         handleClose();
       } catch (err) {
-        useAppStore
-          .getState()
-          .addSystemMessage(`Failed to connect: ${(err as Error).message}`);
+        toast.show({
+          variant: "error",
+          message: `Failed to connect: ${(err as Error).message}`,
+        });
         setView("providers");
         setSelectedProvider(null);
       }
     },
-    [selectedProvider, connectProvider],
+    [selectedProvider, connectProvider, setDefaultProvider, setModel],
   );
 
   const handleApiKeyCancel = useCallback(() => {
@@ -89,16 +97,39 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
     async (provider: ProviderInfo) => {
       try {
         await disconnectProvider.mutateAsync(provider.id);
-        useAppStore
-          .getState()
-          .addSystemMessage(`Disconnected from ${provider.name}`);
+        const isDefault = data?.default === provider.id;
+        if (isDefault) {
+          const remaining = data?.providers?.filter(
+            (p) => p.id !== provider.id && p.connected,
+          );
+          if (remaining && remaining.length > 0) {
+            const next = remaining[0];
+            const result = await setDefaultProvider.mutateAsync(next.id);
+            setModel(`${result.provider}/${result.defaultModel}`);
+            toast.show({
+              variant: "info",
+              message: `Default provider: ${next.name}`,
+            });
+          } else {
+            setModel(undefined);
+            toast.show({
+              variant: "warning",
+              message: `No connected providers remaining`,
+            });
+          }
+        }
+        toast.show({
+          variant: "success",
+          message: `Disconnected from ${provider.name}`,
+        });
       } catch (err) {
-        useAppStore
-          .getState()
-          .addSystemMessage(`Failed to disconnect: ${(err as Error).message}`);
+        toast.show({
+          variant: "error",
+          message: `Failed to disconnect: ${(err as Error).message}`,
+        });
       }
     },
-    [disconnectProvider],
+    [disconnectProvider, setDefaultProvider, setModel, data],
   );
 
   const handleSetDefault = useCallback(
@@ -106,13 +137,15 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
       try {
         const result = await setDefaultProvider.mutateAsync(provider.id);
         setModel(`${result.provider}/${result.defaultModel}`);
-        useAppStore
-          .getState()
-          .addSystemMessage(`Default provider: ${provider.name}`);
+        toast.show({
+          variant: "success",
+          message: `Default provider: ${provider.name}`,
+        });
       } catch (err) {
-        useAppStore
-          .getState()
-          .addSystemMessage(`Failed to set default: ${(err as Error).message}`);
+        toast.show({
+          variant: "error",
+          message: `Failed to set default: ${(err as Error).message}`,
+        });
       }
     },
     [setDefaultProvider, setModel],
