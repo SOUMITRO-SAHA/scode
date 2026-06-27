@@ -8,7 +8,7 @@ import {
 } from "@/components/commands/commands.js";
 import { MainContent, SessionSidebar } from "@/components/layout/index.js";
 import { DialogProvider } from "@/components/ui/dialog";
-import { ToastProvider } from "@/components/ui/toast";
+import { Toast, ToastProvider, useToast } from "@/components/ui/toast";
 import { useHealth, useSessions } from "@/hooks/useApi";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useStreamChat } from "@/hooks/useStreamChat";
@@ -27,6 +27,30 @@ export function App({
   model?: string;
   onExit?: () => void;
 }) {
+  return (
+    <DialogProvider>
+      <ToastProvider>
+        <AppInner
+          serverUrl={serverUrl}
+          initialModel={initialModel}
+          onExit={onExit}
+        />
+        <Toast />
+      </ToastProvider>
+    </DialogProvider>
+  );
+}
+
+function AppInner({
+  serverUrl,
+  initialModel,
+  onExit,
+}: {
+  serverUrl: string;
+  initialModel?: string;
+  onExit?: () => void;
+}) {
+  const toast = useToast();
   const {
     messages,
     streaming,
@@ -131,11 +155,16 @@ export function App({
           openModelPicker: handleOpenModelPicker,
           openProviderPicker: handleOpenProviderPicker,
           addSystemMessage,
+          showToast: toast.show,
           onExit,
         };
         const result = await executeCommand(value, apiRef.current, ctx);
-        if (result?.type === "message" && result.text) {
-          addSystemMessage(result.text);
+        if (result) {
+          if (result.type === "message" && result.text) {
+            addSystemMessage(result.text);
+          } else if (result.type === "error" && result.text) {
+            toast.show({ variant: "error", message: result.text });
+          }
         }
         return;
       }
@@ -155,6 +184,7 @@ export function App({
       handleOpenModelPicker,
       handleOpenProviderPicker,
       addSystemMessage,
+      toast,
       chatSubmit,
     ],
   );
@@ -173,11 +203,16 @@ export function App({
         openModelPicker: handleOpenModelPicker,
         openProviderPicker: handleOpenProviderPicker,
         addSystemMessage,
+        showToast: toast.show,
         onExit,
       };
       const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
-      if (result?.type === "message" && result.text) {
-        addSystemMessage(result.text);
+      if (result) {
+        if (result.type === "message" && result.text) {
+          addSystemMessage(result.text);
+        } else if (result.type === "error" && result.text) {
+          toast.show({ variant: "error", message: result.text });
+        }
       }
     },
     [
@@ -192,6 +227,7 @@ export function App({
       handleOpenModelPicker,
       handleOpenProviderPicker,
       addSystemMessage,
+      toast,
     ],
   );
 
@@ -216,38 +252,34 @@ export function App({
     width - (sidebarVisible ? layout.sidebar.width : 0) - 4;
 
   return (
-    <DialogProvider>
-      <ToastProvider>
-        <box
-          flexDirection="row"
-          width={width}
-          height={height}
-          backgroundColor={theme.background.surface}
-        >
-          <SessionSidebar />
-          <MainContent
-            hasConversation={hasConversation}
-            messages={messages}
-            streaming={streaming}
-            handleSubmit={handleSubmit}
-            composerLines={composerLines}
-            modelDisplay={modelDisplay}
-            serverUrl={serverUrl}
-            height={height}
-            focusTrigger={focusTrigger}
-            paletteVisible={paletteVisible}
-            setPaletteVisible={setPaletteVisible}
-            bumpFocus={bumpFocus}
-            handlePaletteSelect={handlePaletteSelect}
-            modelPickerOpen={modelPickerOpen}
-            setModelPickerOpen={setModelPickerOpen}
-            providerPickerOpen={providerPickerOpen}
-            setProviderPickerOpen={setProviderPickerOpen}
-            sessionName={sessionName}
-            mainContentWidth={mainContentWidth}
-          />
-        </box>
-      </ToastProvider>
-    </DialogProvider>
+    <box
+      flexDirection="row"
+      width={width}
+      height={height}
+      backgroundColor={theme.background.surface}
+    >
+      <SessionSidebar />
+      <MainContent
+        hasConversation={hasConversation}
+        messages={messages}
+        streaming={streaming}
+        handleSubmit={handleSubmit}
+        composerLines={composerLines}
+        modelDisplay={modelDisplay}
+        serverUrl={serverUrl}
+        height={height}
+        focusTrigger={focusTrigger}
+        paletteVisible={paletteVisible}
+        setPaletteVisible={setPaletteVisible}
+        bumpFocus={bumpFocus}
+        handlePaletteSelect={handlePaletteSelect}
+        modelPickerOpen={modelPickerOpen}
+        setModelPickerOpen={setModelPickerOpen}
+        providerPickerOpen={providerPickerOpen}
+        setProviderPickerOpen={setProviderPickerOpen}
+        sessionName={sessionName}
+        mainContentWidth={mainContentWidth}
+      />
+    </box>
   );
 }

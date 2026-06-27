@@ -4,6 +4,7 @@ import { Readable } from "node:stream";
 
 import { useAppStore } from "../store/index";
 
+import { useToast } from "@/components/ui/toast";
 import { DebugLogger } from "@scode/shared/logger";
 import { apiFetch, apiFetchStream } from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
@@ -12,6 +13,7 @@ const decoder = new TextDecoder();
 const dbg = new DebugLogger("client:stream");
 
 export function useStreamChat(serverUrl: string) {
+  const toast = useToast();
   const sessionIdRef = useRef<string | undefined>(undefined);
   const statusRef = useRef<"idle" | "streaming">("idle");
   const qc = useQueryClient();
@@ -66,6 +68,7 @@ export function useStreamChat(serverUrl: string) {
           sessionId = session.id;
           sessionIdRef.current = sessionId;
           useAppStore.getState().setCurrentSessionId(sessionId);
+          toast.show({ variant: "success", message: "Session created" });
           dbg.log("session created", { sessionId });
         }
 
@@ -100,6 +103,7 @@ export function useStreamChat(serverUrl: string) {
         const errMsg = err instanceof Error ? err.message : String(err);
         dbg.error("stream failed", { error: errMsg });
         useAppStore.getState().setLastAssistantError(errMsg);
+        toast.show({ variant: "error", message: errMsg });
       } finally {
         dbg.log("stream flow complete, resetting state");
         useAppStore.getState().setStreaming(false);
@@ -108,7 +112,7 @@ export function useStreamChat(serverUrl: string) {
         qc.invalidateQueries({ queryKey: ["sessions", serverUrl] });
       }
     },
-    [serverUrl, qc],
+    [serverUrl, qc, toast],
   );
 
   return {

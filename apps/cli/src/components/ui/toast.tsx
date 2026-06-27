@@ -20,7 +20,7 @@ export type ToastOptions = {
   duration: number;
 };
 
-type ToastInput = Omit<ToastOptions, "duration"> & { duration?: number };
+export type ToastInput = Omit<ToastOptions, "duration"> & { duration?: number };
 
 interface ToastContextValue {
   show: (options: ToastInput) => void;

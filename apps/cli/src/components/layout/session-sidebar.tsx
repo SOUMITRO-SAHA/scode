@@ -1,6 +1,7 @@
 import { useCallback, useEffect } from "react";
 
 import { Spinner } from "@/components/ui/spinner";
+import { useToast } from "@/components/ui/toast";
 import {
   useCreateSession,
   useDeleteSession,
@@ -14,6 +15,7 @@ import { apiFetch } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 export function SessionSidebar() {
+  const toast = useToast();
   const serverUrl = useAppStore((s) => s.serverUrl);
   const currentSessionId = useAppStore((s) => s.currentSessionId);
   const streamingSessionId = useAppStore((s) => s.streamingSessionId);
@@ -31,13 +33,24 @@ export function SessionSidebar() {
   const clearMessages = useAppStore((s) => s.clearMessages);
 
   const handleCreate = useCallback(async () => {
-    const res = await createSession.mutateAsync({
-      name: "New Session",
-      model: model ?? "",
-      provider: "",
-    });
-    setCurrentSessionId(res.id);
-  }, [createSession, setCurrentSessionId, model]);
+    try {
+      const res = await createSession.mutateAsync({
+        name: "New Session",
+        model: model ?? "",
+        provider: "",
+      });
+      setCurrentSessionId(res.id);
+      toast.show({
+        variant: "success",
+        message: `Session created: ${res.id.slice(0, 8)}...`,
+      });
+    } catch (err) {
+      toast.show({
+        variant: "error",
+        message: `Failed to create session: ${(err as Error).message}`,
+      });
+    }
+  }, [createSession, setCurrentSessionId, model, toast]);
 
   const handleDelete = useCallback(
     async (id: string) => {

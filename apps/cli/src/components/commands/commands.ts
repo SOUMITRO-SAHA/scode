@@ -1,3 +1,4 @@
+import type { ToastInput } from "@/components/ui/toast";
 import type { ApiClient } from "@/services/api";
 import type { AppConfig } from "@scode/shared/types";
 
@@ -34,6 +35,7 @@ export interface CommandContext {
   openModelPicker?: () => void;
   openProviderPicker?: () => void;
   addSystemMessage?: (text: string) => void;
+  showToast?: (options: ToastInput) => void;
   onExit?: () => void;
 }
 
@@ -95,19 +97,21 @@ export const COMMANDS: Command[] = [
       const config = await api.getConfig();
       const model = ctx.model ?? config.defaultModel;
       if (!model) {
-        return {
-          type: "error",
-          text: "No model selected. Use Ctrl+M or /models command to select a model first.",
-        };
+        ctx.showToast?.({
+          variant: "error",
+          message:
+            "No model selected. Use Ctrl+M or /models command to select a model first.",
+        });
+        return;
       }
       const session = await api.createSession("", model);
       ctx.setCurrentSessionId?.(session.id);
       ctx.clearMessages?.();
       ctx.setModel?.(`${session.provider}/${session.model}`);
-      return {
-        type: "message",
-        text: `New session created: ${session.name} (${session.id.slice(0, 8)}...)`,
-      };
+      ctx.showToast?.({
+        variant: "success",
+        message: `New session created: ${session.name} (${session.id.slice(0, 8)}...)`,
+      });
     },
   },
   {
