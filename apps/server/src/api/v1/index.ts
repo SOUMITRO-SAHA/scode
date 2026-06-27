@@ -23,6 +23,8 @@ import type { SkillService } from "../../skill/service";
 import type { ToolService } from "../../tool/service";
 
 import {
+  LOG_MAX_FILES,
+  LOG_TAIL_LINES,
   SCODE_AUTH_PATH,
   SCODE_DIR,
   SCODE_LOGS_DIR,
@@ -300,12 +302,12 @@ export function createV1Router(deps: RouterDeps): Hono {
         .filter((f: string) => f.endsWith(".log"))
         .sort()
         .reverse()
-        .slice(0, 5);
+        .slice(0, LOG_MAX_FILES);
       const logs = files.map((f: string) => {
         const path = join(logsDir, f);
         const content = readFileSync(path, "utf-8")
           .split("\n")
-          .slice(-100)
+          .slice(-LOG_TAIL_LINES)
           .join("\n");
         return { file: f, size: statSync(path).size, content };
       });

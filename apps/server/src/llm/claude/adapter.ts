@@ -3,31 +3,8 @@ import type { UnifiedMessage } from "../types";
 
 import Anthropic from "@anthropic-ai/sdk";
 import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
+import { EFFORT_LEVELS, EFFORT_THINKING_BUDGET } from "@scode/shared/constants";
 import type { EffortLevel } from "@scode/shared/types";
-
-const CLAUDE_EFFORTS: EffortLevel[] = ["low", "medium", "high"];
-
-function effortToThinkingBudget(
-  level: EffortLevel | undefined,
-): number | undefined {
-  if (!level) return undefined;
-  switch (level) {
-    case "none":
-      return undefined;
-    case "minimal":
-      return 1024;
-    case "low":
-      return 2048;
-    case "medium":
-      return 8192;
-    case "high":
-      return 16384;
-    case "xhigh":
-      return 32000;
-    case "max":
-      return 64000;
-  }
-}
 
 function claudeSupportsThinking(model: string): boolean {
   const id = model.toLowerCase();
@@ -59,7 +36,7 @@ export class ClaudeAdapter implements LLMProvider {
 
   getSupportedEfforts(model?: string): EffortLevel[] {
     const m = model ?? this.defaultModel;
-    if (claudeSupportsThinking(m)) return CLAUDE_EFFORTS;
+    if (claudeSupportsThinking(m)) return EFFORT_LEVELS;
     return [];
   }
 
@@ -70,7 +47,7 @@ export class ClaudeAdapter implements LLMProvider {
     const model = params.model ?? this.defaultModel;
 
     const messages = toAnthropicMessages(params.messages);
-    const budgetTokens = effortToThinkingBudget(params.effortLevel);
+    const budgetTokens = EFFORT_THINKING_BUDGET[params.effortLevel ?? "none"];
 
     const stream = client.messages.stream({
       model,

@@ -1,5 +1,25 @@
 import { Effect } from "effect";
 
+import {
+  CONFIG_PATH,
+  HEALTH_PATH,
+  HEALTH_REFETCH_MS,
+  LOGS_PATH,
+  MODELS_PATH,
+  MODEL_DEFAULT_PATH,
+  PROVIDERS_PATH,
+  PROVIDER_CONNECT_PATH,
+  PROVIDER_DEFAULT_PATH,
+  SESSIONS_PATH,
+  SKILLS_PATH,
+  SKILLS_RELOAD_PATH,
+  SKILLS_VALIDATE_PATH,
+  STATS_PATH,
+  providerPath,
+  sessionMessagesPath,
+  sessionPath,
+  skillPath,
+} from "@scode/shared/constants";
 import type {
   HealthStatus,
   LogEntry,
@@ -25,8 +45,8 @@ export function useHealth(serverUrl?: string) {
   return useQuery({
     queryKey: ["health", serverUrl],
     queryFn: () =>
-      Effect.runPromise(apiFetch<HealthStatus>("/health", {}, serverUrl)),
-    refetchInterval: 30_000,
+      Effect.runPromise(apiFetch<HealthStatus>(HEALTH_PATH, {}, serverUrl)),
+    refetchInterval: HEALTH_REFETCH_MS,
   });
 }
 
@@ -47,7 +67,8 @@ export function useConnectionStatus(serverUrl?: string): {
 export function useStats(serverUrl?: string) {
   return useQuery({
     queryKey: ["stats", serverUrl],
-    queryFn: () => Effect.runPromise(apiFetch<Stats>("/stats", {}, serverUrl)),
+    queryFn: () =>
+      Effect.runPromise(apiFetch<Stats>(STATS_PATH, {}, serverUrl)),
   });
 }
 
@@ -58,7 +79,7 @@ export function useProviders(serverUrl?: string) {
     queryFn: () =>
       Effect.runPromise(
         apiFetch<{ providers: ProviderInfo[]; default: string }>(
-          "/providers",
+          PROVIDERS_PATH,
           {},
           serverUrl,
         ),
@@ -72,7 +93,7 @@ export function useConnectProvider(serverUrl?: string) {
     mutationFn: ({ provider, apiKey }: { provider: string; apiKey: string }) =>
       Effect.runPromise(
         apiFetch<{ ok: boolean; provider: string }>(
-          "/providers/connect",
+          PROVIDER_CONNECT_PATH,
           {
             method: "POST",
             body: JSON.stringify({ provider, apiKey }),
@@ -92,7 +113,7 @@ export function useDisconnectProvider(serverUrl?: string) {
     mutationFn: (provider: string) =>
       Effect.runPromise(
         apiFetch<{ ok: boolean; provider: string }>(
-          `/providers/${encodeURIComponent(provider)}`,
+          providerPath(provider),
           { method: "DELETE" },
           serverUrl,
         ),
@@ -109,7 +130,7 @@ export function useSetDefaultProvider(serverUrl?: string) {
     mutationFn: (provider: string) =>
       Effect.runPromise(
         apiFetch<{ ok: boolean; provider: string; defaultModel: string }>(
-          "/providers/default",
+          PROVIDER_DEFAULT_PATH,
           {
             method: "PATCH",
             body: JSON.stringify({ provider }),
@@ -130,7 +151,7 @@ export function useModels(serverUrl?: string) {
     queryFn: () =>
       Effect.runPromise(
         apiFetch<{ models: ModelInfo[]; defaultModel: string }>(
-          "/models",
+          MODELS_PATH,
           {},
           serverUrl,
         ),
@@ -146,7 +167,7 @@ export function useSetDefaultModel(serverUrl?: string) {
     mutationFn: (model: string) =>
       Effect.runPromise(
         apiFetch<{ ok: boolean; model: string; provider: string }>(
-          "/models/default",
+          MODEL_DEFAULT_PATH,
           {
             method: "PATCH",
             body: JSON.stringify({ model }),
@@ -166,7 +187,7 @@ export function useSessions(serverUrl?: string) {
     queryKey: ["sessions", serverUrl],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<{ sessions: SessionInfo[] }>("/sessions", {}, serverUrl),
+        apiFetch<{ sessions: SessionInfo[] }>(SESSIONS_PATH, {}, serverUrl),
       ),
   });
 }
@@ -177,7 +198,7 @@ export function useCreateSession(serverUrl?: string) {
     mutationFn: (body: { name?: string; model?: string; provider?: string }) =>
       Effect.runPromise(
         apiFetch<SessionResponse>(
-          "/sessions",
+          SESSIONS_PATH,
           { method: "POST", body: JSON.stringify(body) },
           serverUrl,
         ),
@@ -193,11 +214,7 @@ export function useSession(id: string | undefined, serverUrl?: string) {
     queryKey: ["session", id, serverUrl],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<SessionResponse>(
-          `/sessions/${encodeURIComponent(id!)}`,
-          {},
-          serverUrl,
-        ),
+        apiFetch<SessionResponse>(sessionPath(id!), {}, serverUrl),
       ),
     enabled: !!id,
   });
@@ -217,7 +234,7 @@ export function useUpdateSession(serverUrl?: string) {
     }) =>
       Effect.runPromise(
         apiFetch<SessionResponse>(
-          `/sessions/${encodeURIComponent(id)}`,
+          sessionPath(id),
           {
             method: "PATCH",
             body: JSON.stringify(body),
@@ -237,7 +254,7 @@ export function useDeleteSession(serverUrl?: string) {
     mutationFn: (id: string) =>
       Effect.runPromise(
         apiFetch<{ ok: boolean }>(
-          `/sessions/${encodeURIComponent(id)}`,
+          sessionPath(id),
           { method: "DELETE" },
           serverUrl,
         ),
@@ -253,11 +270,7 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
     queryKey: ["session-messages", id, serverUrl],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<MessagesResponse>(
-          `/sessions/${encodeURIComponent(id!)}/messages`,
-          {},
-          serverUrl,
-        ),
+        apiFetch<MessagesResponse>(sessionMessagesPath(id!), {}, serverUrl),
       ),
     enabled: !!id,
   });
@@ -269,7 +282,7 @@ export function useSkills(serverUrl?: string) {
     queryKey: ["skills", serverUrl],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<{ skills: SkillInfo[] }>("/skills", {}, serverUrl),
+        apiFetch<{ skills: SkillInfo[] }>(SKILLS_PATH, {}, serverUrl),
       ),
   });
 }
@@ -279,11 +292,7 @@ export function useSkill(name: string | undefined, serverUrl?: string) {
     queryKey: ["skill", name, serverUrl],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<SkillResponse>(
-          `/skills/${encodeURIComponent(name!)}`,
-          {},
-          serverUrl,
-        ),
+        apiFetch<SkillResponse>(skillPath(name!), {}, serverUrl),
       ),
     enabled: !!name,
   });
@@ -295,7 +304,7 @@ export function useReloadSkills(serverUrl?: string) {
     mutationFn: () =>
       Effect.runPromise(
         apiFetch<{ ok: boolean; message: string }>(
-          "/skills/reload",
+          SKILLS_RELOAD_PATH,
           { method: "POST" },
           serverUrl,
         ),
@@ -312,7 +321,7 @@ export function useValidateSkills(serverUrl?: string) {
       Effect.runPromise(
         apiFetch<{
           results: { name: string; valid: boolean; error: string | null }[];
-        }>("/skills/validate", { method: "POST" }, serverUrl),
+        }>(SKILLS_VALIDATE_PATH, { method: "POST" }, serverUrl),
       ),
   });
 }
@@ -322,7 +331,7 @@ export function useConfig(serverUrl?: string) {
   return useQuery({
     queryKey: ["config", serverUrl],
     queryFn: () =>
-      Effect.runPromise(apiFetch<ServerConfig>("/config", {}, serverUrl)),
+      Effect.runPromise(apiFetch<ServerConfig>(CONFIG_PATH, {}, serverUrl)),
   });
 }
 
@@ -332,7 +341,7 @@ export function useUpdateConfig(serverUrl?: string) {
     mutationFn: (partial: Partial<ServerConfig>) =>
       Effect.runPromise(
         apiFetch<ServerConfig>(
-          "/config",
+          CONFIG_PATH,
           { method: "PATCH", body: JSON.stringify(partial) },
           serverUrl,
         ),
@@ -348,6 +357,8 @@ export function useLogs(serverUrl?: string) {
   return useQuery({
     queryKey: ["logs", serverUrl],
     queryFn: () =>
-      Effect.runPromise(apiFetch<{ logs: LogEntry[] }>("/logs", {}, serverUrl)),
+      Effect.runPromise(
+        apiFetch<{ logs: LogEntry[] }>(LOGS_PATH, {}, serverUrl),
+      ),
   });
 }

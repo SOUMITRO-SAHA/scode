@@ -28,6 +28,11 @@ import { useAppStore } from "@/store/index";
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { useTerminalDimensions } from "@opentui/react";
+import {
+  QUERY_RETRY,
+  QUERY_STALE_TIME,
+  sessionPath,
+} from "@scode/shared/constants";
 import { Logger, initDebugLog } from "@scode/shared/logger";
 import { apiFetch } from "@scode/shared/utils";
 import { layout, theme } from "@scode/theme";
@@ -37,7 +42,11 @@ initDebugLog();
 
 const queryClient = new QueryClient({
   defaultOptions: {
-    queries: { retry: 2, staleTime: 10_000, refetchOnWindowFocus: false },
+    queries: {
+      retry: QUERY_RETRY,
+      staleTime: QUERY_STALE_TIME,
+      refetchOnWindowFocus: false,
+    },
   },
 });
 
@@ -171,7 +180,7 @@ function AppInner({
     if (currentSessionId && model && serverUrl) {
       Effect.runPromise(
         apiFetch(
-          `/sessions/${encodeURIComponent(currentSessionId)}`,
+          sessionPath(currentSessionId),
           {
             method: "PATCH",
             body: JSON.stringify({ model }),

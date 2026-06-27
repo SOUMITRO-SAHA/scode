@@ -12,9 +12,11 @@ import {
   UnknownProviderReason,
 } from "./error";
 
-const MAX_RETRIES = 2;
-const BASE_DELAY_MS = 500;
-const MAX_DELAY_MS = 10_000;
+import {
+  BASE_DELAY_MS,
+  MAX_DELAY_MS,
+  MAX_RETRIES,
+} from "@scode/shared/constants";
 
 function isRetryableStatus(status: number): boolean {
   return status === 429 || status === 503 || status === 504 || status === 529;

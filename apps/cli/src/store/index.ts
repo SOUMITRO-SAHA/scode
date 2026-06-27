@@ -1,12 +1,11 @@
 import { create } from "zustand";
 
+import { EFFORT_LEVELS } from "@scode/shared/constants";
 import type { EffortLevel, Message, UnifiedMessage } from "@scode/shared/types";
 
 export type AgentId = "plan" | "write" | "chat";
 
 export const AGENTS: AgentId[] = ["plan", "write", "chat"];
-
-export const EFFORT_LEVELS: EffortLevel[] = ["low", "medium", "high"];
 
 export const AGENT_LABELS: Record<AgentId, string> = {
   plan: "Plan",

@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
 
+import { MAX_BUFFER } from "@scode/shared/constants";
+
 const WORKSPACE = process.cwd();
 
 export const definition: ToolDefinition = {
@@ -38,7 +40,7 @@ export const handler: ToolHandler = async (input: Record<string, unknown>) => {
       cwd: workdir,
       timeout,
       encoding: "utf-8",
-      maxBuffer: 10 * 1024 * 1024,
+      maxBuffer: MAX_BUFFER,
     });
     return { stdout, stderr: "", exitCode: 0 };
   } catch (err: unknown) {

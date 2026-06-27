@@ -8,29 +8,8 @@ import type {
   FunctionDeclaration,
   Part,
 } from "@google/genai";
+import { EFFORT_THINKING_BUDGET } from "@scode/shared/constants";
 import type { EffortLevel } from "@scode/shared/types";
-
-function effortToThinkingBudget(
-  level: EffortLevel | undefined,
-): number | undefined {
-  if (!level) return undefined;
-  switch (level) {
-    case "none":
-      return undefined;
-    case "minimal":
-      return 1024;
-    case "low":
-      return 2048;
-    case "medium":
-      return 8192;
-    case "high":
-      return 16384;
-    case "xhigh":
-      return 32000;
-    case "max":
-      return 64000;
-  }
-}
 
 function geminiEfforts(modelId: string): EffortLevel[] {
   const id = modelId.toLowerCase();
@@ -75,7 +54,7 @@ export class GeminiAdapter implements LLMProvider {
     const client = new GoogleGenAI({ apiKey: params.apiKey });
     const model = params.model ?? this.defaultModel;
     const { systemInstruction, contents } = toGeminiContents(params.messages);
-    const thinkingBudget = effortToThinkingBudget(params.effortLevel);
+    const thinkingBudget = EFFORT_THINKING_BUDGET[params.effortLevel ?? "none"];
 
     const stream = await client.models.generateContentStream({
       model,

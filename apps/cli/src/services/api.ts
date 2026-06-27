@@ -2,6 +2,27 @@ import * as Effect from "effect/Effect";
 
 import { ServerConnectionError } from "./errors";
 
+import {
+  ACTIVE_CLIENTS_PATH,
+  CONFIG_PATH,
+  HEALTH_PATH,
+  LOGS_PATH,
+  MODELS_PATH,
+  MODEL_DEFAULT_PATH,
+  PROVIDERS_PATH,
+  PROVIDER_CONNECT_PATH,
+  PROVIDER_DEFAULT_PATH,
+  SESSIONS_PATH,
+  SKILLS_PATH,
+  SKILLS_RELOAD_PATH,
+  SKILLS_VALIDATE_PATH,
+  STATS_PATH,
+  activeClientPath,
+  providerPath,
+  sessionMessagesPath,
+  sessionPath,
+  skillPath,
+} from "@scode/shared/constants";
 import type {
   ActiveClientsResponse,
   HealthStatus,
@@ -23,7 +44,7 @@ export class ApiClient {
   constructor(private baseUrl: string) {}
 
   health(): Effect.Effect<HealthStatus, ServerConnectionError> {
-    return apiFetch<HealthStatus>("/health", {}, this.baseUrl).pipe(
+    return apiFetch<HealthStatus>(HEALTH_PATH, {}, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -37,7 +58,7 @@ export class ApiClient {
   }
 
   stats(): Effect.Effect<Stats, ServerConnectionError> {
-    return apiFetch<Stats>("/stats", {}, this.baseUrl).pipe(
+    return apiFetch<Stats>(STATS_PATH, {}, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -55,7 +76,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<{ providers: ProviderInfo[]; default: string }>(
-      "/providers",
+      PROVIDERS_PATH,
       {},
       this.baseUrl,
     ).pipe(
@@ -76,7 +97,7 @@ export class ApiClient {
     apiKey: string,
   ): Effect.Effect<{ ok: boolean; provider: string }, ServerConnectionError> {
     return apiFetch<{ ok: boolean; provider: string }>(
-      "/providers/connect",
+      PROVIDER_CONNECT_PATH,
       { method: "POST", body: JSON.stringify({ provider, apiKey }) },
       this.baseUrl,
     ).pipe(
@@ -96,7 +117,7 @@ export class ApiClient {
     provider: string,
   ): Effect.Effect<{ ok: boolean; provider: string }, ServerConnectionError> {
     return apiFetch<{ ok: boolean; provider: string }>(
-      `/providers/${encodeURIComponent(provider)}`,
+      providerPath(provider),
       { method: "DELETE" },
       this.baseUrl,
     ).pipe(
@@ -119,7 +140,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<{ ok: boolean; provider: string; defaultModel: string }>(
-      "/providers/default",
+      PROVIDER_DEFAULT_PATH,
       { method: "PATCH", body: JSON.stringify({ provider }) },
       this.baseUrl,
     ).pipe(
@@ -140,7 +161,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<{ models: ModelInfo[]; defaultModel: string }>(
-      "/models",
+      MODELS_PATH,
       {},
       this.baseUrl,
     ).pipe(
@@ -163,7 +184,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<{ ok: boolean; model: string; provider: string }>(
-      "/models/default",
+      MODEL_DEFAULT_PATH,
       { method: "PATCH", body: JSON.stringify({ model }) },
       this.baseUrl,
     ).pipe(
@@ -184,7 +205,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<{ sessions: SessionInfo[] }>(
-      "/sessions",
+      SESSIONS_PATH,
       {},
       this.baseUrl,
     ).pipe(
@@ -206,7 +227,7 @@ export class ApiClient {
     provider?: string,
   ): Effect.Effect<SessionResponse, ServerConnectionError> {
     return apiFetch<SessionResponse>(
-      "/sessions",
+      SESSIONS_PATH,
       { method: "POST", body: JSON.stringify({ name, model, provider }) },
       this.baseUrl,
     ).pipe(
@@ -225,11 +246,7 @@ export class ApiClient {
   getSession(
     id: string,
   ): Effect.Effect<SessionResponse, ServerConnectionError> {
-    return apiFetch<SessionResponse>(
-      `/sessions/${encodeURIComponent(id)}`,
-      {},
-      this.baseUrl,
-    ).pipe(
+    return apiFetch<SessionResponse>(sessionPath(id), {}, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -247,7 +264,7 @@ export class ApiClient {
     name: string,
   ): Effect.Effect<SessionResponse, ServerConnectionError> {
     return apiFetch<SessionResponse>(
-      `/sessions/${encodeURIComponent(id)}`,
+      sessionPath(id),
       { method: "PATCH", body: JSON.stringify({ name }) },
       this.baseUrl,
     ).pipe(
@@ -267,7 +284,7 @@ export class ApiClient {
     id: string,
   ): Effect.Effect<{ ok: boolean }, ServerConnectionError> {
     return apiFetch<{ ok: boolean }>(
-      `/sessions/${encodeURIComponent(id)}`,
+      sessionPath(id),
       { method: "DELETE" },
       this.baseUrl,
     ).pipe(
@@ -287,7 +304,7 @@ export class ApiClient {
     id: string,
   ): Effect.Effect<MessagesResponse, ServerConnectionError> {
     return apiFetch<MessagesResponse>(
-      `/sessions/${encodeURIComponent(id)}/messages`,
+      sessionMessagesPath(id),
       {},
       this.baseUrl,
     ).pipe(
@@ -304,7 +321,11 @@ export class ApiClient {
   }
 
   listSkills(): Effect.Effect<{ skills: SkillInfo[] }, ServerConnectionError> {
-    return apiFetch<{ skills: SkillInfo[] }>("/skills", {}, this.baseUrl).pipe(
+    return apiFetch<{ skills: SkillInfo[] }>(
+      SKILLS_PATH,
+      {},
+      this.baseUrl,
+    ).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -318,11 +339,7 @@ export class ApiClient {
   }
 
   getSkill(name: string): Effect.Effect<SkillResponse, ServerConnectionError> {
-    return apiFetch<SkillResponse>(
-      `/skills/${encodeURIComponent(name)}`,
-      {},
-      this.baseUrl,
-    ).pipe(
+    return apiFetch<SkillResponse>(skillPath(name), {}, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -340,7 +357,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<{ ok: boolean; message: string }>(
-      "/skills/reload",
+      SKILLS_RELOAD_PATH,
       { method: "POST" },
       this.baseUrl,
     ).pipe(
@@ -362,7 +379,7 @@ export class ApiClient {
   > {
     return apiFetch<{
       results: { name: string; valid: boolean; error: string | null }[];
-    }>("/skills/validate", { method: "POST" }, this.baseUrl).pipe(
+    }>(SKILLS_VALIDATE_PATH, { method: "POST" }, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -376,7 +393,7 @@ export class ApiClient {
   }
 
   getConfig(): Effect.Effect<ServerConfig, ServerConnectionError> {
-    return apiFetch<ServerConfig>("/config", {}, this.baseUrl).pipe(
+    return apiFetch<ServerConfig>(CONFIG_PATH, {}, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -393,7 +410,7 @@ export class ApiClient {
     partial: Partial<ServerConfig>,
   ): Effect.Effect<ServerConfig, ServerConnectionError> {
     return apiFetch<ServerConfig>(
-      "/config",
+      CONFIG_PATH,
       { method: "PATCH", body: JSON.stringify(partial) },
       this.baseUrl,
     ).pipe(
@@ -415,7 +432,7 @@ export class ApiClient {
   > {
     return apiFetch<{
       logs: { file: string; size: number; content: string }[];
-    }>("/logs", {}, this.baseUrl).pipe(
+    }>(LOGS_PATH, {}, this.baseUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new ServerConnectionError({
@@ -433,7 +450,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<ActiveClientsResponse>(
-      "/active-clients",
+      ACTIVE_CLIENTS_PATH,
       {},
       this.baseUrl,
     ).pipe(
@@ -454,7 +471,7 @@ export class ApiClient {
     ServerConnectionError
   > {
     return apiFetch<RegisterClientResponse>(
-      "/active-clients",
+      ACTIVE_CLIENTS_PATH,
       { method: "POST" },
       this.baseUrl,
     ).pipe(
@@ -474,7 +491,7 @@ export class ApiClient {
     clientId: string,
   ): Effect.Effect<UnregisterClientResponse, ServerConnectionError> {
     return apiFetch<UnregisterClientResponse>(
-      `/active-clients/${encodeURIComponent(clientId)}`,
+      activeClientPath(clientId),
       { method: "DELETE" },
       this.baseUrl,
     ).pipe(

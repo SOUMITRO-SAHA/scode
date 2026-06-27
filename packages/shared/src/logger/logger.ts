@@ -12,6 +12,7 @@ import { gzipSync } from "node:zlib";
 import pino from "pino";
 import type { Logger as PinoLogger } from "pino";
 
+import { LOG_COMPRESS_DAYS, LOG_DELETE_DAYS } from "../constants/limits";
 import { dateFromFilename, daysOld } from "../utils/time";
 import type { LogLevel, LoggerOptions } from "./types";
 
@@ -72,13 +73,13 @@ export const runMaintenanceEffect = Effect.fnUntraced(function* (
     if (name.endsWith(".log") && !name.endsWith(".gz")) {
       const dateOpt = yield* Effect.option(dateFromFilename(name));
       const age = Option.isSome(dateOpt) ? yield* daysOld(dateOpt.value) : -1;
-      if (age >= 15) {
+      if (age >= LOG_COMPRESS_DAYS) {
         yield* compress(join(logDir, name));
       }
     } else if (name.endsWith(".log.gz")) {
       const dateOpt = yield* Effect.option(dateFromFilename(name));
       const age = Option.isSome(dateOpt) ? yield* daysOld(dateOpt.value) : -1;
-      if (age >= 30) {
+      if (age >= LOG_DELETE_DAYS) {
         yield* removeFile(join(logDir, name));
       }
     }

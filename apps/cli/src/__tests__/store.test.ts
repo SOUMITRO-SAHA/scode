@@ -1,6 +1,8 @@
 import { beforeEach, describe, expect, it } from "vitest";
 
-import { AGENTS, EFFORT_LEVELS, useAppStore } from "../store";
+import { AGENTS, useAppStore } from "../store";
+
+import { EFFORT_LEVELS } from "@scode/shared/constants";
 
 describe("AppStore", () => {
   beforeEach(() => {

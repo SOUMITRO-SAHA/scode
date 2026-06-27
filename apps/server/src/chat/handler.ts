@@ -10,6 +10,7 @@ import type { SkillService } from "../skill/service";
 import type { ToolService } from "../tool/service";
 import type { Skill, StreamEvent } from "../types";
 
+import { MAX_TOOL_ITERATIONS } from "@scode/shared/constants";
 import { DebugLogger, Logger } from "@scode/shared/logger";
 import { encodeStreamChunk } from "@scode/shared/types";
 import type { EffortLevel } from "@scode/shared/types";
@@ -157,7 +158,7 @@ export async function handleChat(
   let fullResponse = "";
   let hadError = false;
 
-  for (let i = 0; i < 10; i++) {
+  for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     let toolCalled = false;
     dbg.log(`tool loop iteration ${i + 1}/10`);
 

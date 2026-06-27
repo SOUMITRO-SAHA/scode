@@ -3,6 +3,8 @@ import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
 
+import { MAX_BUFFER } from "@scode/shared/constants";
+
 const WORKSPACE = process.cwd();
 
 export const definition: ToolDefinition = {
@@ -33,7 +35,7 @@ export const handler: ToolHandler = async (input: Record<string, unknown>) => {
   try {
     const stdout = execSync(
       `find "${searchPath}" -path '*/node_modules' -prune -o -path "${pattern}" -print`,
-      { encoding: "utf-8", maxBuffer: 10 * 1024 * 1024 },
+      { encoding: "utf-8", maxBuffer: MAX_BUFFER },
     );
     const files = stdout.trim().split("\n").filter(Boolean);
     return { files };

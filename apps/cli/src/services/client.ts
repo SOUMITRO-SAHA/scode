@@ -3,6 +3,7 @@ import { Readable } from "node:stream";
 
 import { StreamError } from "./errors";
 
+import { PROCESS_PATH } from "@scode/shared/constants";
 import { Logger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
 import type { EffortLevel } from "@scode/shared/types";
@@ -25,7 +26,7 @@ export const sendPrompt = (
     if (model) body.model = model;
     if (effortLevel) body.effortLevel = effortLevel;
 
-    const stream = yield* apiFetchStream("/process", body, serverUrl).pipe(
+    const stream = yield* apiFetchStream(PROCESS_PATH, body, serverUrl).pipe(
       Effect.catch((cause) =>
         Effect.fail(
           new StreamError({ message: "Failed to open stream", cause }),

@@ -8,6 +8,7 @@ import type { StreamError } from "../services/errors";
 import { useAppStore } from "../store/index";
 
 import { useToast } from "@/components/ui/toast";
+import { CHAT_PATH, CONFIG_PATH, SESSIONS_PATH } from "@scode/shared/constants";
 import { DebugLogger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
 import { apiFetch, apiFetchStream } from "@scode/shared/utils";
@@ -150,7 +151,7 @@ export function useStreamChat(serverUrl: string) {
         if (!sessionId) {
           dbg.log("fetching config for default model");
           const config = yield* apiFetch<{ defaultModel: string }>(
-            "/config",
+            CONFIG_PATH,
             {},
             serverUrl,
           ).pipe(
@@ -166,7 +167,7 @@ export function useStreamChat(serverUrl: string) {
           }
           dbg.log("creating session", { model: m, name: text.slice(0, 60) });
           const session = yield* apiFetch<{ id: string }>(
-            "/sessions",
+            SESSIONS_PATH,
             {
               method: "POST",
               body: JSON.stringify({ name: text.slice(0, 60), model: m }),
@@ -191,7 +192,7 @@ export function useStreamChat(serverUrl: string) {
 
         dbg.log("opening stream", { sessionId, model, endpoint: "/chat" });
         const stream = yield* apiFetchStream(
-          "/chat",
+          CHAT_PATH,
           { message: text, model, sessionId, effortLevel },
           serverUrl,
         ).pipe(
