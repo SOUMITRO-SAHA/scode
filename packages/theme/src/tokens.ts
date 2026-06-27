@@ -118,9 +118,10 @@ export const markdown = {
 
 export const chat = {
   user: {
-    background: "#18293F",
-    border: colors.blue[500],
+    background: colors.gray[600],
+    border: colors.gray[600],
     text: "#F5F7FA",
+    timestamp: colors.gray[400],
   },
   assistant: {
     text: "#E6EAF0",

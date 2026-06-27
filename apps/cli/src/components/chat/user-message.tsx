@@ -1,22 +1,23 @@
+import { formatTime } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 export function UserMessage({ content }: { content: string }) {
+  const timestamp = formatTime(new Date());
+
   return (
     <box
       borderStyle="rounded"
       borderColor={theme.chat.user.border}
       paddingLeft={1}
       paddingRight={1}
-      paddingTop={1}
-      paddingBottom={1}
+      paddingTop={0}
+      paddingBottom={0}
       marginLeft={6}
       marginRight={2}
-      backgroundColor={theme.chat.user.background}
+      minHeight={3}
     >
-      <box flexDirection="row" justifyContent="flex-end">
-        <text fg={theme.chat.user.border}>You</text>
-      </box>
       <text fg={theme.chat.user.text}>{content}</text>
+      <text fg={theme.chat.user.timestamp}>{timestamp}</text>
     </box>
   );
 }
