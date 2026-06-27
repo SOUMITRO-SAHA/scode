@@ -1,26 +1,20 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
-import { ChatArea } from "@/components/chat/index.js";
 import {
   type Command,
   type CommandContext,
   executeCommand,
   parseCommand,
 } from "@/components/commands/commands.js";
-import { CommandPalette } from "@/components/commands/index.js";
-import { ConnectProvider } from "@/components/commands/index.js";
-import { ModelSwitcher } from "@/components/commands/index.js";
-import { Composer } from "@/components/composer/index.js";
-import { Header } from "@/components/layout/index.js";
-import { Landing } from "@/components/layout/index.js";
-import { SessionSidebar } from "@/components/layout/index.js";
+import { MainContent, SessionSidebar } from "@/components/layout/index.js";
 import { DialogProvider } from "@/components/ui/dialog";
 import { ToastProvider } from "@/components/ui/toast";
 import { useHealth, useSessions } from "@/hooks/useApi";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
 import { useAppStore } from "@/store/index";
-import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { useTerminalDimensions } from "@opentui/react";
 import { apiFetch } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
@@ -201,38 +195,23 @@ export function App({
     ],
   );
 
-  useKeyboard((key) => {
-    if (key.name === "escape") {
-      if (paletteVisible) {
-        setPaletteVisible(false);
-        bumpFocus();
-      } else if (modelPickerOpen) {
-        setModelPickerOpen(false);
-        bumpFocus();
-      } else if (providerPickerOpen) {
-        setProviderPickerOpen(false);
-        bumpFocus();
-      } else if (sidebarVisible) toggleSidebar();
-    } else if (key.ctrl && key.name === "p") {
-      setPaletteVisible((v) => !v);
-    } else if (key.ctrl && key.name === "l") {
-      clearMessages();
-    } else if (key.ctrl && key.name === "d") {
-      toggleDebug();
-    } else if (key.ctrl && key.name === "s") {
-      toggleSidebar();
-    } else if (key.ctrl && key.name === "m") {
-      setModelPickerOpen((v) => !v);
-    } else if (key.ctrl && key.shift && key.name === "p") {
-      setProviderPickerOpen((v) => !v);
-    } else if (key.ctrl && (key.name === "c" || key.name === "q")) {
-      onExit?.();
-    }
+  // Register the actions for Keyboard
+  useKeyboardShortcuts({
+    paletteVisible,
+    modelPickerOpen,
+    providerPickerOpen,
+    sidebarVisible,
+    setPaletteVisible,
+    setModelPickerOpen,
+    setProviderPickerOpen,
+    toggleSidebar,
+    clearMessages,
+    toggleDebug,
+    onExit,
+    bumpFocus,
   });
 
   const modelDisplay = model || undefined;
-  const sidebarWidth = 30;
-  const availableWidth = sidebarVisible ? width - sidebarWidth : width;
 
   return (
     <DialogProvider>
@@ -244,58 +223,26 @@ export function App({
           backgroundColor={theme.background.surface}
         >
           <SessionSidebar />
-          <box flexDirection="column" flexGrow={1}>
-            {hasConversation && (
-              <Header modelDisplay={modelDisplay} sessionName={sessionName} />
-            )}
-            {hasConversation ? (
-              <ChatArea messages={messages} streaming={streaming} />
-            ) : (
-              <Landing
-                onSubmit={handleSubmit}
-                streaming={streaming}
-                height={height}
-                modelDisplay={modelDisplay}
-              />
-            )}
-            {hasConversation && (
-              <Composer
-                onSubmit={handleSubmit}
-                streaming={streaming}
-                width={availableWidth}
-                lines={composerLines}
-                placeholder={streaming ? "Waiting..." : "Ask anything..."}
-                modelDisplay={modelDisplay}
-                serverUrl={serverUrl}
-                focusTrigger={focusTrigger}
-                fullWidth
-              />
-            )}
-            <CommandPalette
-              visible={paletteVisible}
-              onClose={() => {
-                setPaletteVisible(false);
-                bumpFocus();
-              }}
-              onSelect={handlePaletteSelect}
-            />
-            {modelPickerOpen && (
-              <ModelSwitcher
-                onClose={() => {
-                  setModelPickerOpen(false);
-                  bumpFocus();
-                }}
-              />
-            )}
-            {providerPickerOpen && (
-              <ConnectProvider
-                onClose={() => {
-                  setProviderPickerOpen(false);
-                  bumpFocus();
-                }}
-              />
-            )}
-          </box>
+          <MainContent
+            hasConversation={hasConversation}
+            messages={messages}
+            streaming={streaming}
+            handleSubmit={handleSubmit}
+            composerLines={composerLines}
+            modelDisplay={modelDisplay}
+            serverUrl={serverUrl}
+            height={height}
+            focusTrigger={focusTrigger}
+            paletteVisible={paletteVisible}
+            setPaletteVisible={setPaletteVisible}
+            bumpFocus={bumpFocus}
+            handlePaletteSelect={handlePaletteSelect}
+            modelPickerOpen={modelPickerOpen}
+            setModelPickerOpen={setModelPickerOpen}
+            providerPickerOpen={providerPickerOpen}
+            setProviderPickerOpen={setProviderPickerOpen}
+            sessionName={sessionName}
+          />
         </box>
       </ToastProvider>
     </DialogProvider>
