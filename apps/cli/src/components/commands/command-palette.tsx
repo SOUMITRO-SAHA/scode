@@ -66,7 +66,10 @@ export function CommandPalette({
   const handleSelect = (option: DialogSelectOption<string>) => {
     const name = option.value.replace(/^suggested:/, "");
     const cmd = COMMANDS.find((c) => c.name === name);
-    if (cmd) onSelect(cmd);
+    if (cmd) {
+      onSelect(cmd);
+      onClose();
+    }
   };
 
   if (!visible) return null;

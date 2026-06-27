@@ -1,4 +1,4 @@
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
 import { ComposerFooter } from "./composer-footer.js";
@@ -24,6 +24,7 @@ export interface ComposerProps {
   placeholder?: string;
   modelDisplay?: string;
   serverUrl?: string;
+  focusTrigger?: number;
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -40,6 +41,7 @@ export function Composer({
   placeholder = "Ask anything...",
   modelDisplay,
   serverUrl,
+  focusTrigger,
 }: ComposerProps) {
   const [composerKey, setComposerKey] = useState(0);
   const [initialVal, setInitialVal] = useState("");
@@ -55,6 +57,12 @@ export function Composer({
   const { width: termWidth } = useTerminalDimensions();
 
   const { modelName, providerName, hasModel } = parseModelDisplay(modelDisplay);
+
+  useEffect(() => {
+    if (focusTrigger && ref.current && !ref.current.isDestroyed) {
+      ref.current.focus();
+    }
+  }, [focusTrigger]);
   const { items, categories, maxNameLen } = useAutocomplete({
     query: autoQuery,
     serverUrl,

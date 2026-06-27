@@ -7,7 +7,7 @@ import type { KeyEvent } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";
 
-export function ModelSwitcher() {
+export function ModelSwitcher({ onClose }: { onClose?: () => void }) {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const model = useAppStore((s) => s.model);
   const setModel = useAppStore((s) => s.setModel);
@@ -16,10 +16,15 @@ export function ModelSwitcher() {
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
   const [open, setOpen] = useState(true);
 
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    onClose?.();
+  }, [onClose]);
+
   useKeyboard((event: KeyEvent) => {
     if (!open) return;
     if (event.name === "escape") {
-      setOpen(false);
+      handleClose();
     }
   });
 
@@ -28,9 +33,9 @@ export function ModelSwitcher() {
       const modelStr = option.value;
       await setDefaultModel.mutateAsync(modelStr);
       setModel(modelStr);
-      setOpen(false);
+      handleClose();
     },
-    [setDefaultModel, setModel],
+    [setDefaultModel, setModel, handleClose],
   );
 
   const options = useMemo((): DialogSelectOption<string>[] => {
@@ -79,7 +84,7 @@ export function ModelSwitcher() {
           flat
           current={model}
           onSelect={handleSelect}
-          onClose={() => setOpen(false)}
+          onClose={handleClose}
           footer={<text fg={theme.text.disabled}>↑↓ navigate</text>}
           footerHints={[{ title: "↵", label: "select", side: "right" }]}
           emptyView={

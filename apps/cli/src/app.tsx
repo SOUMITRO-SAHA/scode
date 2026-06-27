@@ -57,6 +57,8 @@ export function App({
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
+  const [focusTrigger, setFocusTrigger] = useState(0);
+  const bumpFocus = useCallback(() => setFocusTrigger((n) => n + 1), []);
   const handleOpenModelPicker = useCallback(() => setModelPickerOpen(true), []);
   const handleOpenProviderPicker = useCallback(
     () => setProviderPickerOpen(true),
@@ -169,10 +171,16 @@ export function App({
 
   useKeyboard((key) => {
     if (key.name === "escape") {
-      if (paletteVisible) setPaletteVisible(false);
-      else if (modelPickerOpen) setModelPickerOpen(false);
-      else if (providerPickerOpen) setProviderPickerOpen(false);
-      else if (sidebarVisible) toggleSidebar();
+      if (paletteVisible) {
+        setPaletteVisible(false);
+        bumpFocus();
+      } else if (modelPickerOpen) {
+        setModelPickerOpen(false);
+        bumpFocus();
+      } else if (providerPickerOpen) {
+        setProviderPickerOpen(false);
+        bumpFocus();
+      } else if (sidebarVisible) toggleSidebar();
     } else if (key.ctrl && key.name === "p") {
       setPaletteVisible((v) => !v);
     } else if (key.ctrl && key.name === "l") {
@@ -223,15 +231,33 @@ export function App({
                 placeholder={streaming ? "Waiting..." : "Ask anything..."}
                 modelDisplay={modelDisplay}
                 serverUrl={serverUrl}
+                focusTrigger={focusTrigger}
               />
             )}
             <CommandPalette
               visible={paletteVisible}
-              onClose={() => setPaletteVisible(false)}
+              onClose={() => {
+                setPaletteVisible(false);
+                bumpFocus();
+              }}
               onSelect={handlePaletteSelect}
             />
-            {modelPickerOpen && <ModelSwitcher />}
-            {providerPickerOpen && <ConnectProvider />}
+            {modelPickerOpen && (
+              <ModelSwitcher
+                onClose={() => {
+                  setModelPickerOpen(false);
+                  bumpFocus();
+                }}
+              />
+            )}
+            {providerPickerOpen && (
+              <ConnectProvider
+                onClose={() => {
+                  setProviderPickerOpen(false);
+                  bumpFocus();
+                }}
+              />
+            )}
           </box>
         </box>
       </ToastProvider>

@@ -49,7 +49,7 @@ export function SessionSidebar() {
       flexDirection="column"
       borderStyle="rounded"
       borderColor={theme.border.secondary}
-      backgroundColor={theme.background.secondary}
+      backgroundColor={theme.background.primary}
     >
       <box
         paddingLeft={1}
