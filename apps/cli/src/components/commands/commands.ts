@@ -36,6 +36,7 @@ export interface CommandContext {
   openModelPicker?: () => void;
   openProviderPicker?: () => void;
   openSkillsBrowser?: () => void;
+  toggleSidebar?: () => void;
   addSystemMessage?: (text: string) => void;
   showToast?: (options: ToastInput) => void;
   onExit?: () => void;
@@ -175,36 +176,12 @@ export const COMMANDS: Command[] = [
   {
     name: "session",
     aliases: ["sessions", "s"],
-    description: "List, switch, or delete chat sessions",
-    usage: "/session [switch|delete] [id]",
+    description: "Toggle session sidebar",
+    usage: "/session",
     category: "session",
     suggested: true,
-    handler: async (args, api, ctx) => {
-      if ((args[0] === "switch" || args[0] === "s") && args[1]) {
-        const session = await api.getSession(args[1]);
-        ctx.setCurrentSessionId?.(session.id);
-        ctx.clearMessages?.();
-        return {
-          type: "message",
-          text: `Switched to session: ${session.name} (${session.id.slice(0, 8)}...)`,
-        };
-      }
-      if (
-        (args[0] === "delete" || args[0] === "del" || args[0] === "d") &&
-        args[1]
-      ) {
-        await api.deleteSession(args[1]);
-        return {
-          type: "message",
-          text: `Session deleted: ${args[1].slice(0, 8)}...`,
-        };
-      }
-      const { sessions } = await api.listSessions();
-      const lines = sessions.map(
-        (s, i) =>
-          `  ${i + 1}. ${s.name} (${s.id.slice(0, 8)}...) — ${s.messageCount} msgs`,
-      );
-      return { type: "message", text: `\nSessions:\n${lines.join("\n")}\n` };
+    handler: async (_args, _api, ctx) => {
+      ctx.toggleSidebar?.();
     },
   },
   {

@@ -1,5 +1,9 @@
-import { useCallback, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
+import fuzzysort from "fuzzysort";
+
+import { useDialog } from "@/components/ui/dialog";
+import { DialogConfirm } from "@/components/ui/dialog-confirm";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -8,13 +12,14 @@ import {
   useSessions,
 } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
-import { RGBA } from "@opentui/core";
+import { type InputRenderable, RGBA } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import type { UnifiedMessage } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 export function SessionSidebar() {
+  const dialog = useDialog();
   const toast = useToast();
   const serverUrl = useAppStore((s) => s.serverUrl);
   const currentSessionId = useAppStore((s) => s.currentSessionId);
@@ -31,6 +36,8 @@ export function SessionSidebar() {
   const deleteSession = useDeleteSession(serverUrl);
   const setMessages = useAppStore((s) => s.setMessages);
   const clearMessages = useAppStore((s) => s.clearMessages);
+  const [searchQuery, setSearchQuery] = useState("");
+  const inputRef = useRef<InputRenderable>(null);
 
   const handleCreate = useCallback(async () => {
     try {
@@ -53,11 +60,60 @@ export function SessionSidebar() {
   }, [createSession, setCurrentSessionId, model, toast]);
 
   const handleDelete = useCallback(
-    async (id: string) => {
-      await deleteSession.mutateAsync(id);
-      if (currentSessionId === id) setCurrentSessionId(undefined);
+    async (id: string, name: string) => {
+      if (id === streamingSessionId) {
+        toast.show({
+          variant: "error",
+          message: "Cannot delete a running session",
+        });
+        return;
+      }
+      const confirmed = await DialogConfirm.show(
+        dialog,
+        "Delete Session",
+        `Delete "${name.slice(0, 20)}${name.length > 20 ? "..." : ""}"?`,
+        "delete",
+      );
+      if (confirmed) {
+        const wasActive = currentSessionId === id;
+        await deleteSession.mutateAsync(id);
+        if (wasActive) {
+          setCurrentSessionId(undefined);
+          clearMessages();
+          // Create a new session automatically
+          try {
+            const res = await createSession.mutateAsync({
+              name: "New Session",
+              model: model ?? "",
+              provider: "",
+            });
+            setCurrentSessionId(res.id);
+            toast.show({
+              variant: "success",
+              message: "Session deleted. New session created.",
+            });
+          } catch {
+            toast.show({
+              variant: "success",
+              message: "Session deleted",
+            });
+          }
+        } else {
+          toast.show({ variant: "success", message: "Session deleted" });
+        }
+      }
     },
-    [deleteSession, currentSessionId, setCurrentSessionId],
+    [
+      deleteSession,
+      currentSessionId,
+      setCurrentSessionId,
+      clearMessages,
+      createSession,
+      model,
+      toast,
+      dialog,
+      streamingSessionId,
+    ],
   );
 
   const handleSwitch = useCallback(
@@ -94,6 +150,9 @@ export function SessionSidebar() {
   );
 
   const sessions = data?.sessions ?? [];
+  const filteredSessions = searchQuery
+    ? fuzzysort.go(searchQuery, sessions, { keys: ["name"] }).map((r) => r.obj)
+    : sessions;
 
   // Keyboard navigation for sidebar
   useKeyboard((key) => {
@@ -103,22 +162,32 @@ export function SessionSidebar() {
       setSidebarSelectedIndex(Math.max(0, sidebarSelectedIndex - 1));
     } else if (key.name === "down") {
       setSidebarSelectedIndex(
-        Math.min(sessions.length - 1, sidebarSelectedIndex + 1),
+        Math.min(filteredSessions.length - 1, sidebarSelectedIndex + 1),
       );
     } else if (key.name === "return") {
       // Enter key - switch to selected session
-      if (sessions[sidebarSelectedIndex]) {
-        handleSwitch(sessions[sidebarSelectedIndex].id);
+      if (filteredSessions[sidebarSelectedIndex]) {
+        handleSwitch(filteredSessions[sidebarSelectedIndex].id);
       }
     }
   });
 
   // Reset selected index when sessions change
   useEffect(() => {
-    if (sessions.length > 0 && sidebarSelectedIndex >= sessions.length) {
-      setSidebarSelectedIndex(sessions.length - 1);
+    if (
+      filteredSessions.length > 0 &&
+      sidebarSelectedIndex >= filteredSessions.length
+    ) {
+      setSidebarSelectedIndex(filteredSessions.length - 1);
     }
-  }, [sessions.length, sidebarSelectedIndex, setSidebarSelectedIndex]);
+  }, [filteredSessions.length, sidebarSelectedIndex, setSidebarSelectedIndex]);
+
+  // Focus search input when sidebar opens
+  useEffect(() => {
+    if (sidebarVisible && inputRef.current) {
+      inputRef.current.focus();
+    }
+  }, [sidebarVisible]);
 
   if (!sidebarVisible) return null;
 
@@ -128,13 +197,14 @@ export function SessionSidebar() {
       height="100%"
       flexDirection="column"
       backgroundColor={theme.background.primary}
+      paddingLeft={1}
+      paddingRight={1}
     >
       <box
         flexDirection="row"
         alignItems="center"
-        paddingLeft={1}
-        paddingRight={1}
         height={1}
+        marginBottom={1}
         justifyContent="space-between"
       >
         <text fg={theme.brand.primary}>
@@ -146,29 +216,38 @@ export function SessionSidebar() {
         </box>
       </box>
 
-      <box paddingLeft={1} paddingRight={1} height={1}>
+      <box
+        flexDirection="row"
+        alignItems="center"
+        height={1}
+        gap={1}
+        marginBottom={1}
+      >
+        <input
+          onInput={(value: string) => setSearchQuery(value)}
+          focusedBackgroundColor={theme.background.surface}
+          cursorColor={theme.brand.primary}
+          focusedTextColor={theme.text.primary}
+          ref={inputRef}
+          placeholder="Search sessions..."
+          placeholderColor={theme.text.muted}
+          flexGrow={1}
+          backgroundColor={theme.background.primary}
+        />
         <box onMouseDown={handleCreate}>
-          <text fg={theme.text.disabled}>+ New Session</text>
+          <text fg={theme.brand.primary}>+</text>
         </box>
       </box>
 
       <box flexDirection="column" flexGrow={1}>
-        {isLoading && (
-          <text fg={theme.text.muted} paddingLeft={1}>
-            Loading...
+        {isLoading && <text fg={theme.text.muted}>Loading...</text>}
+        {isError && <text fg={theme.danger}>Failed to load</text>}
+        {!isLoading && !isError && filteredSessions.length === 0 && (
+          <text fg={theme.text.disabled}>
+            {searchQuery ? "No matches" : "No sessions"}
           </text>
         )}
-        {isError && (
-          <text fg={theme.danger} paddingLeft={1}>
-            Failed to load
-          </text>
-        )}
-        {!isLoading && !isError && sessions.length === 0 && (
-          <text fg={theme.text.disabled} paddingLeft={1}>
-            No sessions
-          </text>
-        )}
-        {sessions.map((sess, index) => {
+        {filteredSessions.map((sess, index) => {
           const active = sess.id === currentSessionId;
           const isStreaming = sess.id === streamingSessionId;
           const isSelected = index === sidebarSelectedIndex;
@@ -176,7 +255,6 @@ export function SessionSidebar() {
             <box
               key={sess.id}
               height={1}
-              paddingLeft={1}
               backgroundColor={
                 isSelected
                   ? theme.background.hover
@@ -185,28 +263,37 @@ export function SessionSidebar() {
                     : "transparent"
               }
             >
-              <box
-                flexDirection="row"
-                width="100%"
-                onMouseDown={() => handleSwitch(sess.id)}
-              >
-                <text
-                  fg={active ? theme.brand.primary : theme.text.primary}
-                  width={2}
-                >
-                  {active ? ">" : " "}
-                </text>
-                <text
-                  fg={active ? theme.brand.primary : theme.text.primary}
+              <box flexDirection="row" width="100%">
+                <box
+                  flexDirection="row"
                   flexGrow={1}
+                  flexShrink={1}
+                  onMouseDown={() => handleSwitch(sess.id)}
                 >
-                  {sess.name.slice(0, 16)}
-                </text>
-                {isStreaming && (
-                  <box width={2} justifyContent="flex-end">
+                  <text
+                    fg={active ? theme.brand.primary : theme.text.primary}
+                    width={2}
+                  >
+                    {active ? ">" : " "}
+                  </text>
+                  <text fg={active ? theme.brand.primary : theme.text.primary}>
+                    {sess.name.slice(0, 12)}
+                  </text>
+                </box>
+                <box
+                  width={2}
+                  flexShrink={0}
+                  justifyContent="center"
+                  alignItems="center"
+                >
+                  {isStreaming ? (
                     <Spinner fg={RGBA.fromHex(theme.brand.primary)} />
-                  </box>
-                )}
+                  ) : (
+                    <box onMouseDown={() => handleDelete(sess.id, sess.name)}>
+                      <text fg={theme.text.muted}>×</text>
+                    </box>
+                  )}
+                </box>
               </box>
             </box>
           );
