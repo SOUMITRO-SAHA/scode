@@ -109,6 +109,8 @@ export function useModels(serverUrl?: string) {
         {},
         serverUrl,
       ),
+    staleTime: 0,
+    refetchOnMount: true,
   });
 }
 
