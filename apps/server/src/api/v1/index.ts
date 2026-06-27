@@ -1,3 +1,4 @@
+import { Effect } from "effect";
 import { Hono } from "hono";
 import type { Context } from "hono";
 import { stream } from "hono/streaming";
@@ -12,13 +13,14 @@ import {
 import { join } from "node:path";
 
 import { handleChat } from "../../chat/handler";
-import type { ConfigManager } from "../../config/manager";
-import type { ProviderRegistry } from "../../llm/registry";
-import type { ActiveClientManager } from "../../session/active-clients";
-import type { SessionManager } from "../../session/manager";
+import type { ConfigService } from "../../config/service";
+import type { ProviderService } from "../../llm/provider-service";
+import type { ActiveClientService } from "../../session/active-clients-service";
+import type { SessionService } from "../../session/service";
 import { discover } from "../../skill/discover";
 import { loadSkill } from "../../skill/loader";
-import type { Registry as ToolRegistry } from "../../tool/registry";
+import type { SkillService } from "../../skill/service";
+import type { ToolService } from "../../tool/service";
 
 import {
   SCODE_AUTH_PATH,
@@ -27,31 +29,42 @@ import {
 } from "@scode/shared/constants";
 import type { AppConfig, Skill } from "@scode/shared/types";
 
+const runSync = Effect.runSync;
+
+type DepsConfig = ConfigService["Service"];
+type DepsProvider = ProviderService["Service"];
+type DepsSession = SessionService["Service"];
+type DepsTool = ToolService["Service"];
+type DepsActiveClient = ActiveClientService["Service"];
+type DepsSkill = SkillService["Service"];
+
 interface RouterDeps {
-  toolRegistry: ToolRegistry;
-  providerRegistry: ProviderRegistry;
-  sessionManager: SessionManager;
-  configManager: ConfigManager;
+  configService: DepsConfig;
+  providerService: DepsProvider;
+  sessionService: DepsSession;
+  toolService: DepsTool;
+  activeClientService: DepsActiveClient;
+  skillService: DepsSkill;
   startTime: number;
-  activeClientManager: ActiveClientManager;
 }
 
 export function createV1Router(deps: RouterDeps): Hono {
   const router = new Hono();
 
   router.get("/health", (c) => {
+    const cfg = runSync(deps.configService.get);
     return c.json({
       healthy: true,
       uptime: Math.floor((Date.now() - deps.startTime) / 1000),
-      providers: deps.providerRegistry.listProviders().length,
-      sessions: deps.sessionManager.list().length,
-      defaultProvider: deps.configManager.get().defaultProvider,
-      defaultModel: deps.configManager.get().defaultModel,
+      providers: deps.providerService.listProviders().length,
+      sessions: runSync(deps.sessionService.list).length,
+      defaultProvider: cfg.defaultProvider,
+      defaultModel: cfg.defaultModel,
     });
   });
 
   router.get("/providers", (c) => {
-    const providers = deps.providerRegistry.listProviders();
+    const providers = deps.providerService.listProviders();
     let auth: Record<string, unknown> = {};
     try {
       if (existsSync(SCODE_AUTH_PATH))
@@ -64,7 +77,7 @@ export function createV1Router(deps: RouterDeps): Hono {
         defaultModel: p.defaultModel,
         connected: !!auth[p.id],
       })),
-      default: deps.configManager.get().defaultProvider,
+      default: runSync(deps.configService.get).defaultProvider,
     });
   });
 
@@ -103,15 +116,15 @@ export function createV1Router(deps: RouterDeps): Hono {
 
   router.patch("/providers/default", async (c) => {
     const { provider } = await c.req.json<{ provider: string }>();
-    const p = deps.providerRegistry.getProvider(provider);
+    const p = deps.providerService.getProvider(provider);
     if (!p) return c.json({ error: `Unknown provider: ${provider}` }, 400);
-    deps.configManager.set("defaultProvider", provider);
-    deps.configManager.set("defaultModel", p.defaultModel);
+    runSync(deps.configService.set("defaultProvider", provider));
+    runSync(deps.configService.set("defaultModel", p.defaultModel));
     return c.json({ ok: true, provider, defaultModel: p.defaultModel });
   });
 
   router.get("/models", async (c) => {
-    const providers = deps.providerRegistry.listProviders();
+    const providers = deps.providerService.listProviders();
     let auth: Record<string, { apiKey?: string }> = {};
     try {
       if (existsSync(SCODE_AUTH_PATH))
@@ -148,17 +161,17 @@ export function createV1Router(deps: RouterDeps): Hono {
       }),
     );
 
-    const config = deps.configManager.get();
-    return c.json({ models, defaultModel: config.defaultModel });
+    const cfg = runSync(deps.configService.get);
+    return c.json({ models, defaultModel: cfg.defaultModel });
   });
 
   router.patch("/models/default", async (c) => {
     const { model } = await c.req.json<{ model: string }>();
     if (!model) return c.json({ error: "model required" }, 400);
     try {
-      const { providerId } = deps.providerRegistry.parseModelString(model);
-      deps.configManager.set("defaultModel", model);
-      deps.configManager.set("defaultProvider", providerId);
+      const { providerId } = deps.providerService.parseModelString(model);
+      runSync(deps.configService.set("defaultModel", model));
+      runSync(deps.configService.set("defaultProvider", providerId));
       return c.json({ ok: true, model, provider: providerId });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 400);
@@ -166,7 +179,7 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/sessions", (c) => {
-    const sessions = deps.sessionManager.list();
+    const sessions = runSync(deps.sessionService.list);
     return c.json({
       sessions: sessions.map((s) => ({
         id: s.id,
@@ -182,23 +195,25 @@ export function createV1Router(deps: RouterDeps): Hono {
 
   router.post("/sessions", async (c) => {
     const body = await c.req.json().catch(() => ({}));
-    const config = deps.configManager.get();
-    const session = deps.sessionManager.create(
-      body.name ?? "",
-      body.model ?? config.defaultModel,
-      body.provider ?? config.defaultProvider,
+    const cfg = runSync(deps.configService.get);
+    const session = runSync(
+      deps.sessionService.create(
+        body.name ?? "",
+        body.model ?? cfg.defaultModel,
+        body.provider ?? cfg.defaultProvider,
+      ),
     );
     return c.json(session, 201);
   });
 
   router.get("/sessions/:id", (c) => {
-    const session = deps.sessionManager.get(c.req.param("id"));
+    const session = runSync(deps.sessionService.get(c.req.param("id")));
     if (!session) return c.json({ error: "Session not found" }, 404);
     return c.json(session);
   });
 
   router.patch("/sessions/:id", async (c) => {
-    const session = deps.sessionManager.get(c.req.param("id"));
+    const session = runSync(deps.sessionService.get(c.req.param("id")));
     if (!session) return c.json({ error: "Session not found" }, 404);
     const body = await c.req.json<{
       name?: string;
@@ -208,18 +223,20 @@ export function createV1Router(deps: RouterDeps): Hono {
     if (body.name) session.name = body.name;
     if (body.model) session.model = body.model;
     if (body.provider) session.provider = body.provider;
-    deps.sessionManager.update(session);
+    runSync(deps.sessionService.update(session));
     return c.json(session);
   });
 
   router.delete("/sessions/:id", (c) => {
-    const ok = deps.sessionManager.delete(c.req.param("id"));
+    const ok = runSync(deps.sessionService.delete(c.req.param("id")));
     if (!ok) return c.json({ error: "Session not found" }, 404);
     return c.json({ ok: true });
   });
 
   router.get("/sessions/:id/messages", (c) => {
-    const messages = deps.sessionManager.getMessages(c.req.param("id"));
+    const messages = runSync(
+      deps.sessionService.getMessages(c.req.param("id")),
+    );
     return c.json({ messages });
   });
 
@@ -264,11 +281,11 @@ export function createV1Router(deps: RouterDeps): Hono {
 
   router
     .get("/config", (c) => {
-      return c.json(deps.configManager.get());
+      return c.json(runSync(deps.configService.get));
     })
     .patch("/config", async (c) => {
       const body = await c.req.json<Partial<AppConfig>>();
-      const updated = deps.configManager.update(body);
+      const updated = runSync(deps.configService.update(body));
       return c.json(updated);
     });
 
@@ -305,12 +322,10 @@ export function createV1Router(deps: RouterDeps): Hono {
         const model = body.model;
         const provider = body.provider;
         const sessionId = body.sessionId;
-        const config = deps.configManager.get();
+        const cfg = runSync(deps.configService.get);
         const modelStr =
           model ||
-          (provider
-            ? `${provider}/` + config.defaultModel
-            : config.defaultModel);
+          (provider ? `${provider}/` + cfg.defaultModel : cfg.defaultModel);
         if (!modelStr) {
           s.write(
             JSON.stringify({
@@ -321,8 +336,18 @@ export function createV1Router(deps: RouterDeps): Hono {
           );
           return;
         }
-        await handleChat(message, modelStr, sessionId, deps, (chunk: string) =>
-          s.write(chunk),
+        await handleChat(
+          message,
+          modelStr,
+          sessionId,
+          {
+            configService: deps.configService,
+            providerService: deps.providerService,
+            sessionService: deps.sessionService,
+            toolService: deps.toolService,
+            skillService: deps.skillService,
+          },
+          (chunk: string) => s.write(chunk),
         );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
@@ -342,24 +367,24 @@ export function createV1Router(deps: RouterDeps): Hono {
   router
     .get("/active-clients", (c) => {
       return c.json({
-        count: deps.activeClientManager.getCount(),
-        clients: deps.activeClientManager.getClients(),
+        count: deps.activeClientService.getCount(),
+        clients: deps.activeClientService.getClients(),
       });
     })
     .post("/active-clients", async (c) => {
       const body = await c.req.json().catch(() => ({}));
-      const clientId = deps.activeClientManager.register(body.clientId);
+      const clientId = deps.activeClientService.register(body.clientId);
       return c.json({ clientId }, 201);
     })
     .delete("/active-clients/:clientId", (c) => {
       const clientId = c.req.param("clientId");
-      const { existed, count } = deps.activeClientManager.unregister(clientId);
+      const { existed, count } = deps.activeClientService.unregister(clientId);
       if (!existed) return c.json({ error: "Client not found" }, 404);
       return c.json({ ok: true, wasLast: count === 0, activeCount: count });
     });
 
   router.get("/stats", (c) => {
-    const sessions = deps.sessionManager.list();
+    const sessions = runSync(deps.sessionService.list);
     const totalMessages = sessions.reduce(
       (sum, s) => sum + s.messages.length,
       0,
@@ -368,8 +393,8 @@ export function createV1Router(deps: RouterDeps): Hono {
     return c.json({
       sessions: sessions.length,
       messages: totalMessages,
-      providers: deps.providerRegistry.listProviders().length,
-      models: deps.providerRegistry.listProviders().length,
+      providers: deps.providerService.listProviders().length,
+      models: deps.providerService.listProviders().length,
       skills: dirs.length,
       uptime: Math.floor((Date.now() - deps.startTime) / 1000),
     });

@@ -3,6 +3,7 @@ import type { ToolCall } from "./entities";
 export type StreamEvent =
   | { type: "text"; delta: string }
   | { type: "tool_use"; toolCall: ToolCall }
+  | { type: "error"; message: string }
   | { type: "done" };
 
 export type StreamChunk =

@@ -1,12 +1,14 @@
-import type { ConfigManager } from "../config/manager";
+import { Cause, Effect, Stream } from "effect";
+
+import type { ConfigService } from "../config/service";
 import { resolveApiKey } from "../llm/config";
-import type { ProviderRegistry } from "../llm/registry";
+import { LLMError, ToolFailure } from "../llm/error";
+import type { ProviderService } from "../llm/provider-service";
 import { buildPrompt } from "../prompt/builder";
-import type { SessionManager } from "../session/manager";
-import { discover } from "../skill/discover";
-import { loadSkill } from "../skill/loader";
-import { matchSkills } from "../skill/matcher";
-import type { Registry as ToolRegistry } from "../tool/registry";
+import type { SessionService } from "../session/service";
+import type { SkillService } from "../skill/service";
+import type { ToolService } from "../tool/service";
+import type { StreamEvent } from "../types";
 
 import { DebugLogger, Logger } from "@scode/shared/logger";
 
@@ -15,20 +17,31 @@ const dbg = new DebugLogger("server:handler");
 
 type StreamWriter = (chunk: string) => void | Promise<unknown>;
 
+type DepsConfig = ConfigService["Service"];
+type DepsProvider = ProviderService["Service"];
+type DepsSession = SessionService["Service"];
+type DepsTool = ToolService["Service"];
+type DepsSkill = SkillService["Service"];
+
+export interface HandlerDeps {
+  configService: DepsConfig;
+  providerService: DepsProvider;
+  sessionService: DepsSession;
+  toolService: DepsTool;
+  skillService: DepsSkill;
+}
+
+const runSync: <A>(eff: Effect.Effect<A>) => A = Effect.runSync;
+
 export async function handleChat(
   prompt: string,
   modelStr: string,
   sessionId: string | undefined,
-  deps: {
-    providerRegistry: ProviderRegistry;
-    toolRegistry: ToolRegistry;
-    sessionManager: SessionManager;
-    configManager: ConfigManager;
-  },
+  deps: HandlerDeps,
   streamWriter: StreamWriter,
 ): Promise<string> {
-  const config = deps.configManager.get();
-  const resolvedModel = modelStr || config.defaultModel;
+  const cfg = runSync(deps.configService.get);
+  const resolvedModel = modelStr || cfg.defaultModel;
 
   if (!resolvedModel) {
     throw new Error(
@@ -36,7 +49,7 @@ export async function handleChat(
     );
   }
 
-  const { provider, model } = deps.providerRegistry.resolve(resolvedModel);
+  const { provider, model } = deps.providerService.resolve(resolvedModel);
   const apiKey = resolveApiKey(provider.id);
 
   dbg.log("chat request received", {
@@ -48,24 +61,23 @@ export async function handleChat(
 
   logger.info(`Chat with ${provider.id}/${model}: "${prompt.slice(0, 80)}"`);
 
-  let session = sessionId ? deps.sessionManager.get(sessionId) : null;
+  let session = runSync(deps.sessionService.get(sessionId ?? ""));
   if (!session) {
-    session = deps.sessionManager.create(
-      prompt.slice(0, 60),
-      resolvedModel,
-      provider.id,
+    session = runSync(
+      deps.sessionService.create(
+        prompt.slice(0, 60),
+        resolvedModel,
+        provider.id,
+      ),
     );
   }
 
   session.messages.push({ role: "user", content: prompt });
-  deps.sessionManager.update(session);
+  runSync(deps.sessionService.update(session));
 
-  const skillDirs = discover();
-  const loaded = skillDirs.map(loadSkill);
-  const skills = loaded.filter((s): s is NonNullable<typeof s> => s !== null);
-
-  const matched = matchSkills(prompt, skills);
-  const toolDefs = deps.toolRegistry.definitions();
+  const skills = deps.skillService.loadAllSkills();
+  const matched = deps.skillService.matchSkills(prompt, skills);
+  const toolDefs = deps.toolService.definitions();
   const { system } = buildPrompt(matched, prompt, toolDefs);
 
   dbg.log("skills matched", {
@@ -81,9 +93,9 @@ export async function handleChat(
     let toolCalled = false;
     dbg.log(`tool loop iteration ${i + 1}/10`);
 
-    let generator: AsyncGenerator<import("../types").StreamEvent>;
+    let gen: AsyncGenerator<StreamEvent>;
     try {
-      generator = provider.streamResponse({
+      gen = provider.streamResponse({
         system,
         messages: conversation,
         tools: toolDefs,
@@ -98,62 +110,101 @@ export async function handleChat(
       break;
     }
 
+    const stream = Stream.fromAsyncIterable<StreamEvent, Error>(gen, (e) =>
+      e instanceof Error ? e : new Error(String(e)),
+    ).pipe(
+      Stream.catchCause((cause: Cause.Cause<Error>) => {
+        const error = cause.reasons.find(Cause.isFailReason)?.error;
+        if (error instanceof LLMError) {
+          const msg = `${error.module}.${error.method}: ${error.reason.message}`;
+          dbg.error("llm stream error", {
+            error: msg,
+            retryable: error.retryable,
+          });
+          logger.error(`LLM stream error: ${msg}`);
+          return Stream.make({ type: "error" as const, message: msg });
+        }
+        if (error instanceof ToolFailure) {
+          dbg.error("tool failure", { error: error.error });
+          return Stream.make({ type: "error" as const, message: error.error });
+        }
+        if (error instanceof Error) {
+          dbg.error("llm stream error", { error: error.message });
+          logger.error(`LLM stream error: ${error.message}`);
+          return Stream.make({
+            type: "error" as const,
+            message: error.message,
+          });
+        }
+        const msg = String(error);
+        dbg.error("llm stream unhandled error", { error: msg });
+        logger.error(`LLM stream unhandled error: ${msg}`);
+        return Stream.make({ type: "error" as const, message: msg });
+      }),
+    );
+
     let streamChunkCount = 0;
-    try {
-      for await (const event of generator) {
-        if (event.type === "text") {
-          streamChunkCount++;
-          fullResponse += event.delta;
-          await streamWriter(event.delta);
-        } else if (event.type === "tool_use") {
-          toolCalled = true;
-          dbg.log("tool call", {
-            name: event.toolCall.name,
-            input: event.toolCall.input,
-          });
-          logger.info(`Tool call: ${event.toolCall.name}`);
-          let result: unknown;
-          try {
-            result = await deps.toolRegistry.settle(event.toolCall);
-          } catch (err: unknown) {
-            result = {
-              error: err instanceof Error ? err.message : String(err),
-            };
-          }
+    for await (const event of Stream.toAsyncIterable(stream)) {
+      if (event.type === "text") {
+        streamChunkCount++;
+        fullResponse += event.delta;
+        await streamWriter(event.delta);
+      } else if (event.type === "tool_use") {
+        toolCalled = true;
+        dbg.log("tool call", {
+          name: event.toolCall.name,
+          input: event.toolCall.input,
+        });
+        logger.info(`Tool call: ${event.toolCall.name}`);
 
-          dbg.log("tool result", {
-            name: event.toolCall.name,
-            resultPreview: JSON.stringify(result).slice(0, 200),
-          });
+        const result = await Effect.runPromise(
+          deps.toolService
+            .settle(event.toolCall)
+            .pipe(
+              Effect.catch((failure: ToolFailure) =>
+                Effect.succeed({ error: failure.error }),
+              ),
+            ),
+        );
 
+        dbg.log("tool result", {
+          name: event.toolCall.name,
+          resultPreview: JSON.stringify(result).slice(0, 200),
+        });
+
+        conversation.push({
+          role: "assistant",
+          content: [
+            {
+              type: "tool_use",
+              id: event.toolCall.id,
+              name: event.toolCall.name,
+              input: event.toolCall.input,
+            },
+          ],
+        });
+
+        if (result && typeof result === "object" && "error" in result) {
           conversation.push({
-            role: "assistant",
-            content: [
-              {
-                type: "tool_use",
-                id: event.toolCall.id,
-                name: event.toolCall.name,
-                input: event.toolCall.input,
-              },
-            ],
+            role: "tool",
+            tool_call_id: event.toolCall.id,
+            content: JSON.stringify({
+              error: (result as { error: string }).error,
+            }),
           });
+        } else {
           conversation.push({
             role: "tool",
             tool_call_id: event.toolCall.id,
             content: JSON.stringify(result),
           });
-        } else if (event.type === "done") {
-          break;
         }
+      } else if (event.type === "error") {
+        await streamWriter(`\n\n*Error*: ${event.message}`);
+      } else if (event.type === "done") {
+        break;
       }
-    } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
-      dbg.error("llm stream error", { error: msg });
-      logger.error(`LLM stream error for ${provider.id}/${model}: ${msg}`);
-      await streamWriter(`\n\n*Error*: LLM stream error - ${msg}`);
-      break;
     }
-
     dbg.log("stream event loop done", { streamChunkCount, toolCalled });
     if (!toolCalled) break;
   }
@@ -163,10 +214,12 @@ export async function handleChat(
     preview: fullResponse.slice(0, 200),
   });
 
-  deps.sessionManager.addMessage(session.id, {
-    role: "assistant",
-    content: fullResponse,
-  });
+  runSync(
+    deps.sessionService.addMessage(session.id, {
+      role: "assistant",
+      content: fullResponse,
+    }),
+  );
 
   return session.id;
 }

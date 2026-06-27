@@ -1,7 +1,15 @@
-import type { Tool, ToolCall, ToolDefinition, ToolHandler } from "../types";
+import { Effect } from "effect";
 
-export class Registry {
-  private tools = new Map<string, Tool>();
+import { ToolFailure } from "../llm/error";
+import type { ToolCall, ToolDefinition, ToolHandler } from "../types";
+
+export interface ToolEntry {
+  definition: ToolDefinition;
+  handler: ToolHandler;
+}
+
+export class ToolRegistry {
+  private tools = new Map<string, ToolEntry>();
 
   register(
     name: string,
@@ -12,16 +20,22 @@ export class Registry {
   }
 
   definitions(): ToolDefinition[] {
-    const defs: ToolDefinition[] = [];
-    for (const tool of this.tools.values()) {
-      defs.push(tool.definition);
-    }
-    return defs;
+    return [...this.tools.values()].map((t) => t.definition);
   }
 
-  async settle(call: ToolCall): Promise<unknown> {
+  settle(call: ToolCall): Effect.Effect<unknown, ToolFailure> {
     const tool = this.tools.get(call.name);
-    if (!tool) throw new Error(`Unknown tool: ${call.name}`);
-    return tool.handler(call.input);
+    if (!tool) {
+      return Effect.fail(
+        new ToolFailure({ error: `Unknown tool: ${call.name}` }),
+      );
+    }
+    return Effect.tryPromise({
+      try: () => tool.handler(call.input),
+      catch: (err) =>
+        new ToolFailure({
+          error: err instanceof Error ? err.message : String(err),
+        }),
+    });
   }
 }

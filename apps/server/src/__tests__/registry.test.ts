@@ -1,6 +1,8 @@
 import { describe, expect, it } from "vitest";
 
-import { Registry } from "../tool/registry";
+import { Effect } from "effect";
+
+import { ToolRegistry } from "../tool/registry";
 import type { ToolDefinition } from "../types";
 
 function def(name: string): ToolDefinition {
@@ -15,9 +17,12 @@ function def(name: string): ToolDefinition {
   };
 }
 
-describe("Registry", () => {
+const runSync = Effect.runSync;
+const runPromise = Effect.runPromise;
+
+describe("ToolRegistry", () => {
   it("registers a tool and returns its definition", () => {
-    const reg = new Registry();
+    const reg = new ToolRegistry();
     reg.register("echo", def("echo"), async (input) => input);
     const defs = reg.definitions();
     expect(defs).toHaveLength(1);
@@ -25,24 +30,23 @@ describe("Registry", () => {
   });
 
   it("settles a tool call and returns handler result", async () => {
-    const reg = new Registry();
+    const reg = new ToolRegistry();
     reg.register("echo", def("echo"), async (input) => input);
-    const result = await reg.settle({
-      name: "echo",
-      input: { message: "hello" },
-    });
+    const result = await runPromise(
+      reg.settle({ name: "echo", input: { message: "hello" } }),
+    );
     expect(result).toEqual({ message: "hello" });
   });
 
-  it("throws on unknown tool", async () => {
-    const reg = new Registry();
-    await expect(reg.settle({ name: "unknown", input: {} })).rejects.toThrow(
-      "Unknown tool: unknown",
-    );
+  it("fails on unknown tool", async () => {
+    const reg = new ToolRegistry();
+    await expect(
+      runPromise(reg.settle({ name: "unknown", input: {} })),
+    ).rejects.toThrow("Unknown tool: unknown");
   });
 
   it("registers multiple tools", () => {
-    const reg = new Registry();
+    const reg = new ToolRegistry();
     reg.register("a", def("a"), async () => "a");
     reg.register("b", def("b"), async () => "b");
     reg.register("c", def("c"), async () => "c");
