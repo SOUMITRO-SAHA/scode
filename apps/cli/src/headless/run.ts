@@ -5,8 +5,8 @@ import { runPrompt } from "./run-prompt";
 import { runRepl } from "./run-repl";
 import type { HeadlessMode } from "./types";
 
+import { bootstrap } from "@/services/bootstrap";
 import { CliConfig } from "@/services/config";
-import { initializeApp } from "@/services/init";
 
 function getModel(mode: HeadlessMode): string | undefined {
   return "model" in mode ? mode.model : undefined;
@@ -16,7 +16,7 @@ export const runHeadless = Effect.gen(function* () {
   const args = yield* parseArgs;
   if (args.mode.kind === "none") return false;
 
-  const { serverUrl } = yield* Effect.provide(initializeApp, CliConfig.Live);
+  const { serverUrl } = yield* Effect.provide(bootstrap, CliConfig.Live);
 
   if (args.mode.kind === "prompt") {
     yield* runPrompt(args.mode.text, serverUrl, args.mode.model);

@@ -2,8 +2,8 @@ import * as Effect from "effect/Effect";
 
 import { startTui } from "@/app";
 import { parseArgs, runHeadless, runRepl } from "@/headless/index";
+import { bootstrap } from "@/services/bootstrap";
 import { CliConfig } from "@/services/config";
-import { initializeApp } from "@/services/init";
 import { gracefulShutdown } from "@/services/shutdown";
 import { Logger } from "@scode/shared/logger";
 
@@ -24,7 +24,7 @@ async function main() {
   let serverUrl: string;
   try {
     const result = await Effect.runPromise(
-      Effect.provide(initializeApp, CliConfig.Live),
+      Effect.provide(bootstrap, CliConfig.Live),
     );
     serverUrl = result.serverUrl;
   } catch (err) {

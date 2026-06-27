@@ -8,16 +8,16 @@ import { Logger } from "@scode/shared/logger";
 
 const logger = new Logger({ stderr: true });
 
-export interface InitResult {
+export interface BootstrapResult {
   readonly serverUrl: string;
 }
 
-export class InitError extends Data.TaggedError("InitError")<{
+export class BootstrapError extends Data.TaggedError("BootstrapError")<{
   readonly message: string;
   readonly cause?: unknown;
 }> {}
 
-export const initializeApp = Effect.gen(function* () {
+export const bootstrap = Effect.gen(function* () {
   const config = yield* CliConfig;
 
   logger.debug("Platform initialized", {
@@ -36,5 +36,5 @@ export const initializeApp = Effect.gen(function* () {
     logger.warn("Client registration failed — shutdown will skip unregister");
   }
 
-  return { serverUrl };
+  return { serverUrl } satisfies BootstrapResult;
 });
