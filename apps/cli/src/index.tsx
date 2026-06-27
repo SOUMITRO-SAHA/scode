@@ -6,6 +6,7 @@ import { bootstrap } from "@/services/bootstrap";
 import { CliConfig } from "@/services/config";
 import { gracefulShutdown } from "@/services/shutdown";
 import { Logger } from "@scode/shared/logger";
+import { errorMessage } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
@@ -28,8 +29,9 @@ async function main() {
     );
     serverUrl = result.serverUrl;
   } catch (err) {
-    const msg = err instanceof Error ? err.message : String(err);
-    logger.error(`Failed to connect to server: ${msg}`);
+    logger.error(
+      `Failed to connect to server: ${Effect.runSync(errorMessage(err))}`,
+    );
     process.exit(1);
   }
 

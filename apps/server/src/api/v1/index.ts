@@ -31,6 +31,7 @@ import {
 } from "@scode/shared/constants";
 import { encodeStreamChunk } from "@scode/shared/types";
 import type { AppConfig, Skill } from "@scode/shared/types";
+import { calcUptime, errorMessage } from "@scode/shared/utils";
 
 const runSync = Effect.runSync;
 
@@ -58,7 +59,7 @@ export function createV1Router(deps: RouterDeps): Hono {
     const cfg = runSync(deps.configService.get);
     return c.json({
       healthy: true,
-      uptime: Math.floor((Date.now() - deps.startTime) / 1000),
+      uptime: runSync(calcUptime(deps.startTime)),
       providers: deps.providerService.listProviders().length,
       sessions: runSync(deps.sessionService.list).length,
       defaultProvider: cfg.defaultProvider,
@@ -358,8 +359,12 @@ export function createV1Router(deps: RouterDeps): Hono {
           effortLevel,
         );
       } catch (err: unknown) {
-        const msg = err instanceof Error ? err.message : String(err);
-        s.write(encodeStreamChunk({ type: "error", message: msg }));
+        s.write(
+          encodeStreamChunk({
+            type: "error",
+            message: runSync(errorMessage(err)),
+          }),
+        );
       }
     });
   }
@@ -404,7 +409,7 @@ export function createV1Router(deps: RouterDeps): Hono {
       providers: deps.providerService.listProviders().length,
       models: deps.providerService.listProviders().length,
       skills: dirs.length,
-      uptime: Math.floor((Date.now() - deps.startTime) / 1000),
+      uptime: runSync(calcUptime(deps.startTime)),
     });
   });
 

@@ -14,6 +14,7 @@ import { MAX_TOOL_ITERATIONS } from "@scode/shared/constants";
 import { DebugLogger, Logger } from "@scode/shared/logger";
 import { encodeStreamChunk } from "@scode/shared/types";
 import type { EffortLevel } from "@scode/shared/types";
+import { truncate } from "@scode/shared/utils";
 
 const logger = new Logger();
 const dbg = new DebugLogger("server:handler");
@@ -105,19 +106,21 @@ export async function handleChat(
   const apiKey = resolveApiKey(provider.id);
 
   dbg.log("chat request received", {
-    prompt: prompt.slice(0, 120),
+    prompt: runSync(truncate(prompt, 120)),
     model: resolvedModel,
     provider: provider.id,
     sessionId,
   });
 
-  logger.info(`Chat with ${provider.id}/${model}: "${prompt.slice(0, 80)}"`);
+  logger.info(
+    `Chat with ${provider.id}/${model}: "${runSync(truncate(prompt, 80))}"`,
+  );
 
   let session = runSync(deps.sessionService.get(sessionId ?? ""));
   if (!session) {
     session = runSync(
       deps.sessionService.create(
-        prompt.slice(0, 60),
+        runSync(truncate(prompt, 60)),
         resolvedModel,
         provider.id,
       ),

@@ -5,7 +5,7 @@ import { getDb } from "../db/client";
 import { sessions } from "../db/schema";
 import type { UnifiedMessage } from "../llm/types";
 
-import { generateId } from "@scode/shared/utils";
+import { generateId, nowISO } from "@scode/shared/utils";
 
 export interface Session {
   id: string;
@@ -32,7 +32,7 @@ function rowToSession(row: typeof sessions.$inferSelect): Session {
 export class SessionManager {
   create(name: string, model: string, provider: string): Session {
     const id = Effect.runSync(generateId);
-    const now = new Date().toISOString();
+    const now = Effect.runSync(nowISO);
     const row = {
       id,
       name: name || `Session ${new Date().toLocaleDateString()}`,
@@ -57,7 +57,7 @@ export class SessionManager {
   }
 
   update(session: Session): void {
-    const now = new Date().toISOString();
+    const now = Effect.runSync(nowISO);
     getDb()
       .update(sessions)
       .set({

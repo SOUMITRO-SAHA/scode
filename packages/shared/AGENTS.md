@@ -12,12 +12,13 @@
 
 ## Available subpath modules
 
-| Subpath       | Contents                                                 |
-| ------------- | -------------------------------------------------------- |
-| `./logger`    | Pino logger with daily rotation                          |
-| `./constants` | Ports, URLs, paths, provider env map, defaults           |
-| `./types`     | Entities, API request/response types, stream chunk codec |
-| `./utils`     | `apiUrl`, `apiFetch`, `apiFetchStream`, `generateId`     |
+| Subpath       | Contents                                                               |
+| ------------- | ---------------------------------------------------------------------- |
+| `./logger`    | Pino logger with daily rotation                                        |
+| `./constants` | Ports, URLs, paths, provider env map, defaults, limits, effort, routes |
+| `./types`     | Entities, API request/response types, stream chunk codec               |
+| `./utils`     | API, id, model, time, error, string, json, number utilities            |
+| `./effect`    | Effect-based service wrappers (debug, env config)                      |
 
 ## constants/ submodules
 
@@ -25,6 +26,10 @@
 - `paths.ts` — `SCODE_DIR`, `scodePath()`, config/auth/db/logs paths
 - `providers.ts` — `PROVIDER_ENV_MAP` (provider ID → env var name)
 - `defaults.ts` — `DEFAULT_MODEL_STRING`, `DEFAULT_APP_CONFIG`
+- `api-routes.ts` — route path constants + parameterized path helpers
+- `limits.ts` — numeric constants (buffers, timeouts, retries, log thresholds)
+- `effort.ts` — effort level definitions and thinking budgets
+- `index.ts` — re-exports all of the above
 
 ## utils/ submodules
 
@@ -33,8 +38,14 @@
   - `apiFetch<T>` handles JSON request/response, accepts `RequestInit`-style opts
   - `apiFetchStream` POSTs a body, returns `NodeJS.ReadableStream` — caller iterates with `for await (const chunk of stream)`
   - URL is constructed via `apiUrl(path, base)` → `${apiV1Base(base)}${path}`
-- `id.ts` — `generateId()` UUID v4 via `uuid` package
-- `model.ts` — `parseModelString(input)` returns `{providerId, model}` or null; `formatModelName(modelId)` human-readable model label
+- `id.ts` — `generateId()` UUID v4 via `uuid` package (returns `Effect<never, never, string>`)
+- `model.ts` — `parseModelString(input)` returns `{providerId, model}` or fails; `formatModelName(modelId)` human-readable model label
+- `time.ts` — `formatTime(date)`, `dateFromFilename(name)`, `daysOld(date)`, `nowISO()`
+- `error.ts` — `errorMessage(err: unknown): string` safe error-to-string
+- `string.ts` — `truncate(str, maxLen)`, `splitLines(text)`, `serializeContent(content)`
+- `json.ts` — `safeJSONParse<T>(str, fallback)`, `readJSONFile<T>(path, fallback)`, `writeJSONFile(path, data)`
+- `number.ts` — `clamp(value, min, max)`, `calcUptime(startTime)`
+- `index.ts` — re-exports all of the above
 
 ## API calling convention
 

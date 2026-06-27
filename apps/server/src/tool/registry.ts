@@ -3,6 +3,8 @@ import { Effect } from "effect";
 import { ToolFailure } from "../llm/error";
 import type { ToolCall, ToolDefinition, ToolHandler } from "../types";
 
+import { errorMessage } from "@scode/shared/utils";
+
 export interface ToolEntry {
   definition: ToolDefinition;
   handler: ToolHandler;
@@ -34,7 +36,7 @@ export class ToolRegistry {
       try: () => tool.handler(call.input),
       catch: (err) =>
         new ToolFailure({
-          error: err instanceof Error ? err.message : String(err),
+          error: Effect.runSync(errorMessage(err)),
         }),
     });
   }

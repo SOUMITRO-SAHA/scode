@@ -7,7 +7,7 @@ import { PROCESS_PATH } from "@scode/shared/constants";
 import { Logger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
 import type { EffortLevel } from "@scode/shared/types";
-import { apiFetchStream } from "@scode/shared/utils";
+import { apiFetchStream, truncate } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
@@ -19,7 +19,9 @@ export const sendPrompt = (
   effortLevel?: EffortLevel,
 ): Effect.Effect<string, StreamError> =>
   Effect.gen(function* () {
-    logger.debug(`Sending prompt to ${serverUrl} (${prompt.slice(0, 60)}...)`);
+    logger.debug(
+      `Sending prompt to ${serverUrl} (${Effect.runSync(truncate(prompt, 60))}...)`,
+    );
     const startTime = Date.now();
 
     const body: Record<string, unknown> = { prompt };

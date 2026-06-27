@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import { Effect } from "effect";
 
-import { dateFromFilename, daysOld, formatTime } from "../time";
+import { dateFromFilename, daysOld, formatTime, nowISO } from "../time";
 
 describe("formatTime", () => {
   it("formats time in 12h format", () => {
@@ -34,6 +34,14 @@ describe("dateFromFilename", () => {
     expect(() =>
       Effect.runSync(dateFromFilename("scode.2025-13-01.log")),
     ).toThrow();
+  });
+});
+
+describe("nowISO", () => {
+  it("returns ISO string", () => {
+    const result = Effect.runSync(nowISO);
+    expect(typeof result).toBe("string");
+    expect(result).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });
 

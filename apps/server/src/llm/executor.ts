@@ -17,6 +17,7 @@ import {
   MAX_DELAY_MS,
   MAX_RETRIES,
 } from "@scode/shared/constants";
+import { errorMessage } from "@scode/shared/utils";
 
 function isRetryableStatus(status: number): boolean {
   return status === 429 || status === 503 || status === 504 || status === 529;
@@ -153,7 +154,7 @@ const executeOnce = (
         module: "LLMExecutor",
         method,
         reason: new TransportReason({
-          kind: err instanceof Error ? err.message : String(err),
+          kind: Effect.runSync(errorMessage(err)),
           retryable: false,
         }),
       }),

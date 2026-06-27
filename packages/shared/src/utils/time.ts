@@ -22,3 +22,5 @@ export const dateFromFilename = Effect.fnUntraced(function* (name: string) {
 export const daysOld = Effect.fnUntraced(function* (date: Date) {
   return Math.floor((Date.now() - date.getTime()) / (1000 * 60 * 60 * 24));
 });
+
+export const nowISO = Effect.sync(() => new Date().toISOString());

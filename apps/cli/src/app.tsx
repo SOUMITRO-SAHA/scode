@@ -34,7 +34,7 @@ import {
   sessionPath,
 } from "@scode/shared/constants";
 import { Logger, initDebugLog } from "@scode/shared/logger";
-import { apiFetch } from "@scode/shared/utils";
+import { apiFetch, errorMessage } from "@scode/shared/utils";
 import { layout, theme } from "@scode/theme";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
@@ -96,9 +96,7 @@ export async function startTui(
 
     return true;
   } catch (err) {
-    logger.debug(
-      `TUI init failed: ${err instanceof Error ? err.message : String(err)}`,
-    );
+    logger.debug(`TUI init failed: ${Effect.runSync(errorMessage(err))}`);
     return false;
   }
 }

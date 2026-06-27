@@ -11,7 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { CHAT_PATH, CONFIG_PATH, SESSIONS_PATH } from "@scode/shared/constants";
 import { DebugLogger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
-import { apiFetch, apiFetchStream } from "@scode/shared/utils";
+import { apiFetch, apiFetchStream, errorMessage } from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
 const decoder = new TextDecoder();
@@ -211,7 +211,7 @@ export function useStreamChat(serverUrl: string) {
       try {
         await Effect.runPromise(program);
       } catch (err) {
-        const errMsg = err instanceof Error ? err.message : String(err);
+        const errMsg = Effect.runSync(errorMessage(err));
         dbg.error("stream failed", { error: errMsg });
         useAppStore.getState().setLastAssistantError(errMsg);
         toast.show({ variant: "error", message: errMsg });

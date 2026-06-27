@@ -1,9 +1,11 @@
+import { Effect } from "effect";
 import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
 
 import { MAX_BUFFER } from "@scode/shared/constants";
+import { splitLines } from "@scode/shared/utils";
 
 const WORKSPACE = process.cwd();
 
@@ -37,7 +39,7 @@ export const handler: ToolHandler = async (input: Record<string, unknown>) => {
       `find "${searchPath}" -path '*/node_modules' -prune -o -path "${pattern}" -print`,
       { encoding: "utf-8", maxBuffer: MAX_BUFFER },
     );
-    const files = stdout.trim().split("\n").filter(Boolean);
+    const files = Effect.runSync(splitLines(stdout.trim()));
     return { files };
   } catch {
     return { files: [] };

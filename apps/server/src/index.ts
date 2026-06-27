@@ -20,6 +20,7 @@ import { serve } from "@hono/node-server";
 import { DEFAULT_PORT, healthUrl } from "@scode/shared/constants";
 import { initDebugLog } from "@scode/shared/logger";
 import { encodeStreamChunk } from "@scode/shared/types";
+import { errorMessage } from "@scode/shared/utils";
 
 const runSync = Effect.runSync;
 
@@ -101,7 +102,7 @@ app.post("/process", (c) =>
         (chunk) => s.write(chunk),
       );
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = runSync(errorMessage(err));
       logger.error(`Process handler error: ${msg}`);
       await s.write(encodeStreamChunk({ type: "error", message: msg }));
     }
