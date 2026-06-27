@@ -25,6 +25,7 @@ export interface ComposerProps {
   modelDisplay?: string;
   serverUrl?: string;
   focusTrigger?: number;
+  fullWidth?: boolean;
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -42,6 +43,7 @@ export function Composer({
   modelDisplay,
   serverUrl,
   focusTrigger,
+  fullWidth = false,
 }: ComposerProps) {
   const [composerKey, setComposerKey] = useState(0);
   const [initialVal, setInitialVal] = useState("");
@@ -73,7 +75,7 @@ export function Composer({
     setComposerKey,
   });
 
-  const layout = calculateLayout(termWidth);
+  const layout = calculateLayout(fullWidth ? width : termWidth, fullWidth);
 
   function handleAutoSelect(cmd: Command) {
     const ta = ref.current!;

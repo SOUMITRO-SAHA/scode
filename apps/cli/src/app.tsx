@@ -268,6 +268,7 @@ export function App({
                 modelDisplay={modelDisplay}
                 serverUrl={serverUrl}
                 focusTrigger={focusTrigger}
+                fullWidth
               />
             )}
             <CommandPalette
