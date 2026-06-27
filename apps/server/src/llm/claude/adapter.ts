@@ -9,6 +9,19 @@ export class ClaudeAdapter implements LLMProvider {
   readonly name = "Anthropic Claude";
   readonly defaultModel = "claude-sonnet-4-20250515";
 
+  async listModels(apiKey: string): Promise<string[]> {
+    try {
+      const client = new Anthropic({ apiKey });
+      const models: string[] = [];
+      for await (const model of client.models.list()) {
+        models.push(model.id);
+      }
+      return models.length > 0 ? models : [this.defaultModel];
+    } catch {
+      return [this.defaultModel];
+    }
+  }
+
   async *streamResponse(
     params: Parameters<LLMProvider["streamResponse"]>[0],
   ): ReturnType<LLMProvider["streamResponse"]> {

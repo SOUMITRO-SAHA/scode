@@ -19,8 +19,24 @@ interface OpenAIChunk {
 
 export class CommandCodeAdapter implements LLMProvider {
   readonly id = "commandcode";
-  readonly name = "commandcode";
+  readonly name = "CommandCode";
   readonly defaultModel = "deepseek/deepseek-v4-flash";
+
+  async listModels(apiKey: string): Promise<string[]> {
+    try {
+      const res = await fetch(`${BASE_URL}/models`, {
+        headers: { Authorization: `Bearer ${apiKey}` },
+      });
+      if (!res.ok) return [this.defaultModel];
+      const body = (await res.json()) as {
+        data?: Array<{ id: string }>;
+      };
+      if (!body.data || !Array.isArray(body.data)) return [this.defaultModel];
+      return body.data.map((m) => m.id);
+    } catch {
+      return [this.defaultModel];
+    }
+  }
 
   async *streamResponse(
     params: Parameters<LLMProvider["streamResponse"]>[0],

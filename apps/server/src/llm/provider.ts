@@ -6,6 +6,8 @@ export interface LLMProvider {
   readonly name: string;
   readonly defaultModel: string;
 
+  listModels?(apiKey: string): Promise<string[]>;
+
   streamResponse(params: {
     system: string;
     messages: UnifiedMessage[];

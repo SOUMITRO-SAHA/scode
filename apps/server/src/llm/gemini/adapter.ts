@@ -14,6 +14,22 @@ export class GeminiAdapter implements LLMProvider {
   readonly name = "Google Gemini";
   readonly defaultModel = "gemini-2.5-flash";
 
+  async listModels(apiKey: string): Promise<string[]> {
+    try {
+      const client = new GoogleGenAI({ apiKey });
+      const pager = await client.models.list();
+      const models: string[] = [];
+      for await (const model of pager) {
+        if (model.name) {
+          models.push(model.name.replace(/^models\//, ""));
+        }
+      }
+      return models.length > 0 ? models : [this.defaultModel];
+    } catch {
+      return [this.defaultModel];
+    }
+  }
+
   async *streamResponse(
     params: Parameters<LLMProvider["streamResponse"]>[0],
   ): ReturnType<LLMProvider["streamResponse"]> {

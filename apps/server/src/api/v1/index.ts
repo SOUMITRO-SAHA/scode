@@ -110,13 +110,44 @@ export function createV1Router(deps: RouterDeps): Hono {
     return c.json({ ok: true, provider, defaultModel: p.defaultModel });
   });
 
-  router.get("/models", (c) => {
+  router.get("/models", async (c) => {
     const providers = deps.providerRegistry.listProviders();
-    const models = providers.map((p) => ({
-      provider: p.id,
-      providerName: p.name,
-      defaultModel: p.defaultModel,
-    }));
+    let auth: Record<string, { apiKey?: string }> = {};
+    try {
+      if (existsSync(SCODE_AUTH_PATH))
+        auth = JSON.parse(readFileSync(SCODE_AUTH_PATH, "utf-8"));
+    } catch {}
+
+    const models: Array<{
+      provider: string;
+      providerName: string;
+      defaultModel: string;
+    }> = [];
+
+    await Promise.all(
+      providers.map(async (p) => {
+        const apiKey = auth[p.id]?.apiKey;
+        if (p.listModels && apiKey) {
+          try {
+            const modelIds = await p.listModels(apiKey);
+            for (const id of modelIds) {
+              models.push({
+                provider: p.id,
+                providerName: p.name,
+                defaultModel: id,
+              });
+            }
+            return;
+          } catch {}
+        }
+        models.push({
+          provider: p.id,
+          providerName: p.name,
+          defaultModel: p.defaultModel,
+        });
+      }),
+    );
+
     const config = deps.configManager.get();
     return c.json({ models, defaultModel: config.defaultModel });
   });
