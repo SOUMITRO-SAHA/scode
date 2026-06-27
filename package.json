@@ -7,7 +7,7 @@
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",
     "check-types": "turbo run check-types",
     "test": "turbo run test",
-    "cli": "bun apps/cli/src/index.tsx 2>/dev/null || pnpm exec tsx apps/cli/src/index.tsx",
+    "cli": "bun apps/cli/src/index.tsx 2>/dev/null || pnpm exec tsx --tsconfig apps/cli/tsconfig.json apps/cli/src/index.tsx",
     "server": "pnpm exec tsx apps/server/src/index.ts --port=4100",
     "web": "pnpm --filter web dev",
     "dev:cli": "SCODE_DEBUG=1 bun scripts/dev-cli.ts",
