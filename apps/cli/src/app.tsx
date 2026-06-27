@@ -1,4 +1,13 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import {
+  StrictMode,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
+
+import * as Effect from "effect/Effect";
 
 import {
   type Command,
@@ -6,6 +15,7 @@ import {
   executeCommand,
   parseCommand,
 } from "@/components/commands/commands";
+import { ErrorBoundary } from "@/components/error/index";
 import { MainContent, SessionSidebar } from "@/components/layout/index";
 import { DialogProvider } from "@/components/ui/dialog";
 import { Toast, ToastProvider, useToast } from "@/components/ui/toast";
@@ -13,10 +23,76 @@ import { useHealth, useSessions } from "@/hooks/useApi";
 import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
+import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
 import { useAppStore } from "@/store/index";
+import { createCliRenderer } from "@opentui/core";
+import { createRoot } from "@opentui/react";
 import { useTerminalDimensions } from "@opentui/react";
+import { Logger, initDebugLog } from "@scode/shared/logger";
 import { apiFetch } from "@scode/shared/utils";
 import { layout, theme } from "@scode/theme";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+initDebugLog();
+
+const queryClient = new QueryClient({
+  defaultOptions: {
+    queries: { retry: 2, staleTime: 10_000, refetchOnWindowFocus: false },
+  },
+});
+
+const logger = new Logger({ stderr: true });
+
+export async function startTui(
+  serverUrl: string,
+  model?: string,
+): Promise<boolean> {
+  try {
+    const renderer = await createCliRenderer({
+      exitOnCtrlC: false,
+      targetFps: 30,
+    });
+
+    setRendererCleanup(() => renderer.destroy());
+
+    process.on("SIGINT", () => {
+      void Effect.runPromise(gracefulShutdown(0, serverUrl));
+    });
+
+    process.on("uncaughtException", (err) => {
+      logger.error(`Uncaught exception: ${err.message}`);
+      void Effect.runPromise(gracefulShutdown(1, serverUrl));
+    });
+
+    process.on("unhandledRejection", (reason) => {
+      const message = reason instanceof Error ? reason.message : String(reason);
+      logger.error(`Unhandled rejection: ${message}`);
+      void Effect.runPromise(gracefulShutdown(1, serverUrl));
+    });
+
+    const handleExit = () => {
+      void Effect.runPromise(gracefulShutdown(0, serverUrl));
+    };
+
+    const root = createRoot(renderer);
+    root.render(
+      <QueryClientProvider client={queryClient}>
+        <StrictMode>
+          <ErrorBoundary>
+            <App serverUrl={serverUrl} model={model} onExit={handleExit} />
+          </ErrorBoundary>
+        </StrictMode>
+      </QueryClientProvider>,
+    );
+
+    return true;
+  } catch (err) {
+    logger.debug(
+      `TUI init failed: ${err instanceof Error ? err.message : String(err)}`,
+    );
+    return false;
+  }
+}
 
 export function App({
   serverUrl,
