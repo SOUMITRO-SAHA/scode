@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import { ChatArea } from "@/components/chat/index.js";
 import {
@@ -16,10 +16,12 @@ import { Landing } from "@/components/layout/index.js";
 import { SessionSidebar } from "@/components/layout/index.js";
 import { DialogProvider } from "@/components/ui/dialog";
 import { ToastProvider } from "@/components/ui/toast";
+import { useHealth, useSessions } from "@/hooks/useApi";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
 import { useAppStore } from "@/store/index";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { apiFetch } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 export function App({
@@ -50,9 +52,39 @@ export function App({
   const addSystemMessage = useAppStore((s) => s.addSystemMessage);
   const clearMessages = useAppStore((s) => s.clearMessages);
 
+  const { data: sessionsData } = useSessions(serverUrl);
+  const sessions = sessionsData?.sessions ?? [];
+  const currentSession = useMemo(
+    () => sessions.find((s) => s.id === currentSessionId),
+    [sessions, currentSessionId],
+  );
+  const sessionName = currentSession?.name;
+
   useEffect(() => {
     if (serverUrl) useAppStore.getState().setServerUrl(serverUrl);
   }, [serverUrl]);
+
+  // Load last used model from server on init (if no model set via CLI args)
+  const { data: healthData } = useHealth(serverUrl);
+  useEffect(() => {
+    if (healthData?.defaultModel && !model) {
+      setModel(healthData.defaultModel);
+    }
+  }, [healthData, model, setModel]);
+
+  // Persist model changes to the current session in the backend
+  useEffect(() => {
+    if (currentSessionId && model && serverUrl) {
+      apiFetch(
+        `/sessions/${encodeURIComponent(currentSessionId)}`,
+        {
+          method: "PATCH",
+          body: JSON.stringify({ model }),
+        },
+        serverUrl,
+      ).catch(() => {});
+    }
+  }, [model, currentSessionId, serverUrl]);
 
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
@@ -199,6 +231,8 @@ export function App({
   });
 
   const modelDisplay = model || undefined;
+  const sidebarWidth = 30;
+  const availableWidth = sidebarVisible ? width - sidebarWidth : width;
 
   return (
     <DialogProvider>
@@ -211,7 +245,9 @@ export function App({
         >
           <SessionSidebar />
           <box flexDirection="column" flexGrow={1}>
-            {hasConversation && <Header modelDisplay={modelDisplay} />}
+            {hasConversation && (
+              <Header modelDisplay={modelDisplay} sessionName={sessionName} />
+            )}
             {hasConversation ? (
               <ChatArea messages={messages} streaming={streaming} />
             ) : (
@@ -226,7 +262,7 @@ export function App({
               <Composer
                 onSubmit={handleSubmit}
                 streaming={streaming}
-                width={width}
+                width={availableWidth}
                 lines={composerLines}
                 placeholder={streaming ? "Waiting..." : "Ask anything..."}
                 modelDisplay={modelDisplay}

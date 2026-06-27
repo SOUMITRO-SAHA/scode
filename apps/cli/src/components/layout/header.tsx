@@ -46,26 +46,24 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
 
   return (
     <box
-      height={1}
+      height={2}
       backgroundColor={theme.background.secondary}
       paddingLeft={1}
       paddingRight={1}
+      alignItems="center"
     >
       <box flexDirection="row" width="100%" justifyContent="space-between">
-        <box flexDirection="row">
+        <box flexDirection="row" alignItems="center">
           <box onMouseDown={toggleSidebar}>
-            <text fg={theme.text.disabled}>☰</text>
+            <text fg={theme.text.disabled}>{sidebarVisible ? "✕" : "☰"}</text>
           </box>
-          <text fg={theme.brand.primary} paddingLeft={1}>
-            <strong>{agentLabel}</strong>
-          </text>
           {sessionName && (
             <text fg={theme.text.muted} paddingLeft={1}>
-              · {sessionName.slice(0, 24)}
+              {sessionName.slice(0, 24)}
             </text>
           )}
         </box>
-        <box flexDirection="row">
+        <box flexDirection="row" alignItems="center">
           <text fg={connected ? theme.success : theme.danger}>
             {connected ? "●" : "○"}
           </text>
@@ -75,7 +73,9 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
                 <strong>{modelName}</strong>
               </text>
               {providerName && (
-                <text fg={theme.text.muted}> {providerName}</text>
+                <text fg={theme.text.muted} paddingLeft={1}>
+                  {providerName}
+                </text>
               )}
             </>
           ) : (
@@ -85,7 +85,7 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
           )}
           <text
             fg={theme.warning}
-            paddingLeft={1}
+            paddingLeft={2}
             onMouseDown={() => setEffortLevel(cycleEffort(effortLevel))}
           >
             {effortLevel}

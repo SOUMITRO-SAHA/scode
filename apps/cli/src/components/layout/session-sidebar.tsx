@@ -17,7 +17,9 @@ export function SessionSidebar() {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const currentSessionId = useAppStore((s) => s.currentSessionId);
   const streamingSessionId = useAppStore((s) => s.streamingSessionId);
+  const model = useAppStore((s) => s.model);
   const setCurrentSessionId = useAppStore((s) => s.setCurrentSessionId);
+  const setModel = useAppStore((s) => s.setModel);
   const sidebarVisible = useAppStore((s) => s.sidebarVisible);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
   const sidebarSelectedIndex = useAppStore((s) => s.sidebarSelectedIndex);
@@ -29,9 +31,13 @@ export function SessionSidebar() {
   const clearMessages = useAppStore((s) => s.clearMessages);
 
   const handleCreate = useCallback(async () => {
-    const res = await createSession.mutateAsync({ name: "New Session" });
+    const res = await createSession.mutateAsync({
+      name: "New Session",
+      model: model ?? "",
+      provider: "",
+    });
     setCurrentSessionId(res.id);
-  }, [createSession, setCurrentSessionId]);
+  }, [createSession, setCurrentSessionId, model]);
 
   const handleDelete = useCallback(
     async (id: string) => {
@@ -44,24 +50,34 @@ export function SessionSidebar() {
   const handleSwitch = useCallback(
     async (id: string) => {
       setCurrentSessionId(id);
-      // Load session messages
+      // Load session messages and model
       if (id) {
         try {
-          const response = await apiFetch<{ messages: UnifiedMessage[] }>(
-            `/sessions/${encodeURIComponent(id)}/messages`,
-            {},
-            serverUrl,
-          );
-          setMessages(response.messages);
+          const [messagesResponse, sessionResponse] = await Promise.all([
+            apiFetch<{ messages: UnifiedMessage[] }>(
+              `/sessions/${encodeURIComponent(id)}/messages`,
+              {},
+              serverUrl,
+            ),
+            apiFetch<{ model: string; provider: string }>(
+              `/sessions/${encodeURIComponent(id)}`,
+              {},
+              serverUrl,
+            ),
+          ]);
+          setMessages(messagesResponse.messages);
+          if (sessionResponse.model) {
+            setModel(sessionResponse.model);
+          }
         } catch (error) {
-          console.error("Failed to load session messages:", error);
+          console.error("Failed to load session:", error);
           clearMessages();
         }
       } else {
         clearMessages();
       }
     },
-    [setCurrentSessionId, setMessages, clearMessages, serverUrl],
+    [setCurrentSessionId, setMessages, clearMessages, setModel, serverUrl],
   );
 
   const sessions = data?.sessions ?? [];
