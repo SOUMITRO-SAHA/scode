@@ -1,6 +1,6 @@
 import { create } from "zustand";
 
-import type { Message } from "@scode/shared/types";
+import type { Message, UnifiedMessage } from "@scode/shared/types";
 
 export type AgentId = "plan" | "write" | "chat";
 export type EffortLevel = "low" | "medium" | "high";
@@ -44,6 +44,7 @@ interface AppStore {
   setStreaming: (s: boolean) => void;
   cycleAgent: () => void;
   setSidebarSelectedIndex: (i: number) => void;
+  setMessages: (messages: UnifiedMessage[]) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -104,4 +105,18 @@ export const useAppStore = create<AppStore>((set) => ({
       return { currentAgent: AGENTS[(idx + 1) % AGENTS.length] };
     }),
   setSidebarSelectedIndex: (i) => set({ sidebarSelectedIndex: i }),
+  setMessages: (unifiedMessages) =>
+    set(() => {
+      // Convert UnifiedMessage to Message
+      const messages: Message[] = unifiedMessages
+        .filter(
+          (m) =>
+            m.role === "user" || m.role === "assistant" || m.role === "system",
+        )
+        .map((m) => ({
+          role: m.role as "user" | "assistant" | "system",
+          content: typeof m.content === "string" ? m.content : "",
+        }));
+      return { messages };
+    }),
 }));

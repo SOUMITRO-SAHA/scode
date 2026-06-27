@@ -9,6 +9,8 @@ import {
 import { useAppStore } from "@/store/index";
 import { RGBA } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
+import type { UnifiedMessage } from "@scode/shared/types";
+import { apiFetch } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 export function SessionSidebar() {
@@ -23,6 +25,8 @@ export function SessionSidebar() {
   const { data, isLoading, isError } = useSessions(serverUrl);
   const createSession = useCreateSession(serverUrl);
   const deleteSession = useDeleteSession(serverUrl);
+  const setMessages = useAppStore((s) => s.setMessages);
+  const clearMessages = useAppStore((s) => s.clearMessages);
 
   const handleCreate = useCallback(async () => {
     const res = await createSession.mutateAsync({ name: "New Session" });
@@ -38,10 +42,26 @@ export function SessionSidebar() {
   );
 
   const handleSwitch = useCallback(
-    (id: string) => {
+    async (id: string) => {
       setCurrentSessionId(id);
+      // Load session messages
+      if (id) {
+        try {
+          const response = await apiFetch<{ messages: UnifiedMessage[] }>(
+            `/sessions/${encodeURIComponent(id)}/messages`,
+            {},
+            serverUrl,
+          );
+          setMessages(response.messages);
+        } catch (error) {
+          console.error("Failed to load session messages:", error);
+          clearMessages();
+        }
+      } else {
+        clearMessages();
+      }
     },
-    [setCurrentSessionId],
+    [setCurrentSessionId, setMessages, clearMessages, serverUrl],
   );
 
   const sessions = data?.sessions ?? [];
