@@ -72,9 +72,7 @@ export function MainContent({
 
   return (
     <box flexDirection="column" flexGrow={1}>
-      {hasConversation && (
-        <Header modelDisplay={modelDisplay} sessionName={sessionName} />
-      )}
+      {hasConversation && <Header sessionName={sessionName} />}
 
       <box
         flexDirection="column"
