@@ -4,6 +4,8 @@ import type { ChatCompletionMessageParam } from "openai/resources/chat/completio
 import type { LLMProvider } from "../provider";
 import type { UnifiedMessage } from "../types";
 
+import type { EffortLevel } from "@scode/shared/types";
+
 export interface OpenAICompatConfig {
   id: string;
   name: string;
@@ -49,6 +51,7 @@ export class OpenAICompatAdapter implements LLMProvider {
       tools: toOpenAITools(params.tools),
       stream: true,
       max_tokens: 8192,
+      ...(params.effortLevel ? { reasoning_effort: params.effortLevel } : {}),
     });
 
     const toolCallAccumulators: Map<

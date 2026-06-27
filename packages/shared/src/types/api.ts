@@ -1,5 +1,6 @@
 import type {
   AppConfig,
+  EffortLevel,
   HealthStatus,
   LogEntry,
   ModelInfo,
@@ -20,6 +21,7 @@ export interface ChatRequest {
   model?: string;
   provider?: string;
   sessionId?: string;
+  effortLevel?: EffortLevel;
 }
 
 export interface CreateSessionRequest {

@@ -3,6 +3,21 @@ import type { UnifiedMessage } from "../types";
 
 import Anthropic from "@anthropic-ai/sdk";
 import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
+import type { EffortLevel } from "@scode/shared/types";
+
+function effortToThinkingBudget(
+  level: EffortLevel | undefined,
+): number | undefined {
+  if (!level) return undefined;
+  switch (level) {
+    case "low":
+      return 2048;
+    case "medium":
+      return 8192;
+    case "high":
+      return 16384;
+  }
+}
 
 export class ClaudeAdapter implements LLMProvider {
   readonly id = "claude";
@@ -29,6 +44,7 @@ export class ClaudeAdapter implements LLMProvider {
     const model = params.model ?? this.defaultModel;
 
     const messages = toAnthropicMessages(params.messages);
+    const budgetTokens = effortToThinkingBudget(params.effortLevel);
 
     const stream = client.messages.stream({
       model,
@@ -36,6 +52,14 @@ export class ClaudeAdapter implements LLMProvider {
       system: params.system,
       messages,
       tools: toAnthropicTools(params.tools),
+      ...(budgetTokens
+        ? {
+            thinking: {
+              type: "enabled",
+              budget_tokens: budgetTokens,
+            },
+          }
+        : {}),
     });
 
     for await (const event of stream) {
@@ -44,6 +68,12 @@ export class ClaudeAdapter implements LLMProvider {
         event.delta.type === "text_delta"
       ) {
         yield { type: "text", delta: event.delta.text };
+      }
+      if (
+        event.type === "content_block_delta" &&
+        event.delta.type === "thinking_delta"
+      ) {
+        yield { type: "thought", text: event.delta.thinking };
       }
     }
 

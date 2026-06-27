@@ -49,6 +49,7 @@ export class CommandCodeAdapter implements LLMProvider {
       tools: params.tools.length > 0 ? toOpenAITools(params.tools) : undefined,
       stream: true,
       stream_options: { include_usage: true },
+      ...(params.effortLevel ? { reasoning_effort: params.effortLevel } : {}),
     };
 
     const res = await fetch(`${BASE_URL}/chat/completions`, {

@@ -11,6 +11,8 @@ import type { ToolService } from "../tool/service";
 import type { Skill, StreamEvent } from "../types";
 
 import { DebugLogger, Logger } from "@scode/shared/logger";
+import { encodeStreamChunk } from "@scode/shared/types";
+import type { EffortLevel } from "@scode/shared/types";
 
 const logger = new Logger();
 const dbg = new DebugLogger("server:handler");
@@ -39,6 +41,7 @@ export async function handleChat(
   sessionId: string | undefined,
   deps: HandlerDeps,
   streamWriter: StreamWriter,
+  effortLevel?: EffortLevel,
 ): Promise<string> {
   const cfg = runSync(deps.configService.get);
   const resolvedModel = modelStr || cfg.defaultModel;
@@ -105,12 +108,18 @@ export async function handleChat(
         tools: toolDefs,
         model,
         apiKey,
+        effortLevel,
       });
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       dbg.error("llm init failed", { error: msg });
       logger.error(`LLM init failed for ${provider.id}/${model}: ${msg}`);
-      await streamWriter(`\n\n*Error*: LLM call failed - ${msg}`);
+      await streamWriter(
+        encodeStreamChunk({
+          type: "error",
+          message: `LLM call failed - ${msg}`,
+        }),
+      );
       break;
     }
 
@@ -152,7 +161,13 @@ export async function handleChat(
       if (event.type === "text") {
         streamChunkCount++;
         fullResponse += event.delta;
-        await streamWriter(event.delta);
+        await streamWriter(
+          encodeStreamChunk({ type: "text", delta: event.delta }),
+        );
+      } else if (event.type === "thought") {
+        await streamWriter(
+          encodeStreamChunk({ type: "thought", text: event.text }),
+        );
       } else if (event.type === "tool_use") {
         toolCalled = true;
         dbg.log("tool call", {
@@ -204,7 +219,9 @@ export async function handleChat(
           });
         }
       } else if (event.type === "error") {
-        await streamWriter(`\n\n*Error*: ${event.message}`);
+        await streamWriter(
+          encodeStreamChunk({ type: "error", message: event.message }),
+        );
       } else if (event.type === "done") {
         break;
       }

@@ -8,12 +8,13 @@ import { useAutocomplete } from "./useAutocomplete.js";
 import { useHistory } from "./useHistory.js";
 
 import type { Command } from "@/components/commands/commands.js";
-import { AGENT_LABELS, useAppStore } from "@/store/index";
+import { AGENT_LABELS, EFFORT_LEVELS, useAppStore } from "@/store/index";
 import {
   type KeyEvent,
   TextAttributes,
   type TextareaRenderable,
 } from "@opentui/core";
+import type { EffortLevel } from "@scode/shared/types";
 import { theme, layout as themeLayout } from "@scode/theme";
 
 export interface ComposerProps {
@@ -57,6 +58,7 @@ export function Composer({
   const currentAgent = useAppStore((s) => s.currentAgent);
   const cycleAgent = useAppStore((s) => s.cycleAgent);
   const effortLevel = useAppStore((s) => s.effortLevel);
+  const setEffortLevel = useAppStore((s) => s.setEffortLevel);
   const selectedSkills = useAppStore((s) => s.selectedSkills);
   const removeSelectedSkill = useAppStore((s) => s.removeSelectedSkill);
   const clearSelectedSkills = useAppStore((s) => s.clearSelectedSkills);
@@ -67,6 +69,15 @@ export function Composer({
   const skipSubmitRef = useRef(false);
 
   const { modelName, providerName, hasModel } = parseModelDisplay(modelDisplay);
+
+  function cycleEffort(level: EffortLevel): EffortLevel {
+    const idx = EFFORT_LEVELS.indexOf(level);
+    return EFFORT_LEVELS[(idx + 1) % EFFORT_LEVELS.length];
+  }
+
+  function handleCycleEffort() {
+    setEffortLevel(cycleEffort(effortLevel));
+  }
 
   useEffect(() => {
     if (focusTrigger && ref.current && !ref.current.isDestroyed) {
@@ -194,10 +205,10 @@ export function Composer({
   return (
     <box
       paddingBottom={2}
-      paddingLeft={1}
-      paddingRight={1}
+      paddingLeft={1.5}
+      paddingRight={1.5}
       width={effectiveWidth}
-      alignItems="center"
+      alignItems="stretch"
     >
       <box
         borderStyle="rounded"
@@ -273,6 +284,7 @@ export function Composer({
           isCommand={isCommand}
           currentAgent={currentAgent}
           effortLevel={effortLevel}
+          onCycleEffort={handleCycleEffort}
           modelName={modelName}
           providerName={providerName}
           hasModel={hasModel}

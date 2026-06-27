@@ -8,6 +8,21 @@ import type {
   FunctionDeclaration,
   Part,
 } from "@google/genai";
+import type { EffortLevel } from "@scode/shared/types";
+
+function effortToThinkingBudget(
+  level: EffortLevel | undefined,
+): number | undefined {
+  if (!level) return undefined;
+  switch (level) {
+    case "low":
+      return 2048;
+    case "medium":
+      return 8192;
+    case "high":
+      return 16384;
+  }
+}
 
 export class GeminiAdapter implements LLMProvider {
   readonly id = "gemini";
@@ -36,6 +51,7 @@ export class GeminiAdapter implements LLMProvider {
     const client = new GoogleGenAI({ apiKey: params.apiKey });
     const model = params.model ?? this.defaultModel;
     const { systemInstruction, contents } = toGeminiContents(params.messages);
+    const thinkingBudget = effortToThinkingBudget(params.effortLevel);
 
     const stream = await client.models.generateContentStream({
       model,
@@ -49,6 +65,13 @@ export class GeminiAdapter implements LLMProvider {
             functionDeclarations: toGeminiTools(params.tools),
           },
         ],
+        ...(thinkingBudget
+          ? {
+              thinkingConfig: {
+                thinkingBudget,
+              },
+            }
+          : {}),
       },
     });
 
@@ -58,8 +81,15 @@ export class GeminiAdapter implements LLMProvider {
     }> = [];
 
     for await (const chunk of stream) {
-      if (chunk.text) {
-        yield { type: "text", delta: chunk.text };
+      const parts = chunk.candidates?.[0]?.content?.parts;
+      if (parts) {
+        for (const part of parts) {
+          if (part.thought && part.text) {
+            yield { type: "thought", text: part.text };
+          } else if (part.text) {
+            yield { type: "text", delta: part.text };
+          }
+        }
       }
       if (chunk.functionCalls) {
         aggregatedFunctionCalls = chunk.functionCalls.map(

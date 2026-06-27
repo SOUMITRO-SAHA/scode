@@ -6,11 +6,48 @@ import { useAppStore } from "../store/index";
 
 import { useToast } from "@/components/ui/toast";
 import { DebugLogger } from "@scode/shared/logger";
+import { decodeStreamChunk } from "@scode/shared/types";
 import { apiFetch, apiFetchStream } from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
 const decoder = new TextDecoder();
 const dbg = new DebugLogger("client:stream");
+
+function processStreamChunk(chunk: string, buffer: string): string {
+  buffer += chunk;
+  const lines = buffer.split("\n");
+  for (let i = 0; i < lines.length - 1; i++) {
+    const line = lines[i].trim();
+    if (!line) continue;
+    const parsed = decodeStreamChunk(line);
+    if (!parsed) {
+      dbg.warn("unparseable chunk, treating as plain text", {
+        line: line.slice(0, 80),
+      });
+      useAppStore.getState().appendAssistantChunk(line);
+      continue;
+    }
+    switch (parsed.type) {
+      case "text": {
+        useAppStore.getState().appendAssistantChunk(parsed.delta);
+        break;
+      }
+      case "thought": {
+        useAppStore.getState().appendThought(parsed.text);
+        break;
+      }
+      case "error": {
+        useAppStore.getState().setLastAssistantError(parsed.message);
+        break;
+      }
+      case "meta": {
+        // meta events are informational, no UI update needed
+        break;
+      }
+    }
+  }
+  return lines[lines.length - 1];
+}
 
 export function useStreamChat(serverUrl: string) {
   const toast = useToast();
@@ -31,6 +68,7 @@ export function useStreamChat(serverUrl: string) {
 
       dbg.log("submit", { text: text.slice(0, 120), model: current.model });
 
+      useAppStore.getState().clearThought();
       useAppStore.getState().addUserMessage(text);
       useAppStore.getState().setStreaming(true);
       statusRef.current = "streaming";
@@ -76,6 +114,7 @@ export function useStreamChat(serverUrl: string) {
         setStreamingSession(sessionId);
 
         const model = useAppStore.getState().model;
+        const effortLevel = useAppStore.getState().effortLevel;
         dbg.log("opening stream", { sessionId, model, endpoint: "/chat" });
         const stream = await apiFetchStream(
           "/chat",
@@ -83,6 +122,7 @@ export function useStreamChat(serverUrl: string) {
             message: text,
             model,
             sessionId,
+            effortLevel,
           },
           serverUrl,
         );
@@ -92,11 +132,12 @@ export function useStreamChat(serverUrl: string) {
 
         let chunkCount = 0;
         let totalBytes = 0;
+        let buffer = "";
         for await (const chunk of stream as Readable) {
           const t = decoder.decode(chunk as Uint8Array, { stream: true });
           chunkCount++;
           totalBytes += t.length;
-          useAppStore.getState().appendAssistantChunk(t);
+          buffer = processStreamChunk(t, buffer);
         }
         dbg.log("stream finished", { chunkCount, totalBytes });
       } catch (err) {

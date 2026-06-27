@@ -8,6 +8,7 @@ export type {
   UnifiedMessage,
   ContentBlock,
   AppConfig,
+  EffortLevel,
   LogEntry,
   HealthStatus,
   Stats,

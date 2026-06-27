@@ -27,6 +27,7 @@ import {
   SCODE_DIR,
   SCODE_LOGS_DIR,
 } from "@scode/shared/constants";
+import { encodeStreamChunk } from "@scode/shared/types";
 import type { AppConfig, Skill } from "@scode/shared/types";
 
 const runSync = Effect.runSync;
@@ -322,13 +323,14 @@ export function createV1Router(deps: RouterDeps): Hono {
         const model = body.model;
         const provider = body.provider;
         const sessionId = body.sessionId;
+        const effortLevel = body.effortLevel;
         const cfg = runSync(deps.configService.get);
         const modelStr =
           model ||
           (provider ? `${provider}/` + cfg.defaultModel : cfg.defaultModel);
         if (!modelStr) {
           s.write(
-            JSON.stringify({
+            encodeStreamChunk({
               type: "error",
               message:
                 "No model selected. Use Ctrl+M or /models command to select a model.",
@@ -348,10 +350,11 @@ export function createV1Router(deps: RouterDeps): Hono {
             skillService: deps.skillService,
           },
           (chunk: string) => s.write(chunk),
+          effortLevel,
         );
       } catch (err: unknown) {
         const msg = err instanceof Error ? err.message : String(err);
-        s.write(JSON.stringify({ type: "error", message: msg }));
+        s.write(encodeStreamChunk({ type: "error", message: msg }));
       }
     });
   }

@@ -1,21 +1,13 @@
 import { useConnectionStatus } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
-import { EFFORT_LEVELS, type EffortLevel } from "@/store/index";
 import { theme } from "@scode/theme";
 
 interface HeaderProps {
   sessionName?: string;
 }
 
-function cycleEffort(level: EffortLevel): EffortLevel {
-  const idx = EFFORT_LEVELS.indexOf(level);
-  return EFFORT_LEVELS[(idx + 1) % EFFORT_LEVELS.length];
-}
-
 export function Header({ sessionName }: HeaderProps) {
   const serverUrl = useAppStore((s) => s.serverUrl);
-  const effortLevel = useAppStore((s) => s.effortLevel);
-  const setEffortLevel = useAppStore((s) => s.setEffortLevel);
   const currentAgent = useAppStore((s) => s.currentAgent);
   const sidebarVisible = useAppStore((s) => s.sidebarVisible);
   const toggleSidebar = useAppStore((s) => s.toggleSidebar);
@@ -66,13 +58,6 @@ export function Header({ sessionName }: HeaderProps) {
               : status === "connected"
                 ? "●"
                 : "○"}
-          </text>
-
-          <text
-            fg={theme.warning}
-            onMouseDown={() => setEffortLevel(cycleEffort(effortLevel))}
-          >
-            {effortLevel}
           </text>
         </box>
       </box>

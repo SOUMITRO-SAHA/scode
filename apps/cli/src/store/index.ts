@@ -1,9 +1,8 @@
 import { create } from "zustand";
 
-import type { Message, UnifiedMessage } from "@scode/shared/types";
+import type { EffortLevel, Message, UnifiedMessage } from "@scode/shared/types";
 
 export type AgentId = "plan" | "write" | "chat";
-export type EffortLevel = "low" | "medium" | "high";
 
 export const AGENTS: AgentId[] = ["plan", "write", "chat"];
 
@@ -28,6 +27,8 @@ interface AppStore {
   currentAgent: AgentId;
   sidebarSelectedIndex: number;
   selectedSkills: string[];
+  thought: string;
+  thoughtStartTime: number;
 
   setServerUrl: (url: string) => void;
   setCurrentSessionId: (id: string | undefined) => void;
@@ -49,6 +50,8 @@ interface AppStore {
   addSelectedSkill: (name: string) => void;
   removeSelectedSkill: (name: string) => void;
   clearSelectedSkills: () => void;
+  appendThought: (text: string) => void;
+  clearThought: () => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -64,6 +67,8 @@ export const useAppStore = create<AppStore>((set) => ({
   currentAgent: "chat",
   sidebarSelectedIndex: 0,
   selectedSkills: [],
+  thought: "",
+  thoughtStartTime: 0,
 
   setServerUrl: (url) => set({ serverUrl: url }),
   setCurrentSessionId: (id) => set({ currentSessionId: id }),
@@ -102,7 +107,8 @@ export const useAppStore = create<AppStore>((set) => ({
     set((s) => ({
       messages: [...s.messages, { role: "system" as const, content: text }],
     })),
-  clearMessages: () => set({ messages: [], streaming: false }),
+  clearMessages: () =>
+    set({ messages: [], streaming: false, thought: "", thoughtStartTime: 0 }),
   setStreaming: (s) => set({ streaming: s }),
   cycleAgent: () =>
     set((s) => {
@@ -135,4 +141,11 @@ export const useAppStore = create<AppStore>((set) => ({
       selectedSkills: s.selectedSkills.filter((n) => n !== name),
     })),
   clearSelectedSkills: () => set({ selectedSkills: [] }),
+  appendThought: (text) =>
+    set((s) => ({
+      thought: s.thought + text,
+      thoughtStartTime:
+        s.thoughtStartTime === 0 ? Date.now() : s.thoughtStartTime,
+    })),
+  clearThought: () => set({ thought: "", thoughtStartTime: 0 }),
 }));

@@ -1,6 +1,8 @@
 import type { StreamEvent, ToolDefinition } from "../types";
 import type { UnifiedMessage } from "./types";
 
+import type { EffortLevel } from "@scode/shared/types";
+
 export interface LLMProvider {
   readonly id: string;
   readonly name: string;
@@ -14,5 +16,6 @@ export interface LLMProvider {
     tools: ToolDefinition[];
     model?: string;
     apiKey: string;
+    effortLevel?: EffortLevel;
   }): AsyncGenerator<StreamEvent>;
 }
