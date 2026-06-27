@@ -151,7 +151,7 @@ export function Composer({
     <box
       paddingLeft={layout.borderPad}
       paddingRight={layout.borderPad}
-      paddingBottom={1}
+      paddingBottom={2}
     >
       <box
         borderStyle="rounded"
