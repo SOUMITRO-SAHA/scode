@@ -11,9 +11,8 @@
     "types": ["node"],
     "lib": ["ESNext"],
     "noEmit": true,
-    "baseUrl": ".",
     "paths": {
-      "@/*": ["./src/*"]
+      "@/*": ["${configDir}/src/*"]
     }
   },
   "include": ["src"],
