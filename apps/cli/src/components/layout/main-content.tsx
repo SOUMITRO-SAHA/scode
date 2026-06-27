@@ -83,6 +83,7 @@ export function MainContent({
             modelDisplay={modelDisplay}
             mainContentWidth={mainContentWidth}
             clearTrigger={composerClearTrigger}
+            focusTrigger={focusTrigger}
           />
         )}
         {hasConversation && (

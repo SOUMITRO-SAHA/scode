@@ -45,6 +45,7 @@ export function useKeyboardShortcuts({
         toggleSidebar();
       }
     } else if (key.ctrl && key.name === "p") {
+      if (paletteVisible) bumpFocus();
       setPaletteVisible((v) => !v);
     } else if (key.ctrl && key.name === "l") {
       clearMessages();

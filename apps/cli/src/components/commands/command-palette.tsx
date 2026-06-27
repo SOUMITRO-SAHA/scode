@@ -3,8 +3,7 @@ import { useMemo } from "react";
 import { COMMANDS, type Command } from "./commands.js";
 
 import { DialogSelect, type DialogSelectOption } from "@/components/ui/dialog";
-import type { KeyEvent } from "@opentui/core";
-import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";
 
 interface CommandPaletteProps {
@@ -25,13 +24,6 @@ export function CommandPalette({
   onSelect,
 }: CommandPaletteProps) {
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
-
-  useKeyboard((event: KeyEvent) => {
-    if (!visible) return;
-    if (event.name === "escape") {
-      onClose();
-    }
-  });
 
   const options = useMemo((): DialogSelectOption<string>[] => {
     const suggested: DialogSelectOption<string>[] = [];
