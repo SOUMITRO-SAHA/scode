@@ -118,10 +118,10 @@ Use `@/` for cross-directory imports (maps to `./src/*`). Same-directory imports
 ```typescript
 // Cross-directory ✅
 import { useAppStore } from "@/store/index";
-import { Composer } from "@/components/composer/index.js";
+import { Composer } from "@/components/composer/index";
 
 // Same-directory ✅
-import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
+import { AutocompleteDropdown } from "./autocomplete-dropdown";
 
 // Deep relative ❌
 import { useAppStore } from "../../store/index";
@@ -130,6 +130,7 @@ import { useAppStore } from "../../store/index";
 # Key Design Decisions
 
 - **CLI is client-only** — no AI logic in CLI. Thin client that forwards prompts to server and streams responses.
+- **No `.js` extensions** — never use `.js` suffix in imports. tsx resolves extensionless imports natively. All imports are plain `"./foo"` not `"./foo.js"`.
 - **Singleton server** — one process serves all CLI invocations. Server holds API keys, model connections, and skill cache.
 - **Auto lifecycle** — CLI spawns server if not running; server stays alive until idle timeout or explicit shutdown.
 - **Transport**: HTTP/TCP with JSON health checks, streaming via Hono's `stream()` (chunked transfer).
@@ -163,11 +164,6 @@ import { useAppStore } from "../../store/index";
 - `@scode/shared` uses subpath exports (`"./logger"`, `"./constants"`) — no root `"."` export. Import as `@scode/shared/logger`, not `@scode/shared`.
 - `@scode/theme` uses single root export (`"."`). Zero runtime dependencies.
 - Neither `@scode/shared` nor `@scode/theme` have tsconfig paths or project references — resolution relies entirely on pnpm workspace + bundler (tsx).
-
-## Stale turbo.json
-
-- `turbo.json` `build.outputs` lists `.next/**` — there is NO Next.js app in this repo. Config was copied from another project.
-- `turbo.json` has `lint` and `check-types` tasks but most packages lack lint scripts.
 
 ## Dev startup
 
@@ -211,7 +207,7 @@ import { useAppStore } from "../../store/index";
 ## Path alias usage
 
 - `apps/cli/tsconfig.json` defines `paths: {"@/*": ["./src/*"]}` — use `@/` for cross-directory imports.
-- Same-directory imports use `./` (e.g., `./autocomplete-dropdown.js`).
+- Same-directory imports use `./` (e.g., `./autocomplete-dropdown`).
 - Deep relative paths like `../../` are avoided — use `@/` instead.
 
 ## Dev mode divergence (CLI vs Server)
