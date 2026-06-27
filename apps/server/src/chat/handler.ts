@@ -80,59 +80,80 @@ export async function handleChat(
   for (let i = 0; i < 10; i++) {
     let toolCalled = false;
     dbg.log(`tool loop iteration ${i + 1}/10`);
-    const generator = provider.streamResponse({
-      system,
-      messages: conversation,
-      tools: toolDefs,
-      model,
-      apiKey,
-    });
+
+    let generator: AsyncGenerator<import("../types").StreamEvent>;
+    try {
+      generator = provider.streamResponse({
+        system,
+        messages: conversation,
+        tools: toolDefs,
+        model,
+        apiKey,
+      });
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      dbg.error("llm init failed", { error: msg });
+      logger.error(`LLM init failed for ${provider.id}/${model}: ${msg}`);
+      await streamWriter(`\n\n*Error*: LLM call failed - ${msg}`);
+      break;
+    }
 
     let streamChunkCount = 0;
-    for await (const event of generator) {
-      if (event.type === "text") {
-        streamChunkCount++;
-        fullResponse += event.delta;
-        await streamWriter(event.delta);
-      } else if (event.type === "tool_use") {
-        toolCalled = true;
-        dbg.log("tool call", {
-          name: event.toolCall.name,
-          input: event.toolCall.input,
-        });
-        logger.info(`Tool call: ${event.toolCall.name}`);
-        let result: unknown;
-        try {
-          result = await deps.toolRegistry.settle(event.toolCall);
-        } catch (err: unknown) {
-          result = { error: err instanceof Error ? err.message : String(err) };
+    try {
+      for await (const event of generator) {
+        if (event.type === "text") {
+          streamChunkCount++;
+          fullResponse += event.delta;
+          await streamWriter(event.delta);
+        } else if (event.type === "tool_use") {
+          toolCalled = true;
+          dbg.log("tool call", {
+            name: event.toolCall.name,
+            input: event.toolCall.input,
+          });
+          logger.info(`Tool call: ${event.toolCall.name}`);
+          let result: unknown;
+          try {
+            result = await deps.toolRegistry.settle(event.toolCall);
+          } catch (err: unknown) {
+            result = {
+              error: err instanceof Error ? err.message : String(err),
+            };
+          }
+
+          dbg.log("tool result", {
+            name: event.toolCall.name,
+            resultPreview: JSON.stringify(result).slice(0, 200),
+          });
+
+          conversation.push({
+            role: "assistant",
+            content: [
+              {
+                type: "tool_use",
+                id: event.toolCall.id,
+                name: event.toolCall.name,
+                input: event.toolCall.input,
+              },
+            ],
+          });
+          conversation.push({
+            role: "tool",
+            tool_call_id: event.toolCall.id,
+            content: JSON.stringify(result),
+          });
+        } else if (event.type === "done") {
+          break;
         }
-
-        dbg.log("tool result", {
-          name: event.toolCall.name,
-          resultPreview: JSON.stringify(result).slice(0, 200),
-        });
-
-        conversation.push({
-          role: "assistant",
-          content: [
-            {
-              type: "tool_use",
-              id: event.toolCall.id,
-              name: event.toolCall.name,
-              input: event.toolCall.input,
-            },
-          ],
-        });
-        conversation.push({
-          role: "tool",
-          tool_call_id: event.toolCall.id,
-          content: JSON.stringify(result),
-        });
-      } else if (event.type === "done") {
-        break;
       }
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      dbg.error("llm stream error", { error: msg });
+      logger.error(`LLM stream error for ${provider.id}/${model}: ${msg}`);
+      await streamWriter(`\n\n*Error*: LLM stream error - ${msg}`);
+      break;
     }
+
     dbg.log("stream event loop done", { streamChunkCount, toolCalled });
     if (!toolCalled) break;
   }

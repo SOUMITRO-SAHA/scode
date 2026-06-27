@@ -22,7 +22,7 @@ import * as writeTool from "./tool/write";
 
 import { serve } from "@hono/node-server";
 import { DEFAULT_PORT, healthUrl } from "@scode/shared/constants";
-import { Logger, initDebugLog } from "@scode/shared/logger";
+import { DebugLogger, Logger, initDebugLog } from "@scode/shared/logger";
 
 initDebugLog();
 
@@ -99,41 +99,47 @@ app.get("/health", (c) => c.json({ healthy: true }));
 // Legacy process endpoint
 app.post("/process", (c) =>
   stream(c, async (s) => {
-    const {
-      prompt,
-      message,
-      model: modelString,
-      sessionId,
-    } = await c.req.json<{
-      prompt?: string;
-      message?: string;
-      model?: string;
-      sessionId?: string;
-    }>();
-    const text = message ?? prompt;
-    if (!text) {
-      c.status(400);
-      await s.write(JSON.stringify({ error: "message or prompt required" }));
-      return;
-    }
-    const config = configManager.get();
-    const modelStr = modelString || config.defaultModel;
-    if (!modelStr) {
-      c.status(400);
-      await s.write(
-        JSON.stringify({
-          error: "No model selected. Use /models to select a model.",
-        }),
+    try {
+      const {
+        prompt,
+        message,
+        model: modelString,
+        sessionId,
+      } = await c.req.json<{
+        prompt?: string;
+        message?: string;
+        model?: string;
+        sessionId?: string;
+      }>();
+      const text = message ?? prompt;
+      if (!text) {
+        c.status(400);
+        await s.write(JSON.stringify({ error: "message or prompt required" }));
+        return;
+      }
+      const config = configManager.get();
+      const modelStr = modelString || config.defaultModel;
+      if (!modelStr) {
+        c.status(400);
+        await s.write(
+          JSON.stringify({
+            error: "No model selected. Use /models to select a model.",
+          }),
+        );
+        return;
+      }
+      await handleChat(
+        text,
+        modelStr,
+        sessionId,
+        { providerRegistry, toolRegistry, sessionManager, configManager },
+        (chunk) => s.write(chunk),
       );
-      return;
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : String(err);
+      logger.error(`Process handler error: ${msg}`);
+      await s.write(JSON.stringify({ error: msg }));
     }
-    await handleChat(
-      text,
-      modelStr,
-      sessionId,
-      { providerRegistry, toolRegistry, sessionManager, configManager },
-      (chunk) => s.write(chunk),
-    );
   }),
 );
 

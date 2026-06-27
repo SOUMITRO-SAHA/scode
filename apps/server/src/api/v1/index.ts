@@ -301,26 +301,33 @@ export function createV1Router(deps: RouterDeps): Hono {
       return c.json({ error: "message or prompt required" }, 400);
     }
     return stream(c, async (s) => {
-      const model = body.model;
-      const provider = body.provider;
-      const sessionId = body.sessionId;
-      const config = deps.configManager.get();
-      const modelStr =
-        model ||
-        (provider ? `${provider}/` + config.defaultModel : config.defaultModel);
-      if (!modelStr) {
-        s.write(
-          JSON.stringify({
-            type: "error",
-            message:
-              "No model selected. Use Ctrl+M or /models command to select a model.",
-          }),
+      try {
+        const model = body.model;
+        const provider = body.provider;
+        const sessionId = body.sessionId;
+        const config = deps.configManager.get();
+        const modelStr =
+          model ||
+          (provider
+            ? `${provider}/` + config.defaultModel
+            : config.defaultModel);
+        if (!modelStr) {
+          s.write(
+            JSON.stringify({
+              type: "error",
+              message:
+                "No model selected. Use Ctrl+M or /models command to select a model.",
+            }),
+          );
+          return;
+        }
+        await handleChat(message, modelStr, sessionId, deps, (chunk: string) =>
+          s.write(chunk),
         );
-        return;
+      } catch (err: unknown) {
+        const msg = err instanceof Error ? err.message : String(err);
+        s.write(JSON.stringify({ type: "error", message: msg }));
       }
-      await handleChat(message, modelStr, sessionId, deps, (chunk: string) =>
-        s.write(chunk),
-      );
     });
   }
 
