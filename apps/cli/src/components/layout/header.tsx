@@ -56,9 +56,11 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
     >
       <box flexDirection="row" width="100%" justifyContent="space-between">
         <box flexDirection="row" alignItems="center" gap={0.5}>
-          <box onMouseDown={toggleSidebar}>
-            <text fg={theme.text.disabled}>☰</text>
-          </box>
+          {!sidebarVisible && (
+            <box onMouseDown={toggleSidebar}>
+              <text fg={theme.text.disabled}>☰</text>
+            </box>
+          )}
 
           <text fg={theme.text.muted} paddingLeft={1}>
             {agentLabel}
