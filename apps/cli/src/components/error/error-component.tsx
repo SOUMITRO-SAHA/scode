@@ -139,7 +139,7 @@ export function ErrorComponent({
         borderStyle="single"
         borderColor={theme.danger}
       >
-        <text fg={theme.text.primary} paddingX={1} paddingTop={1}>
+        <text fg={theme.danger} paddingX={1} paddingTop={1}>
           {error.message}
         </text>
 
