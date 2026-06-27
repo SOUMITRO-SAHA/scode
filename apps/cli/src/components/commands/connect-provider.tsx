@@ -20,7 +20,7 @@ import { theme } from "@scode/theme";
 
 type View = "providers" | "api-key";
 
-export function ConnectProvider() {
+export function ConnectProvider({ onClose }: { onClose?: () => void }) {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const setModel = useAppStore((s) => s.setModel);
   const { data, isLoading } = useProviders(serverUrl);
@@ -35,6 +35,11 @@ export function ConnectProvider() {
   );
   const dialog = useDialog();
 
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    onClose?.();
+  }, [onClose]);
+
   useKeyboard((event: KeyEvent) => {
     if (!open) return;
     if (event.name === "escape") {
@@ -42,7 +47,7 @@ export function ConnectProvider() {
         setView("providers");
         setSelectedProvider(null);
       } else {
-        setOpen(false);
+        handleClose();
       }
     }
   });
@@ -63,7 +68,7 @@ export function ConnectProvider() {
         useAppStore
           .getState()
           .addSystemMessage(`Connected to ${selectedProvider.name}`);
-        setOpen(false);
+        handleClose();
       } catch (err) {
         useAppStore
           .getState()
@@ -117,10 +122,20 @@ export function ConnectProvider() {
     if (!data?.providers) return [];
     return data.providers.map((p) => ({
       title: p.name,
-      description: p.connected ? `● ${p.id}` : `○ ${p.id}`,
+      description: p.id,
       value: p.id,
       truncateTitle: false,
-      gutter: p.connected ? () => <text fg={theme.success}>●</text> : undefined,
+      titleView: (
+        <box flexDirection="row" flexGrow={1} overflow="hidden">
+          <text wrapMode="none">{p.name}</text>
+          <text wrapMode="none" fg={theme.text.muted}>{`  ${p.id}`}</text>
+          {p.connected && (
+            <text wrapMode="none" fg={theme.success}>
+              {` connected`}
+            </text>
+          )}
+        </box>
+      ),
     }));
   }, [data]);
 
@@ -169,7 +184,7 @@ export function ConnectProvider() {
                 await handleConnect(provider);
               }
             }}
-            onClose={() => setOpen(false)}
+            onClose={handleClose}
             actions={[
               {
                 command: "c",

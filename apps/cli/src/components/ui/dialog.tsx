@@ -711,12 +711,7 @@ function Option(props: {
 
   return (
     <>
-      {props.current && (
-        <text flexShrink={0} fg={text} marginRight={0}>
-          ●
-        </text>
-      )}
-      <box flexDirection="row" flexGrow={1} overflow="hidden">
+      <box flexDirection="row" flexGrow={1} marginLeft={1} overflow="hidden">
         {props.titleView ? (
           props.titleView
         ) : (
