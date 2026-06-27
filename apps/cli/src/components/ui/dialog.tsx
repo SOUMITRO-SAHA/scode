@@ -511,7 +511,7 @@ export function DialogSelect<T>(props: DialogSelectProps<T>) {
                     >
                       <box
                         flexDirection="row"
-                        paddingLeft={isCurrent || option.gutter ? 1 : 3}
+                        paddingLeft={1}
                         paddingRight={3}
                         gap={1}
                         backgroundColor={
