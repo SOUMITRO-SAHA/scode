@@ -12,8 +12,8 @@ import { gzipSync } from "node:zlib";
 import pino from "pino";
 import type { Logger as PinoLogger } from "pino";
 
+import { dateFromFilename, daysOld } from "../utils/time";
 import type { LogLevel, LoggerOptions } from "./types";
-import { dateFromFilename, daysOld } from "./utils";
 
 function ts(): string {
   return new Date().toISOString().slice(11, 23);

@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 
-import { dateFromFilename, daysOld } from "../utils";
+import { dateFromFilename, daysOld } from "../time";
 
 describe("dateFromFilename", () => {
   it("parses dated log filename", () => {
