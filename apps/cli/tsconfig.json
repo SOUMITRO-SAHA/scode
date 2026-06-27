@@ -10,14 +10,7 @@
     "skipLibCheck": true,
     "types": ["node"],
     "lib": ["ESNext"],
-    "outDir": "./dist",
-    "rootDir": ".",
-    "plugins": [
-      {
-        "name": "@effect/language-service",
-        "namespaceImportPackages": ["effect", "@effect/platform-node"]
-      }
-    ],
+    "noEmit": true,
     "paths": {
       "@/*": ["./src/*"]
     }

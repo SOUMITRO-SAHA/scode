@@ -1,15 +1,15 @@
 import { useState } from "react";
 
-import { Header } from "./header.js";
-import { Landing } from "./landing.js";
+import { Header } from "./header";
+import { Landing } from "./landing";
 
-import { ChatArea } from "@/components/chat/index.js";
-import type { Command } from "@/components/commands/commands.js";
-import { CommandPalette } from "@/components/commands/index.js";
-import { ConnectProvider } from "@/components/commands/index.js";
-import { ModelSwitcher } from "@/components/commands/index.js";
-import { SkillBrowser } from "@/components/commands/index.js";
-import { Composer } from "@/components/composer/index.js";
+import { ChatArea } from "@/components/chat/index";
+import type { Command } from "@/components/commands/commands";
+import { CommandPalette } from "@/components/commands/index";
+import { ConnectProvider } from "@/components/commands/index";
+import { ModelSwitcher } from "@/components/commands/index";
+import { SkillBrowser } from "@/components/commands/index";
+import { Composer } from "@/components/composer/index";
 import type { Message } from "@scode/shared/types";
 
 interface MainContentProps {

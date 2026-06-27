@@ -5,12 +5,12 @@ import {
   type CommandContext,
   executeCommand,
   parseCommand,
-} from "@/components/commands/commands.js";
-import { MainContent, SessionSidebar } from "@/components/layout/index.js";
+} from "@/components/commands/commands";
+import { MainContent, SessionSidebar } from "@/components/layout/index";
 import { DialogProvider } from "@/components/ui/dialog";
 import { Toast, ToastProvider, useToast } from "@/components/ui/toast";
 import { useHealth, useSessions } from "@/hooks/useApi";
-import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts.js";
+import { useKeyboardShortcuts } from "@/hooks/useKeyboardShortcuts";
 import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
 import { useAppStore } from "@/store/index";

@@ -2,7 +2,6 @@
   "name": "scode",
   "private": true,
   "scripts": {
-    "build": "turbo run build",
     "dev": "SCODE_DEBUG=1 pnpm cli",
     "lint": "turbo run lint",
     "format": "prettier --write \"**/*.{ts,tsx,md}\"",

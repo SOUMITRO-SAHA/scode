@@ -1,4 +1,4 @@
-import type { Command } from "@/components/commands/commands.js";
+import type { Command } from "@/components/commands/commands";
 
 export interface AutocompleteItem {
   name: string;

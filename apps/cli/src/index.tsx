@@ -1,9 +1,11 @@
+import * as Effect from "effect/Effect";
 import { stdin, stdout } from "node:process";
 import { createInterface } from "node:readline";
 
 import { App } from "@/app";
-import { ErrorBoundary } from "@/components/error/index.js";
+import { ErrorBoundary } from "@/components/error/index";
 import { sendPrompt } from "@/services/client";
+import { CliConfig } from "@/services/config";
 import { initializeApp } from "@/services/init";
 import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
 import { createCliRenderer } from "@opentui/core";
@@ -30,10 +32,13 @@ async function main() {
 
   let serverUrl: string;
   try {
-    const result = await initializeApp();
+    const result = await Effect.runPromise(
+      Effect.provide(initializeApp, CliConfig.Live),
+    );
     serverUrl = result.serverUrl;
   } catch (err) {
-    logger.error(`Failed to connect to server: ${(err as Error).message}`);
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`Failed to connect to server: ${msg}`);
     process.exit(1);
   }
 

@@ -1,5 +1,4 @@
-import { AGENT_LABELS, type AgentId } from "../../store/index";
-
+import { AGENT_LABELS, type AgentId } from "@/store/index";
 import { theme } from "@scode/theme";
 
 const AGENT_COLORS: Record<string, string> = {

@@ -1,4 +1,4 @@
-import { type DialogContextValue, useDialog } from "./dialog.js";
+import { type DialogContextValue, useDialog } from "./dialog";
 
 import { TextAttributes } from "@opentui/core";
 import { theme } from "@scode/theme";

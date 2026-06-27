@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { ThinkingDisplay } from "@/components/feedback/thinking-display.js";
+import { ThinkingDisplay } from "@/components/feedback/thinking-display";
 import { useAppStore } from "@/store/index";
 import { getMarkdownStyle } from "@/styles/syntaxTheme";
 import { theme } from "@scode/theme";
@@ -20,7 +20,7 @@ export function AssistantMessage({
   if (!content && !isStreaming) return null;
 
   return (
-    <box paddingTop={1} paddingBottom={1}>
+    <box paddingTop={1} paddingBottom={1} paddingLeft={2}>
       <box flexDirection="column">
         {thought || (isStreaming && !content) ? (
           <ThinkingDisplay

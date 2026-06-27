@@ -4,7 +4,7 @@ import fuzzysort from "fuzzysort";
 
 import type { AutocompleteItem } from "./types";
 
-import { COMMANDS } from "@/components/commands/commands.js";
+import { COMMANDS } from "@/components/commands/commands";
 import { useSkills } from "@/hooks/useApi";
 
 interface UseAutocompleteOptions {

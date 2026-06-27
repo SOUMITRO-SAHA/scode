@@ -1,2 +1,2 @@
-export { ErrorBoundary } from "./error-boundary.js";
-export { ErrorComponent } from "./error-component.js";
+export { ErrorBoundary } from "./error-boundary";
+export { ErrorComponent } from "./error-component";

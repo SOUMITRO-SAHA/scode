@@ -1,4 +1,4 @@
-export { CommandPalette } from "./command-palette.js";
-export { ConnectProvider } from "./connect-provider.js";
-export { ModelSwitcher } from "./model-switcher.js";
-export { SkillBrowser } from "./skill-browser.js";
+export { CommandPalette } from "./command-palette";
+export { ConnectProvider } from "./connect-provider";
+export { ModelSwitcher } from "./model-switcher";
+export { SkillBrowser } from "./skill-browser";

@@ -1,6 +1,6 @@
 import { useMemo } from "react";
 
-import { COMMANDS, type Command } from "./commands.js";
+import { COMMANDS, type Command } from "./commands";
 
 import { DialogSelect, type DialogSelectOption } from "@/components/ui/dialog";
 import { useTerminalDimensions } from "@opentui/react";

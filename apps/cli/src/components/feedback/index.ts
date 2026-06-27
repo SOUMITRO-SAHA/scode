@@ -1,5 +1,5 @@
-export { ThinkingPanel } from "./thinking-panel.js";
-export { TipSection } from "./tip-section.js";
-export { KeyboardHints } from "./keyboard-hints.js";
-export { Spinner } from "./spinner.js";
-export { ThinkingDisplay } from "./thinking-display.js";
+export { ThinkingPanel } from "./thinking-panel";
+export { TipSection } from "./tip-section";
+export { KeyboardHints } from "./keyboard-hints";
+export { Spinner } from "./spinner";
+export { ThinkingDisplay } from "./thinking-display";

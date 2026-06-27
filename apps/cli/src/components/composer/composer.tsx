@@ -1,13 +1,13 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
-import { AutocompleteDropdown } from "./autocomplete-dropdown.js";
-import { ComposerFooter } from "./composer-footer.js";
-import { calculateLayout, parseModelDisplay } from "./layout.js";
-import { SkillPills } from "./skill-pills.js";
-import { useAutocomplete } from "./useAutocomplete.js";
-import { useHistory } from "./useHistory.js";
+import { AutocompleteDropdown } from "./autocomplete-dropdown";
+import { ComposerFooter } from "./composer-footer";
+import { calculateLayout, parseModelDisplay } from "./layout";
+import { SkillPills } from "./skill-pills";
+import { useAutocomplete } from "./useAutocomplete";
+import { useHistory } from "./useHistory";
 
-import type { Command } from "@/components/commands/commands.js";
+import type { Command } from "@/components/commands/commands";
 import { AGENT_LABELS, useAppStore } from "@/store/index";
 import {
   type KeyEvent,
@@ -237,7 +237,7 @@ export function Composer({
   const hasActiveSkills = selectedSkills.length > 0;
 
   return (
-    <box paddingBottom={2} width={effectiveWidth} alignItems="stretch">
+    <box paddingBottom={1} width={effectiveWidth} alignItems="stretch">
       <box
         borderStyle="rounded"
         borderColor={

@@ -24,7 +24,7 @@ export function Header({ sessionName }: HeaderProps) {
   return (
     <box
       height={1}
-      marginBottom={0.5}
+      marginBottom={0}
       backgroundColor={theme.background.secondary}
       paddingLeft={1}
       paddingRight={1}

@@ -1,6 +1,6 @@
 import { useCallback, useState } from "react";
 
-import { type DialogContextValue, useDialog } from "./dialog.js";
+import { type DialogContextValue, useDialog } from "./dialog";
 
 import { TextAttributes } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";

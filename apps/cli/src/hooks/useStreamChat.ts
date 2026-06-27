@@ -4,7 +4,7 @@ import * as Effect from "effect/Effect";
 import * as Stream from "effect/Stream";
 import { Readable } from "node:stream";
 
-import type { StreamError } from "../services/platform/errors";
+import type { StreamError } from "../services/errors";
 import { useAppStore } from "../store/index";
 
 import { useToast } from "@/components/ui/toast";
@@ -17,7 +17,6 @@ const decoder = new TextDecoder();
 const dbg = new DebugLogger("client:stream");
 
 let assistantMsgAdded = false;
-let streamRef: Readable | null = null;
 
 function processStreamChunk(chunk: string, buffer: string): string {
   buffer += chunk;
@@ -69,8 +68,8 @@ function processStreamChunk(chunk: string, buffer: string): string {
 function readStreamToStore(
   stream: Readable,
   buffer: string,
-): Effect.Effect<string> {
-  return Effect.async<string>((resume) => {
+): Effect.Effect<string, Error> {
+  return Effect.callback<string, Error>((resume) => {
     let localBuffer = buffer;
     let closed = false;
 
@@ -101,7 +100,6 @@ function readStreamToStore(
     stream.on("end", onEnd);
     stream.on("error", onError);
 
-    // Resume reading if paused
     stream.resume();
 
     return Effect.sync(() => {
@@ -117,6 +115,7 @@ export function useStreamChat(serverUrl: string) {
   const toast = useToast();
   const sessionIdRef = useRef<string | undefined>(undefined);
   const statusRef = useRef<"idle" | "streaming">("idle");
+  const streamRef = useRef<Readable | null>(null);
   const qc = useQueryClient();
   const streaming = useAppStore((s) => s.streaming);
   const messages = useAppStore((s) => s.messages);
@@ -133,7 +132,7 @@ export function useStreamChat(serverUrl: string) {
       dbg.log("submit", { text: text.slice(0, 120), model: current.model });
 
       assistantMsgAdded = false;
-      streamRef = null;
+      streamRef.current = null;
 
       useAppStore.getState().clearThought();
       useAppStore.getState().addUserMessage(text);
@@ -197,7 +196,7 @@ export function useStreamChat(serverUrl: string) {
           catch: (cause) => new Error(`Stream open failed: ${cause}`),
         })) as Readable;
 
-        streamRef = stream;
+        streamRef.current = stream;
         dbg.log("stream connected, reading chunks");
 
         yield* readStreamToStore(stream, "");
@@ -213,11 +212,12 @@ export function useStreamChat(serverUrl: string) {
         toast.show({ variant: "error", message: errMsg });
       } finally {
         dbg.log("stream flow complete, resetting state");
-        if (streamRef) {
+        const stream = streamRef.current;
+        if (stream !== null) {
           try {
-            streamRef.destroy();
+            (stream as Readable).destroy();
           } catch {}
-          streamRef = null;
+          streamRef.current = null;
         }
         useAppStore.getState().setStreaming(false);
         setStreamingSession(undefined);

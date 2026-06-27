@@ -1,3 +1,3 @@
-export { Composer } from "./composer.js";
-export { SkillPills } from "./skill-pills.js";
-export type { ComposerProps } from "./composer.js";
+export { Composer } from "./composer";
+export { SkillPills } from "./skill-pills";
+export type { ComposerProps } from "./composer";

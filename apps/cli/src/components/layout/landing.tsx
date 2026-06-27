@@ -1,4 +1,4 @@
-import { Composer } from "@/components/composer/index.js";
+import { Composer } from "@/components/composer/index";
 import { KeyboardHints } from "@/components/feedback/keyboard-hints";
 import { TipSection } from "@/components/feedback/tip-section";
 import { useConnectionStatus, useHealth } from "@/hooks/useApi";
