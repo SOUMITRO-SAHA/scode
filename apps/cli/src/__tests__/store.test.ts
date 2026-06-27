@@ -108,9 +108,11 @@ describe("AppStore", () => {
     expect(msgs[0].content).toBe("Error: timeout");
   });
 
-  it("does not set error when no assistant message", () => {
+  it("creates assistant message with error when no assistant message exists", () => {
     useAppStore.getState().setLastAssistantError("fail");
-    expect(useAppStore.getState().messages).toHaveLength(0);
+    const msgs = useAppStore.getState().messages;
+    expect(msgs).toHaveLength(1);
+    expect(msgs[0]).toEqual({ role: "assistant", content: "Error: fail" });
   });
 
   it("adds system message", () => {

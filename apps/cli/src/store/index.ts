@@ -104,6 +104,8 @@ export const useAppStore = create<AppStore>((set) => ({
       const last = copy[copy.length - 1];
       if (last && last.role === "assistant") {
         copy[copy.length - 1] = { ...last, content: `Error: ${err}` };
+      } else {
+        copy.push({ role: "assistant", content: `Error: ${err}` });
       }
       return { messages: copy };
     }),

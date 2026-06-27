@@ -35,6 +35,56 @@ export interface HandlerDeps {
 
 const runSync: <A>(eff: Effect.Effect<A>) => A = Effect.runSync;
 
+const errorMsg = (msg: string) => `[Error: ${msg}]`;
+
+function persistError(
+  deps: HandlerDeps,
+  sessionId: string,
+  msg: string,
+): Effect.Effect<void> {
+  return Effect.as(
+    deps.sessionService.addMessage(sessionId, {
+      role: "system" as const,
+      content: errorMsg(msg),
+    }),
+    void 0,
+  );
+}
+
+function extractErrorMsg(
+  error: unknown,
+  providerId: string,
+  model: string,
+): string {
+  if (error instanceof LLMError) {
+    const msg = `${error.module}.${error.method}: ${error.reason.message}`;
+    logger.error(`LLM stream error: ${msg}`);
+    return msg;
+  }
+  if (error instanceof ToolFailure) {
+    dbg.error("tool failure", { error: error.error });
+    return error.error;
+  }
+  if (error instanceof Error) {
+    logger.error(`LLM stream error: ${error.message}`);
+    return error.message;
+  }
+  const msg = String(error);
+  logger.error(`LLM stream unhandled error: ${msg}`);
+  return msg;
+}
+
+function extractCauseMsg(
+  cause: Cause.Cause<Error>,
+  providerId: string,
+  model: string,
+): string {
+  const error = Cause.isFailType(cause)
+    ? cause.error
+    : cause.reasons?.find(Cause.isFailReason)?.error;
+  return extractErrorMsg(error, providerId, model);
+}
+
 export async function handleChat(
   prompt: string,
   modelStr: string,
@@ -75,8 +125,20 @@ export async function handleChat(
     );
   }
 
+  // Emit meta chunk so CLI knows the session ID immediately
+  await streamWriter(
+    encodeStreamChunk({
+      type: "meta",
+      sessionId: session.id,
+      model: resolvedModel,
+    }),
+  );
+
   session.messages.push({ role: "user", content: prompt });
   runSync(deps.sessionService.update(session));
+
+  const saveSync = (msg: string) =>
+    runSync(persistError(deps, session.id, msg));
 
   const skills = runSync(
     Effect.catch(deps.skillService.loadAllSkills, () =>
@@ -95,6 +157,7 @@ export async function handleChat(
 
   const conversation = [...session.messages];
   let fullResponse = "";
+  let hadError = false;
 
   for (let i = 0; i < 10; i++) {
     let toolCalled = false;
@@ -111,15 +174,14 @@ export async function handleChat(
         effortLevel,
       });
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : String(err);
+      const msg = extractErrorMsg(err, provider.id, model);
       dbg.error("llm init failed", { error: msg });
-      logger.error(`LLM init failed for ${provider.id}/${model}: ${msg}`);
+      const errText = `LLM call failed - ${msg}`;
       await streamWriter(
-        encodeStreamChunk({
-          type: "error",
-          message: `LLM call failed - ${msg}`,
-        }),
+        encodeStreamChunk({ type: "error", message: errText }),
       );
+      saveSync(errText);
+      hadError = true;
       break;
     }
 
@@ -127,32 +189,14 @@ export async function handleChat(
       e instanceof Error ? e : new Error(String(e)),
     ).pipe(
       Stream.catchCause((cause: Cause.Cause<Error>) => {
-        const error = cause.reasons.find(Cause.isFailReason)?.error;
-        if (error instanceof LLMError) {
-          const msg = `${error.module}.${error.method}: ${error.reason.message}`;
-          dbg.error("llm stream error", {
-            error: msg,
-            retryable: error.retryable,
-          });
-          logger.error(`LLM stream error: ${msg}`);
-          return Stream.make({ type: "error" as const, message: msg });
-        }
-        if (error instanceof ToolFailure) {
-          dbg.error("tool failure", { error: error.error });
-          return Stream.make({ type: "error" as const, message: error.error });
-        }
-        if (error instanceof Error) {
-          dbg.error("llm stream error", { error: error.message });
-          logger.error(`LLM stream error: ${error.message}`);
-          return Stream.make({
+        const msg = extractCauseMsg(cause, provider.id, model);
+        // Compose the error save effect and emit the error event via Stream.fromEffect
+        return Stream.fromEffect(
+          Effect.as(persistError(deps, session.id, msg), {
             type: "error" as const,
-            message: error.message,
-          });
-        }
-        const msg = String(error);
-        dbg.error("llm stream unhandled error", { error: msg });
-        logger.error(`LLM stream unhandled error: ${msg}`);
-        return Stream.make({ type: "error" as const, message: msg });
+            message: msg,
+          }),
+        );
       }),
     );
 
@@ -167,6 +211,12 @@ export async function handleChat(
       } else if (event.type === "thought") {
         await streamWriter(
           encodeStreamChunk({ type: "thought", text: event.text }),
+        );
+      } else if (event.type === "error") {
+        // Error events from catchCause already persisted; native error events persist here
+        hadError = true;
+        await streamWriter(
+          encodeStreamChunk({ type: "error", message: event.message }),
         );
       } else if (event.type === "tool_use") {
         toolCalled = true;
@@ -204,13 +254,14 @@ export async function handleChat(
         });
 
         if (result && typeof result === "object" && "error" in result) {
+          const errMsg = (result as { error: string }).error;
           conversation.push({
             role: "tool",
             tool_call_id: event.toolCall.id,
-            content: JSON.stringify({
-              error: (result as { error: string }).error,
-            }),
+            content: JSON.stringify({ error: errMsg }),
           });
+          saveSync(errMsg);
+          hadError = true;
         } else {
           conversation.push({
             role: "tool",
@@ -218,10 +269,6 @@ export async function handleChat(
             content: JSON.stringify(result),
           });
         }
-      } else if (event.type === "error") {
-        await streamWriter(
-          encodeStreamChunk({ type: "error", message: event.message }),
-        );
       } else if (event.type === "done") {
         break;
       }
@@ -232,15 +279,19 @@ export async function handleChat(
 
   dbg.log("response complete", {
     responseLength: fullResponse.length,
+    hadError,
     preview: fullResponse.slice(0, 200),
   });
 
-  runSync(
-    deps.sessionService.addMessage(session.id, {
-      role: "assistant",
-      content: fullResponse,
-    }),
-  );
+  // Always save assistant response (even if empty / error-only)
+  if (fullResponse || hadError) {
+    runSync(
+      deps.sessionService.addMessage(session.id, {
+        role: "assistant",
+        content: fullResponse || "",
+      }),
+    );
+  }
 
   return session.id;
 }

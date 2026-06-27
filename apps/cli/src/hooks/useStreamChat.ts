@@ -1,7 +1,10 @@
 import { useCallback, useRef } from "react";
 
+import * as Effect from "effect/Effect";
+import * as Stream from "effect/Stream";
 import { Readable } from "node:stream";
 
+import type { StreamError } from "../services/platform/errors";
 import { useAppStore } from "../store/index";
 
 import { useToast } from "@/components/ui/toast";
@@ -12,6 +15,9 @@ import { useQueryClient } from "@tanstack/react-query";
 
 const decoder = new TextDecoder();
 const dbg = new DebugLogger("client:stream");
+
+let assistantMsgAdded = false;
+let streamRef: Readable | null = null;
 
 function processStreamChunk(chunk: string, buffer: string): string {
   buffer += chunk;
@@ -24,11 +30,25 @@ function processStreamChunk(chunk: string, buffer: string): string {
       dbg.warn("unparseable chunk, treating as plain text", {
         line: line.slice(0, 80),
       });
+      if (!assistantMsgAdded) {
+        useAppStore.getState().addAssistantMessage();
+        assistantMsgAdded = true;
+      }
       useAppStore.getState().appendAssistantChunk(line);
       continue;
     }
     switch (parsed.type) {
+      case "meta": {
+        if (parsed.sessionId) {
+          useAppStore.getState().setCurrentSessionId(parsed.sessionId);
+        }
+        break;
+      }
       case "text": {
+        if (!assistantMsgAdded) {
+          useAppStore.getState().addAssistantMessage();
+          assistantMsgAdded = true;
+        }
         useAppStore.getState().appendAssistantChunk(parsed.delta);
         break;
       }
@@ -38,15 +58,59 @@ function processStreamChunk(chunk: string, buffer: string): string {
       }
       case "error": {
         useAppStore.getState().setLastAssistantError(parsed.message);
-        break;
-      }
-      case "meta": {
-        // meta events are informational, no UI update needed
+        assistantMsgAdded = true;
         break;
       }
     }
   }
   return lines[lines.length - 1];
+}
+
+function readStreamToStore(
+  stream: Readable,
+  buffer: string,
+): Effect.Effect<string> {
+  return Effect.async<string>((resume) => {
+    let localBuffer = buffer;
+    let closed = false;
+
+    const onData = (chunk: Uint8Array) => {
+      const t = decoder.decode(chunk, { stream: true });
+      localBuffer = processStreamChunk(t, localBuffer);
+    };
+
+    const onEnd = () => {
+      closed = true;
+      cleanup();
+      resume(Effect.succeed(localBuffer));
+    };
+
+    const onError = (err: Error) => {
+      closed = true;
+      cleanup();
+      resume(Effect.fail(err));
+    };
+
+    const cleanup = () => {
+      stream.removeListener("data", onData);
+      stream.removeListener("end", onEnd);
+      stream.removeListener("error", onError);
+    };
+
+    stream.on("data", onData);
+    stream.on("end", onEnd);
+    stream.on("error", onError);
+
+    // Resume reading if paused
+    stream.resume();
+
+    return Effect.sync(() => {
+      if (!closed) {
+        cleanup();
+        stream.destroy();
+      }
+    });
+  });
 }
 
 export function useStreamChat(serverUrl: string) {
@@ -68,6 +132,9 @@ export function useStreamChat(serverUrl: string) {
 
       dbg.log("submit", { text: text.slice(0, 120), model: current.model });
 
+      assistantMsgAdded = false;
+      streamRef = null;
+
       useAppStore.getState().clearThought();
       useAppStore.getState().addUserMessage(text);
       useAppStore.getState().setStreaming(true);
@@ -75,19 +142,19 @@ export function useStreamChat(serverUrl: string) {
 
       let sessionId = sessionIdRef.current;
 
-      // Set streaming session ID after we have the session
       const setStreamingSession = (id: string | undefined) => {
         useAppStore.getState().setStreamingSessionId(id);
       };
 
-      try {
+      // Wrap the stream lifecycle in an Effect for proper scoped resource management
+      const program = Effect.gen(function* () {
         if (!sessionId) {
           dbg.log("fetching config for default model");
-          const config = await apiFetch<{ defaultModel: string }>(
-            "/config",
-            {},
-            serverUrl,
-          );
+          const config = yield* Effect.tryPromise({
+            try: () =>
+              apiFetch<{ defaultModel: string }>("/config", {}, serverUrl),
+            catch: (cause) => new Error(`Config fetch failed: ${cause}`),
+          });
           const m = useAppStore.getState().model ?? config.defaultModel;
           if (!m) {
             throw new Error(
@@ -95,14 +162,18 @@ export function useStreamChat(serverUrl: string) {
             );
           }
           dbg.log("creating session", { model: m, name: text.slice(0, 60) });
-          const session = await apiFetch<{ id: string }>(
-            "/sessions",
-            {
-              method: "POST",
-              body: JSON.stringify({ name: text.slice(0, 60), model: m }),
-            },
-            serverUrl,
-          );
+          const session = yield* Effect.tryPromise({
+            try: () =>
+              apiFetch<{ id: string }>(
+                "/sessions",
+                {
+                  method: "POST",
+                  body: JSON.stringify({ name: text.slice(0, 60), model: m }),
+                },
+                serverUrl,
+              ),
+            catch: (cause) => new Error(`Session creation failed: ${cause}`),
+          });
           sessionId = session.id;
           sessionIdRef.current = sessionId;
           useAppStore.getState().setCurrentSessionId(sessionId);
@@ -110,36 +181,31 @@ export function useStreamChat(serverUrl: string) {
           dbg.log("session created", { sessionId });
         }
 
-        // Set streaming session ID
         setStreamingSession(sessionId);
 
         const model = useAppStore.getState().model;
         const effortLevel = useAppStore.getState().effortLevel;
-        dbg.log("opening stream", { sessionId, model, endpoint: "/chat" });
-        const stream = await apiFetchStream(
-          "/chat",
-          {
-            message: text,
-            model,
-            sessionId,
-            effortLevel,
-          },
-          serverUrl,
-        );
 
-        useAppStore.getState().addAssistantMessage();
+        dbg.log("opening stream", { sessionId, model, endpoint: "/chat" });
+        const stream = (yield* Effect.tryPromise({
+          try: () =>
+            apiFetchStream(
+              "/chat",
+              { message: text, model, sessionId, effortLevel },
+              serverUrl,
+            ),
+          catch: (cause) => new Error(`Stream open failed: ${cause}`),
+        })) as Readable;
+
+        streamRef = stream;
         dbg.log("stream connected, reading chunks");
 
-        let chunkCount = 0;
-        let totalBytes = 0;
-        let buffer = "";
-        for await (const chunk of stream as Readable) {
-          const t = decoder.decode(chunk as Uint8Array, { stream: true });
-          chunkCount++;
-          totalBytes += t.length;
-          buffer = processStreamChunk(t, buffer);
-        }
-        dbg.log("stream finished", { chunkCount, totalBytes });
+        yield* readStreamToStore(stream, "");
+        dbg.log("stream finished");
+      });
+
+      try {
+        await Effect.runPromise(program);
       } catch (err) {
         const errMsg = err instanceof Error ? err.message : String(err);
         dbg.error("stream failed", { error: errMsg });
@@ -147,6 +213,12 @@ export function useStreamChat(serverUrl: string) {
         toast.show({ variant: "error", message: errMsg });
       } finally {
         dbg.log("stream flow complete, resetting state");
+        if (streamRef) {
+          try {
+            streamRef.destroy();
+          } catch {}
+          streamRef = null;
+        }
         useAppStore.getState().setStreaming(false);
         setStreamingSession(undefined);
         statusRef.current = "idle";
