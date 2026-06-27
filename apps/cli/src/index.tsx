@@ -8,8 +8,10 @@ import { initializeApp } from "@/services/init";
 import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
 import { createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
-import { Logger } from "@scode/shared/logger";
+import { Logger, initDebugLog } from "@scode/shared/logger";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+
+initDebugLog();
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -22,7 +22,9 @@ import * as writeTool from "./tool/write";
 
 import { serve } from "@hono/node-server";
 import { DEFAULT_PORT, healthUrl } from "@scode/shared/constants";
-import { Logger } from "@scode/shared/logger";
+import { Logger, initDebugLog } from "@scode/shared/logger";
+
+initDebugLog();
 
 function buildRegistry(): Registry {
   const reg = new Registry();
