@@ -5,9 +5,12 @@ export function UserMessage({ content }: { content: string }) {
     <box
       borderStyle="rounded"
       borderColor={theme.chat.user.border}
-      paddingX={1}
-      paddingY={1}
-      marginLeft={4}
+      paddingLeft={1}
+      paddingRight={1}
+      paddingTop={1}
+      paddingBottom={1}
+      marginLeft={6}
+      marginRight={2}
       backgroundColor={theme.chat.user.background}
     >
       <box flexDirection="row" justifyContent="flex-end">

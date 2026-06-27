@@ -34,8 +34,10 @@ export function ChatArea({
     <scrollbox
       flexGrow={1}
       ref={scrollRef}
-      paddingLeft={1}
-      paddingRight={1}
+      paddingLeft={2}
+      paddingRight={2}
+      paddingTop={1}
+      paddingBottom={1}
       stickyScroll
       stickyStart="bottom"
     >

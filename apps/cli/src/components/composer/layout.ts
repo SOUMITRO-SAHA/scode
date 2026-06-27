@@ -3,9 +3,9 @@ import type { ComposerLayout, ModelInfo } from "./types";
 import { formatModelName, parseModelString } from "@scode/shared/utils";
 
 export function calculateLayout(terminalWidth: number): ComposerLayout {
-  const boxWidth = Math.min(terminalWidth - 4, 80);
+  const boxWidth = terminalWidth - 4;
   const inputWidth = boxWidth - 4;
-  const borderPad = Math.max(0, Math.floor((terminalWidth - boxWidth) / 2));
+  const borderPad = 2;
   const autoWidth = boxWidth;
 
   return {
