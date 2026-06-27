@@ -149,7 +149,13 @@ export function Composer({
   const isCommand = initialVal.trim().startsWith("/");
 
   return (
-    <box paddingBottom={2} width={effectiveWidth} alignItems="center">
+    <box
+      paddingBottom={2}
+      paddingLeft={1}
+      paddingRight={1}
+      width={effectiveWidth}
+      alignItems="center"
+    >
       <box
         borderStyle="rounded"
         borderColor={
@@ -158,51 +164,53 @@ export function Composer({
         width="100%"
         flexDirection="column"
       >
-        <textarea
-          key={composerKey}
-          ref={ref}
-          initialValue={initialVal}
-          onSubmit={handleSubmit}
-          onKeyDown={handleKeyDown}
-          onContentChange={() => {
-            if (streaming) return;
-            const ta = ref.current;
-            const val = ta?.plainText ?? "";
-            if (val.startsWith("/")) {
-              const afterSlash = val.slice(1);
-              if (!afterSlash.includes(" ")) {
-                setAutoQuery(afterSlash);
-                setAutoIdx(0);
-                if (!autoVisible) setAutoVisible(true);
-                return;
-              }
-              if (afterSlash.includes(" ") && afterSlash.trim().length > 0) {
-                const cmdPart = afterSlash.split(" ")[0];
-                const matchingCmd = items.find(
-                  (c) => c.name === cmdPart || c.aliases.includes(cmdPart),
-                );
-                if (matchingCmd) {
-                  setAutoVisible(false);
-                  setAutoQuery("");
+        <box paddingLeft={1}>
+          <textarea
+            key={composerKey}
+            ref={ref}
+            initialValue={initialVal}
+            onSubmit={handleSubmit}
+            onKeyDown={handleKeyDown}
+            onContentChange={() => {
+              if (streaming) return;
+              const ta = ref.current;
+              const val = ta?.plainText ?? "";
+              if (val.startsWith("/")) {
+                const afterSlash = val.slice(1);
+                if (!afterSlash.includes(" ")) {
+                  setAutoQuery(afterSlash);
+                  setAutoIdx(0);
+                  if (!autoVisible) setAutoVisible(true);
                   return;
                 }
+                if (afterSlash.includes(" ") && afterSlash.trim().length > 0) {
+                  const cmdPart = afterSlash.split(" ")[0];
+                  const matchingCmd = items.find(
+                    (c) => c.name === cmdPart || c.aliases.includes(cmdPart),
+                  );
+                  if (matchingCmd) {
+                    setAutoVisible(false);
+                    setAutoQuery("");
+                    return;
+                  }
+                }
               }
-            }
-            if (autoVisible) {
-              setAutoVisible(false);
-              setAutoQuery("");
-            }
-          }}
-          placeholder={streaming ? "Waiting..." : placeholder}
-          width={layout.inputWidth}
-          height={lines}
-          focused
-          keyBindings={[{ name: "return", action: "submit" }]}
-          backgroundColor="transparent"
-          focusedBackgroundColor="transparent"
-          textColor={theme.text.primary}
-          placeholderColor={theme.text.disabled}
-        />
+              if (autoVisible) {
+                setAutoVisible(false);
+                setAutoQuery("");
+              }
+            }}
+            placeholder={streaming ? "Waiting..." : placeholder}
+            width={layout.inputWidth}
+            height={lines}
+            focused
+            keyBindings={[{ name: "return", action: "submit" }]}
+            backgroundColor="transparent"
+            focusedBackgroundColor="transparent"
+            textColor={theme.text.primary}
+            placeholderColor={theme.text.disabled}
+          />
+        </box>
         {autoVisible && (
           <AutocompleteDropdown
             items={items}
