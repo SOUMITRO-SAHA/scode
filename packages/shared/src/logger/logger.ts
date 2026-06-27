@@ -1,4 +1,4 @@
-import { Effect } from "effect";
+import { Effect, Option } from "effect";
 import {
   mkdirSync,
   readFileSync,
@@ -70,13 +70,15 @@ export const runMaintenanceEffect = Effect.fnUntraced(function* (
 
   for (const name of entries) {
     if (name.endsWith(".log") && !name.endsWith(".gz")) {
-      const date = dateFromFilename(name);
-      if (date && daysOld(date) >= 15) {
+      const dateOpt = yield* Effect.option(dateFromFilename(name));
+      const age = Option.isSome(dateOpt) ? yield* daysOld(dateOpt.value) : -1;
+      if (age >= 15) {
         yield* compress(join(logDir, name));
       }
     } else if (name.endsWith(".log.gz")) {
-      const date = dateFromFilename(name);
-      if (date && daysOld(date) >= 30) {
+      const dateOpt = yield* Effect.option(dateFromFilename(name));
+      const age = Option.isSome(dateOpt) ? yield* daysOld(dateOpt.value) : -1;
+      if (age >= 30) {
         yield* removeFile(join(logDir, name));
       }
     }

@@ -25,12 +25,13 @@ export const sendPrompt = (
     if (model) body.model = model;
     if (effortLevel) body.effortLevel = effortLevel;
 
-    const stream = yield* Effect.tryPromise({
-      try: () =>
-        apiFetchStream("/process", body, serverUrl) as Promise<Readable>,
-      catch: (cause) =>
-        new StreamError({ message: "Failed to open stream", cause }),
-    });
+    const stream = yield* apiFetchStream("/process", body, serverUrl).pipe(
+      Effect.catch((cause) =>
+        Effect.fail(
+          new StreamError({ message: "Failed to open stream", cause }),
+        ),
+      ),
+    );
 
     const decoder = new TextDecoder();
     let full = "";

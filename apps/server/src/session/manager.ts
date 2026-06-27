@@ -1,4 +1,5 @@
 import { desc, eq } from "drizzle-orm";
+import { Effect } from "effect";
 
 import { getDb } from "../db/client";
 import { sessions } from "../db/schema";
@@ -30,7 +31,7 @@ function rowToSession(row: typeof sessions.$inferSelect): Session {
 
 export class SessionManager {
   create(name: string, model: string, provider: string): Session {
-    const id = generateId();
+    const id = Effect.runSync(generateId);
     const now = new Date().toISOString();
     const row = {
       id,

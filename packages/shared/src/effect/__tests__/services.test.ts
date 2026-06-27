@@ -1,11 +1,7 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { Effect, Layer, ManagedRuntime } from "effect";
 
-import { apiFetch as rawApiFetch } from "../../utils/api";
-import { generateId as rawGenerateId } from "../../utils/id";
-import { formatModelName, parseModelString } from "../../utils/model";
-import { formatTime as rawFormatTime } from "../../utils/time";
 import { ApiService, IdService, ModelService, TimeService } from "../services";
 
 vi.mock("../../utils/api", () => ({
@@ -18,11 +14,13 @@ vi.mock("../../utils/api", () => ({
 }));
 
 vi.mock("../../utils/id", () => ({
-  generateId: vi.fn(),
+  generateId: Effect.succeed("abc-123"),
 }));
 
 vi.mock("../../utils/time", () => ({
   formatTime: vi.fn(),
+  dateFromFilename: vi.fn(),
+  daysOld: vi.fn(),
 }));
 
 vi.mock("../../utils/model", () => ({
@@ -39,15 +37,18 @@ const TestLayer = Layer.mergeAll(
 
 const runtime = ManagedRuntime.make(TestLayer);
 
+function mockOf(fn: unknown): Mock {
+  return fn as Mock;
+}
+
 describe("ApiService", () => {
   beforeEach(() => {
     vi.clearAllMocks();
   });
 
   it("fetch performs GET request and returns data", async () => {
-    (rawApiFetch as ReturnType<typeof vi.fn>).mockResolvedValue({
-      healthy: true,
-    });
+    const { apiFetch } = await import("../../utils/api");
+    mockOf(apiFetch).mockReturnValue(Effect.succeed({ healthy: true }));
 
     const result = await runtime.runPromise(
       ApiService.pipe(
@@ -56,46 +57,41 @@ describe("ApiService", () => {
     );
 
     expect(result).toEqual({ healthy: true });
-    expect(rawApiFetch).toHaveBeenCalledWith("/health", undefined, undefined);
+    expect(mockOf(apiFetch)).toHaveBeenCalledWith(
+      "/health",
+      undefined,
+      undefined,
+    );
   });
 
   it("fetch returns typed error on failure", async () => {
-    (rawApiFetch as ReturnType<typeof vi.fn>).mockRejectedValue(
-      new Error("timeout"),
-    );
-
-    const result = await runtime.runPromise(
-      ApiService.pipe(
-        Effect.flatMap((svc) => svc.fetch("/fail")),
-        Effect.flip,
+    const { apiFetch } = await import("../../utils/api");
+    mockOf(apiFetch).mockReturnValue(
+      Effect.fail(
+        Object.assign(new Error("timeout"), { _tag: "ApiFetchError" }),
       ),
     );
 
+    const result = await runtime.runPromise(
+      Effect.flip(ApiService.pipe(Effect.flatMap((svc) => svc.fetch("/fail")))),
+    );
+
     expect(result._tag).toBe("ApiFetchError");
-    expect(result.message).toContain("/fail");
   });
 
   it("url constructs URL", async () => {
     const result = await runtime.runPromise(
       ApiService.pipe(Effect.flatMap((svc) => svc.url("/health"))),
     );
-
     expect(result).toBe("http://127.0.0.1:4100/api/v1/health");
   });
 });
 
 describe("IdService", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   it("generate returns id string", async () => {
-    (rawGenerateId as ReturnType<typeof vi.fn>).mockReturnValue("abc-123");
-
     const result = await runtime.runPromise(
       IdService.pipe(Effect.flatMap((svc) => svc.generate)),
     );
-
     expect(result).toBe("abc-123");
   });
 });
@@ -106,7 +102,8 @@ describe("TimeService", () => {
   });
 
   it("formatTime returns formatted string", async () => {
-    (rawFormatTime as ReturnType<typeof vi.fn>).mockReturnValue("2:30 PM");
+    const { formatTime } = await import("../../utils/time");
+    mockOf(formatTime).mockReturnValue(Effect.succeed("2:30 PM"));
     const date = new Date("2025-01-01T14:30:00");
 
     const result = await runtime.runPromise(
@@ -114,7 +111,7 @@ describe("TimeService", () => {
     );
 
     expect(result).toBe("2:30 PM");
-    expect(rawFormatTime).toHaveBeenCalledWith(date);
+    expect(mockOf(formatTime)).toHaveBeenCalledWith(date);
   });
 });
 
@@ -124,10 +121,13 @@ describe("ModelService", () => {
   });
 
   it("parse returns provider and model", async () => {
-    (parseModelString as ReturnType<typeof vi.fn>).mockReturnValue({
-      providerId: "claude",
-      model: "claude-sonnet-4-20250515",
-    });
+    const { parseModelString } = await import("../../utils/model");
+    mockOf(parseModelString).mockReturnValue(
+      Effect.succeed({
+        providerId: "claude",
+        model: "claude-sonnet-4-20250515",
+      }),
+    );
 
     const result = await runtime.runPromise(
       ModelService.pipe(
@@ -142,21 +142,25 @@ describe("ModelService", () => {
   });
 
   it("parse returns error for invalid input", async () => {
-    (parseModelString as ReturnType<typeof vi.fn>).mockReturnValue(null);
+    const { parseModelString } = await import("../../utils/model");
+    mockOf(parseModelString).mockReturnValue(
+      Effect.fail(
+        Object.assign(new Error("parse failed"), { _tag: "ModelParseError" }),
+      ),
+    );
 
     const result = await runtime.runPromise(
-      ModelService.pipe(
-        Effect.flatMap((svc) => svc.parse("invalid")),
-        Effect.flip,
+      Effect.flip(
+        ModelService.pipe(Effect.flatMap((svc) => svc.parse("invalid"))),
       ),
     );
 
     expect(result._tag).toBe("ModelParseError");
-    expect(result.message).toContain("Expected format: provider/model");
   });
 
   it("formatName returns formatted name", async () => {
-    (formatModelName as ReturnType<typeof vi.fn>).mockReturnValue("Sonnet 4");
+    const { formatModelName } = await import("../../utils/model");
+    mockOf(formatModelName).mockReturnValue(Effect.succeed("Sonnet 4"));
 
     const result = await runtime.runPromise(
       ModelService.pipe(

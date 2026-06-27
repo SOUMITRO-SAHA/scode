@@ -1,5 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { Effect } from "effect";
+
 import { AutocompleteDropdown } from "./autocomplete-dropdown";
 import { ComposerFooter } from "./composer-footer";
 import { calculateLayout, parseModelDisplay } from "./layout";
@@ -83,13 +85,15 @@ export function Composer({
     if (!providerId || !modelId) return;
 
     let cancelled = false;
-    apiFetch<{
-      models: Array<{
-        provider: string;
-        defaultModel: string;
-        supportedEfforts: string[];
-      }>;
-    }>("/models", {}, serverUrl)
+    Effect.runPromise(
+      apiFetch<{
+        models: Array<{
+          provider: string;
+          defaultModel: string;
+          supportedEfforts: string[];
+        }>;
+      }>("/models", {}, serverUrl),
+    )
       .then((res) => {
         if (cancelled) return;
         const match = res.models.find(

@@ -15,19 +15,25 @@ vi.mock("../../utils/api", () => ({
 }));
 
 vi.mock("../../utils/id", () => ({
-  generateId: vi.fn().mockReturnValue("abc-123"),
+  generateId: Effect.succeed("abc-123"),
 }));
 
 vi.mock("../../utils/time", () => ({
-  formatTime: vi.fn().mockReturnValue("2:30 PM"),
+  formatTime: vi.fn().mockReturnValue(Effect.succeed("2:30 PM")),
+  dateFromFilename: vi.fn(),
+  daysOld: vi.fn(),
 }));
 
 vi.mock("../../utils/model", () => ({
-  parseModelString: vi.fn().mockReturnValue({
-    providerId: "claude",
-    model: "claude-sonnet-4-20250515",
-  }),
-  formatModelName: vi.fn().mockReturnValue("Sonnet 4"),
+  parseModelString: vi
+    .fn()
+    .mockReturnValue(
+      Effect.succeed({
+        providerId: "claude",
+        model: "claude-sonnet-4-20250515",
+      }),
+    ),
+  formatModelName: vi.fn().mockReturnValue(Effect.succeed("Sonnet 4")),
 }));
 
 const runtime = ManagedRuntime.make(SharedServicesLive);

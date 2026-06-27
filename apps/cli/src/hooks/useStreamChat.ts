@@ -149,11 +149,15 @@ export function useStreamChat(serverUrl: string) {
       const program = Effect.gen(function* () {
         if (!sessionId) {
           dbg.log("fetching config for default model");
-          const config = yield* Effect.tryPromise({
-            try: () =>
-              apiFetch<{ defaultModel: string }>("/config", {}, serverUrl),
-            catch: (cause) => new Error(`Config fetch failed: ${cause}`),
-          });
+          const config = yield* apiFetch<{ defaultModel: string }>(
+            "/config",
+            {},
+            serverUrl,
+          ).pipe(
+            Effect.catch((cause) =>
+              Effect.fail(new Error(`Config fetch failed: ${cause}`)),
+            ),
+          );
           const m = useAppStore.getState().model ?? config.defaultModel;
           if (!m) {
             throw new Error(
@@ -161,18 +165,18 @@ export function useStreamChat(serverUrl: string) {
             );
           }
           dbg.log("creating session", { model: m, name: text.slice(0, 60) });
-          const session = yield* Effect.tryPromise({
-            try: () =>
-              apiFetch<{ id: string }>(
-                "/sessions",
-                {
-                  method: "POST",
-                  body: JSON.stringify({ name: text.slice(0, 60), model: m }),
-                },
-                serverUrl,
-              ),
-            catch: (cause) => new Error(`Session creation failed: ${cause}`),
-          });
+          const session = yield* apiFetch<{ id: string }>(
+            "/sessions",
+            {
+              method: "POST",
+              body: JSON.stringify({ name: text.slice(0, 60), model: m }),
+            },
+            serverUrl,
+          ).pipe(
+            Effect.catch((cause) =>
+              Effect.fail(new Error(`Session creation failed: ${cause}`)),
+            ),
+          );
           sessionId = session.id;
           sessionIdRef.current = sessionId;
           useAppStore.getState().setCurrentSessionId(sessionId);
@@ -186,15 +190,15 @@ export function useStreamChat(serverUrl: string) {
         const effortLevel = useAppStore.getState().effortLevel;
 
         dbg.log("opening stream", { sessionId, model, endpoint: "/chat" });
-        const stream = (yield* Effect.tryPromise({
-          try: () =>
-            apiFetchStream(
-              "/chat",
-              { message: text, model, sessionId, effortLevel },
-              serverUrl,
-            ),
-          catch: (cause) => new Error(`Stream open failed: ${cause}`),
-        })) as Readable;
+        const stream = yield* apiFetchStream(
+          "/chat",
+          { message: text, model, sessionId, effortLevel },
+          serverUrl,
+        ).pipe(
+          Effect.catch((cause) =>
+            Effect.fail(new Error(`Stream open failed: ${cause}`)),
+          ),
+        );
 
         streamRef.current = stream;
         dbg.log("stream connected, reading chunks");

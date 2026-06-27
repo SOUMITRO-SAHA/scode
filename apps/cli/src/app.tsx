@@ -7,7 +7,7 @@ import {
   useState,
 } from "react";
 
-import * as Effect from "effect/Effect";
+import { Effect } from "effect";
 
 import {
   type Command,
@@ -169,13 +169,15 @@ function AppInner({
   // Persist model changes to the current session in the backend
   useEffect(() => {
     if (currentSessionId && model && serverUrl) {
-      apiFetch(
-        `/sessions/${encodeURIComponent(currentSessionId)}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify({ model }),
-        },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch(
+          `/sessions/${encodeURIComponent(currentSessionId)}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify({ model }),
+          },
+          serverUrl,
+        ),
       ).catch(() => {});
     }
   }, [model, currentSessionId, serverUrl]);

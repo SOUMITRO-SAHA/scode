@@ -1,8 +1,10 @@
+import { Effect } from "effect";
+
 import { formatTime } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 export function UserMessage({ content }: { content: string }) {
-  const timestamp = formatTime(new Date());
+  const timestamp = Effect.runSync(formatTime(new Date()));
 
   return (
     <box

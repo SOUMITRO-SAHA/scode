@@ -1,12 +1,8 @@
-import { Context, Effect, Layer, Option } from "effect";
+import { Context, Effect, Layer } from "effect";
 import { Readable } from "node:stream";
 
-import {
-  apiFetch as rawApiFetch,
-  apiFetchStream as rawApiFetchStream,
-  apiUrl as rawApiUrl,
-} from "../utils/api";
-import { generateId as rawGenerateId } from "../utils/id";
+import { apiFetch, apiFetchStream, apiUrl as rawApiUrl } from "../utils/api";
+import { generateId } from "../utils/id";
 import { formatModelName, parseModelString } from "../utils/model";
 import { formatTime as rawFormatTime } from "../utils/time";
 import {
@@ -39,47 +35,16 @@ export class ApiService extends Context.Service<
   static readonly Live = Layer.succeed(
     ApiService,
     ApiService.of({
-      fetch: <T>(
-        path: string,
-        opts?: RequestInit,
-        base?: string,
-      ): Effect.Effect<T, ApiFetchError> =>
-        Effect.tryPromise({
-          try: () => rawApiFetch<T>(path, opts, base),
-          catch: (err) =>
-            new ApiFetchError({
-              url: rawApiUrl(path, base),
-              method: opts?.method?.toString() ?? "get",
-              status:
-                err instanceof Error && "status" in err
-                  ? (err as { status: number }).status
-                  : undefined,
-            }),
-        }),
-      fetchStream: (
-        path: string,
-        body: unknown,
-        base?: string,
-      ): Effect.Effect<Readable, ApiStreamError> =>
-        Effect.tryPromise({
-          try: () => rawApiFetchStream(path, body, base),
-          catch: (err) =>
-            new ApiStreamError({
-              url: rawApiUrl(path, base),
-              status:
-                err instanceof Error && "status" in err
-                  ? (err as { status: number }).status
-                  : undefined,
-            }),
-        }),
-      url: (path: string, base?: string): Effect.Effect<string, ApiUrlError> =>
+      fetch: <T>(path: string, opts?: RequestInit, base?: string) =>
+        apiFetch<T>(path, opts, base),
+      fetchStream: (path: string, body: unknown, base?: string) =>
+        apiFetchStream(path, body, base),
+      url: (path: string, base?: string) =>
         Effect.sync(() => {
           try {
             return rawApiUrl(path, base);
-          } catch (err) {
-            throw new ApiUrlError({
-              path,
-            });
+          } catch {
+            throw new ApiUrlError({ path });
           }
         }),
     }),
@@ -95,7 +60,7 @@ export class IdService extends Context.Service<
   static readonly Live = Layer.succeed(
     IdService,
     IdService.of({
-      generate: Effect.sync(() => rawGenerateId()),
+      generate: generateId,
     }),
   );
 }
@@ -109,7 +74,7 @@ export class TimeService extends Context.Service<
   static readonly Live = Layer.succeed(
     TimeService,
     TimeService.of({
-      formatTime: (date: Date) => Effect.sync(() => rawFormatTime(date)),
+      formatTime: (date: Date) => rawFormatTime(date),
     }),
   );
 }
@@ -126,12 +91,8 @@ export class ModelService extends Context.Service<
   static readonly Live = Layer.succeed(
     ModelService,
     ModelService.of({
-      parse: (input: string) =>
-        Effect.fromOption(Option.fromNullOr(parseModelString(input))).pipe(
-          Effect.mapError(() => new ModelParseError({ input })),
-        ),
-      formatName: (modelId: string) =>
-        Effect.sync(() => formatModelName(modelId)),
+      parse: (input: string) => parseModelString(input),
+      formatName: (modelId: string) => formatModelName(modelId),
     }),
   );
 }

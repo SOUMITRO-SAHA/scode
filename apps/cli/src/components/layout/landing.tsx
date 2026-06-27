@@ -1,3 +1,5 @@
+import { Effect, Option } from "effect";
+
 import { Composer } from "@/components/composer/index";
 import { KeyboardHints } from "@/components/feedback/keyboard-hints";
 import { TipSection } from "@/components/feedback/tip-section";
@@ -35,8 +37,12 @@ export function Landing({
   const composerLines = height < 20 ? 1 : height < 28 ? 2 : 3;
 
   const modelStr = model ?? modelDisplay ?? health?.defaultModel;
-  const parsed = modelStr ? parseModelString(modelStr) : null;
-  const modelName = parsed ? formatModelName(parsed.model) : "";
+  const parsed = modelStr
+    ? Option.getOrNull(
+        Effect.runSync(Effect.option(parseModelString(modelStr))),
+      )
+    : null;
+  const modelName = parsed ? Effect.runSync(formatModelName(parsed.model)) : "";
   const providerName = parsed ? parsed.providerId : "";
   const hasModel = !!modelName;
 

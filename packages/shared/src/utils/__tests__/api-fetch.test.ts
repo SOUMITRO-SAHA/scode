@@ -1,6 +1,7 @@
 import { type Mock, beforeEach, describe, expect, it, vi } from "vitest";
 
 import axios from "axios";
+import { Effect } from "effect";
 
 import { apiFetch, apiFetchStream } from "../api";
 
@@ -13,7 +14,7 @@ describe("apiFetch", () => {
 
   it("performs GET request by default", async () => {
     (axios as Mock).mockResolvedValue({ data: { healthy: true } });
-    const result = await apiFetch("/health");
+    const result = await Effect.runPromise(apiFetch("/health"));
     expect(result).toEqual({ healthy: true });
     expect(axios).toHaveBeenCalledWith(
       "http://127.0.0.1:4100/api/v1/health",
@@ -23,10 +24,12 @@ describe("apiFetch", () => {
 
   it("performs POST with body", async () => {
     (axios as Mock).mockResolvedValue({ data: { id: "abc" } });
-    const result = await apiFetch("/sessions", {
-      method: "POST",
-      body: JSON.stringify({ name: "test" }),
-    });
+    const result = await Effect.runPromise(
+      apiFetch("/sessions", {
+        method: "POST",
+        body: JSON.stringify({ name: "test" }),
+      }),
+    );
     expect(result).toEqual({ id: "abc" });
     expect(axios).toHaveBeenCalledWith(
       "http://127.0.0.1:4100/api/v1/sessions",
@@ -39,7 +42,7 @@ describe("apiFetch", () => {
 
   it("uses custom base URL", async () => {
     (axios as Mock).mockResolvedValue({ data: {} });
-    await apiFetch("/health", {}, "http://localhost:5000");
+    await Effect.runPromise(apiFetch("/health", {}, "http://localhost:5000"));
     expect(axios).toHaveBeenCalledWith(
       "http://localhost:5000/api/v1/health",
       expect.anything(),
@@ -48,10 +51,12 @@ describe("apiFetch", () => {
 
   it("forwards custom headers", async () => {
     (axios as Mock).mockResolvedValue({ data: {} });
-    await apiFetch("/test", {
-      method: "GET",
-      headers: { "X-Custom": "value" } as Record<string, string>,
-    });
+    await Effect.runPromise(
+      apiFetch("/test", {
+        method: "GET",
+        headers: { "X-Custom": "value" } as Record<string, string>,
+      }),
+    );
     const config = (axios as Mock).mock.calls[0][1];
     expect(config.headers["X-Custom"]).toBe("value");
   });
@@ -59,9 +64,16 @@ describe("apiFetch", () => {
   it("forwards abort signal", async () => {
     (axios as Mock).mockResolvedValue({ data: {} });
     const controller = new AbortController();
-    await apiFetch("/test", { signal: controller.signal });
+    await Effect.runPromise(apiFetch("/test", { signal: controller.signal }));
     const config = (axios as Mock).mock.calls[0][1];
     expect(config.signal).toBe(controller.signal);
+  });
+
+  it("returns typed error on failure", async () => {
+    (axios as Mock).mockRejectedValue(new Error("timeout"));
+    const result = await Effect.runPromise(Effect.flip(apiFetch("/fail")));
+    expect(result._tag).toBe("ApiFetchError");
+    expect(result.message).toContain("/fail");
   });
 });
 
@@ -74,7 +86,9 @@ describe("apiFetchStream", () => {
     const fakeStream = { pipe: vi.fn() };
     (axios as Mock).mockResolvedValue({ data: fakeStream });
 
-    const result = await apiFetchStream("/chat", { message: "hi" });
+    const result = await Effect.runPromise(
+      apiFetchStream("/chat", { message: "hi" }),
+    );
     expect(result).toBe(fakeStream);
     expect(axios).toHaveBeenCalledWith(
       "http://127.0.0.1:4100/api/v1/chat",
@@ -89,7 +103,9 @@ describe("apiFetchStream", () => {
   it("uses custom base URL", async () => {
     const fakeStream = { pipe: vi.fn() };
     (axios as Mock).mockResolvedValue({ data: fakeStream });
-    await apiFetchStream("/chat", {}, "http://localhost:5000");
+    await Effect.runPromise(
+      apiFetchStream("/chat", {}, "http://localhost:5000"),
+    );
     expect(axios).toHaveBeenCalledWith(
       "http://localhost:5000/api/v1/chat",
       expect.anything(),

@@ -32,13 +32,13 @@ export const gracefulShutdown = (
     const id = MutableRef.get(clientIdRef);
     if (id !== null && baseUrl) {
       MutableRef.set(clientIdRef, null);
-      const data = yield* Effect.promise<UnregisterClientResponse | undefined>(
-        () =>
-          apiFetch<UnregisterClientResponse>(
-            `/active-clients/${encodeURIComponent(id)}`,
-            { method: "DELETE" },
-            baseUrl,
-          ).catch(() => undefined),
+      const data = yield* apiFetch<UnregisterClientResponse>(
+        `/active-clients/${encodeURIComponent(id)}`,
+        { method: "DELETE" },
+        baseUrl,
+      ).pipe(
+        Effect.catch(() => Effect.succeed(undefined)),
+        Effect.catchCause(() => Effect.succeed(undefined)),
       );
       if (data && data.wasLast) {
         logger.info("Last client — shutting down server");

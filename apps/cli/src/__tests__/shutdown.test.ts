@@ -51,11 +51,9 @@ describe("shutdown", () => {
 
   it("gracefulShutdown with clientId unregisters", async () => {
     const mockApiFetch = vi.mocked(apiFetch);
-    mockApiFetch.mockResolvedValue({
-      ok: true,
-      wasLast: false,
-      activeCount: 1,
-    });
+    mockApiFetch.mockReturnValue(
+      Effect.succeed({ ok: true, wasLast: false, activeCount: 1 }),
+    );
     setClientId("client-1");
 
     const exitSpy = vi
@@ -77,7 +75,9 @@ describe("shutdown", () => {
 
   it("stops server when wasLast is true", async () => {
     const mockApiFetch = vi.mocked(apiFetch);
-    mockApiFetch.mockResolvedValue({ ok: true, wasLast: true, activeCount: 0 });
+    mockApiFetch.mockReturnValue(
+      Effect.succeed({ ok: true, wasLast: true, activeCount: 0 }),
+    );
     setClientId("client-1");
 
     const exitSpy = vi
@@ -92,7 +92,11 @@ describe("shutdown", () => {
 
   it("handles apiFetch error gracefully", async () => {
     const mockApiFetch = vi.mocked(apiFetch);
-    mockApiFetch.mockRejectedValue(new Error("server down"));
+    mockApiFetch.mockReturnValue(
+      Effect.fail(
+        Object.assign(new Error("server down"), { _tag: "ApiFetchError" }),
+      ),
+    );
     setClientId("client-1");
 
     const exitSpy = vi

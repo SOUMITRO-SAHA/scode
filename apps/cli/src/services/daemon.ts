@@ -26,10 +26,7 @@ function resolveServerEntry(): string {
   return resolve(cliSrc, "../../../server/src/index.ts");
 }
 
-const healthCheck = Effect.tryPromise({
-  try: () => apiFetch("/health", {}, baseUrl).then(() => true),
-  catch: () => false,
-}).pipe(Effect.catchCause(() => Effect.succeed(false)));
+const healthCheck = Effect.isSuccess(apiFetch<unknown>("/health", {}, baseUrl));
 
 export const findServer: Effect.Effect<string | null> = Effect.gen(
   function* () {
@@ -106,12 +103,12 @@ export const ensureServer: Effect.Effect<string, ServerNotFoundError> =
   });
 
 export const registerActiveClient: Effect.Effect<string | null> =
-  Effect.promise(() =>
-    apiFetch<RegisterClientResponse>(
-      "/active-clients",
-      { method: "POST" },
-      baseUrl,
-    )
-      .then((r) => r.clientId)
-      .catch(() => null),
+  apiFetch<RegisterClientResponse>(
+    "/active-clients",
+    { method: "POST" },
+    baseUrl,
+  ).pipe(
+    Effect.map((r) => r.clientId),
+    Effect.catch(() => Effect.succeed(null)),
+    Effect.catchCause(() => Effect.succeed(null)),
   );

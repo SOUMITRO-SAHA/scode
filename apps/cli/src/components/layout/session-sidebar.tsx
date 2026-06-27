@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 
+import { Effect } from "effect";
 import fuzzysort from "fuzzysort";
 
 import { Spinner } from "@/components/ui/spinner";
@@ -144,15 +145,19 @@ export function SessionSidebar() {
         try {
           dbg.log("Loading session data", { id });
           const [messagesResponse, sessionResponse] = await Promise.all([
-            apiFetch<{ messages: UnifiedMessage[] }>(
-              `/sessions/${encodeURIComponent(id)}/messages`,
-              {},
-              serverUrl,
+            Effect.runPromise(
+              apiFetch<{ messages: UnifiedMessage[] }>(
+                `/sessions/${encodeURIComponent(id)}/messages`,
+                {},
+                serverUrl,
+              ),
             ),
-            apiFetch<{ model: string; provider: string }>(
-              `/sessions/${encodeURIComponent(id)}`,
-              {},
-              serverUrl,
+            Effect.runPromise(
+              apiFetch<{ model: string; provider: string }>(
+                `/sessions/${encodeURIComponent(id)}`,
+                {},
+                serverUrl,
+              ),
             ),
           ]);
           dbg.log("Session data loaded", {

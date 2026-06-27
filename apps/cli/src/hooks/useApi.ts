@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 import type {
   HealthStatus,
   LogEntry,
@@ -22,7 +24,8 @@ export function useApiBase(serverUrl?: string) {
 export function useHealth(serverUrl?: string) {
   return useQuery({
     queryKey: ["health", serverUrl],
-    queryFn: () => apiFetch<HealthStatus>("/health", {}, serverUrl),
+    queryFn: () =>
+      Effect.runPromise(apiFetch<HealthStatus>("/health", {}, serverUrl)),
     refetchInterval: 30_000,
   });
 }
@@ -44,7 +47,7 @@ export function useConnectionStatus(serverUrl?: string): {
 export function useStats(serverUrl?: string) {
   return useQuery({
     queryKey: ["stats", serverUrl],
-    queryFn: () => apiFetch<Stats>("/stats", {}, serverUrl),
+    queryFn: () => Effect.runPromise(apiFetch<Stats>("/stats", {}, serverUrl)),
   });
 }
 
@@ -53,10 +56,12 @@ export function useProviders(serverUrl?: string) {
   return useQuery({
     queryKey: ["providers", serverUrl],
     queryFn: () =>
-      apiFetch<{ providers: ProviderInfo[]; default: string }>(
-        "/providers",
-        {},
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ providers: ProviderInfo[]; default: string }>(
+          "/providers",
+          {},
+          serverUrl,
+        ),
       ),
   });
 }
@@ -65,13 +70,15 @@ export function useConnectProvider(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: ({ provider, apiKey }: { provider: string; apiKey: string }) =>
-      apiFetch<{ ok: boolean; provider: string }>(
-        "/providers/connect",
-        {
-          method: "POST",
-          body: JSON.stringify({ provider, apiKey }),
-        },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ ok: boolean; provider: string }>(
+          "/providers/connect",
+          {
+            method: "POST",
+            body: JSON.stringify({ provider, apiKey }),
+          },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["providers", serverUrl] });
@@ -83,10 +90,12 @@ export function useDisconnectProvider(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (provider: string) =>
-      apiFetch<{ ok: boolean; provider: string }>(
-        `/providers/${encodeURIComponent(provider)}`,
-        { method: "DELETE" },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ ok: boolean; provider: string }>(
+          `/providers/${encodeURIComponent(provider)}`,
+          { method: "DELETE" },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["providers", serverUrl] });
@@ -98,13 +107,15 @@ export function useSetDefaultProvider(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (provider: string) =>
-      apiFetch<{ ok: boolean; provider: string; defaultModel: string }>(
-        "/providers/default",
-        {
-          method: "PATCH",
-          body: JSON.stringify({ provider }),
-        },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ ok: boolean; provider: string; defaultModel: string }>(
+          "/providers/default",
+          {
+            method: "PATCH",
+            body: JSON.stringify({ provider }),
+          },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["providers", serverUrl] });
@@ -117,10 +128,12 @@ export function useModels(serverUrl?: string) {
   return useQuery({
     queryKey: ["models", serverUrl],
     queryFn: () =>
-      apiFetch<{ models: ModelInfo[]; defaultModel: string }>(
-        "/models",
-        {},
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ models: ModelInfo[]; defaultModel: string }>(
+          "/models",
+          {},
+          serverUrl,
+        ),
       ),
     staleTime: 0,
     refetchOnMount: true,
@@ -131,13 +144,15 @@ export function useSetDefaultModel(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (model: string) =>
-      apiFetch<{ ok: boolean; model: string; provider: string }>(
-        "/models/default",
-        {
-          method: "PATCH",
-          body: JSON.stringify({ model }),
-        },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ ok: boolean; model: string; provider: string }>(
+          "/models/default",
+          {
+            method: "PATCH",
+            body: JSON.stringify({ model }),
+          },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["models", serverUrl] });
@@ -150,7 +165,9 @@ export function useSessions(serverUrl?: string) {
   return useQuery({
     queryKey: ["sessions", serverUrl],
     queryFn: () =>
-      apiFetch<{ sessions: SessionInfo[] }>("/sessions", {}, serverUrl),
+      Effect.runPromise(
+        apiFetch<{ sessions: SessionInfo[] }>("/sessions", {}, serverUrl),
+      ),
   });
 }
 
@@ -158,10 +175,12 @@ export function useCreateSession(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (body: { name?: string; model?: string; provider?: string }) =>
-      apiFetch<SessionResponse>(
-        "/sessions",
-        { method: "POST", body: JSON.stringify(body) },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<SessionResponse>(
+          "/sessions",
+          { method: "POST", body: JSON.stringify(body) },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sessions", serverUrl] });
@@ -173,10 +192,12 @@ export function useSession(id: string | undefined, serverUrl?: string) {
   return useQuery({
     queryKey: ["session", id, serverUrl],
     queryFn: () =>
-      apiFetch<SessionResponse>(
-        `/sessions/${encodeURIComponent(id!)}`,
-        {},
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<SessionResponse>(
+          `/sessions/${encodeURIComponent(id!)}`,
+          {},
+          serverUrl,
+        ),
       ),
     enabled: !!id,
   });
@@ -194,13 +215,15 @@ export function useUpdateSession(serverUrl?: string) {
       model?: string;
       provider?: string;
     }) =>
-      apiFetch<SessionResponse>(
-        `/sessions/${encodeURIComponent(id)}`,
-        {
-          method: "PATCH",
-          body: JSON.stringify(body),
-        },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<SessionResponse>(
+          `/sessions/${encodeURIComponent(id)}`,
+          {
+            method: "PATCH",
+            body: JSON.stringify(body),
+          },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sessions", serverUrl] });
@@ -212,10 +235,12 @@ export function useDeleteSession(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (id: string) =>
-      apiFetch<{ ok: boolean }>(
-        `/sessions/${encodeURIComponent(id)}`,
-        { method: "DELETE" },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ ok: boolean }>(
+          `/sessions/${encodeURIComponent(id)}`,
+          { method: "DELETE" },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["sessions", serverUrl] });
@@ -227,10 +252,12 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
   return useQuery({
     queryKey: ["session-messages", id, serverUrl],
     queryFn: () =>
-      apiFetch<MessagesResponse>(
-        `/sessions/${encodeURIComponent(id!)}/messages`,
-        {},
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<MessagesResponse>(
+          `/sessions/${encodeURIComponent(id!)}/messages`,
+          {},
+          serverUrl,
+        ),
       ),
     enabled: !!id,
   });
@@ -240,7 +267,10 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
 export function useSkills(serverUrl?: string) {
   return useQuery({
     queryKey: ["skills", serverUrl],
-    queryFn: () => apiFetch<{ skills: SkillInfo[] }>("/skills", {}, serverUrl),
+    queryFn: () =>
+      Effect.runPromise(
+        apiFetch<{ skills: SkillInfo[] }>("/skills", {}, serverUrl),
+      ),
   });
 }
 
@@ -248,10 +278,12 @@ export function useSkill(name: string | undefined, serverUrl?: string) {
   return useQuery({
     queryKey: ["skill", name, serverUrl],
     queryFn: () =>
-      apiFetch<SkillResponse>(
-        `/skills/${encodeURIComponent(name!)}`,
-        {},
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<SkillResponse>(
+          `/skills/${encodeURIComponent(name!)}`,
+          {},
+          serverUrl,
+        ),
       ),
     enabled: !!name,
   });
@@ -261,10 +293,12 @@ export function useReloadSkills(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: () =>
-      apiFetch<{ ok: boolean; message: string }>(
-        "/skills/reload",
-        { method: "POST" },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<{ ok: boolean; message: string }>(
+          "/skills/reload",
+          { method: "POST" },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["skills", serverUrl] });
@@ -275,9 +309,11 @@ export function useReloadSkills(serverUrl?: string) {
 export function useValidateSkills(serverUrl?: string) {
   return useMutation({
     mutationFn: () =>
-      apiFetch<{
-        results: { name: string; valid: boolean; error: string | null }[];
-      }>("/skills/validate", { method: "POST" }, serverUrl),
+      Effect.runPromise(
+        apiFetch<{
+          results: { name: string; valid: boolean; error: string | null }[];
+        }>("/skills/validate", { method: "POST" }, serverUrl),
+      ),
   });
 }
 
@@ -285,7 +321,8 @@ export function useValidateSkills(serverUrl?: string) {
 export function useConfig(serverUrl?: string) {
   return useQuery({
     queryKey: ["config", serverUrl],
-    queryFn: () => apiFetch<ServerConfig>("/config", {}, serverUrl),
+    queryFn: () =>
+      Effect.runPromise(apiFetch<ServerConfig>("/config", {}, serverUrl)),
   });
 }
 
@@ -293,10 +330,12 @@ export function useUpdateConfig(serverUrl?: string) {
   const qc = useQueryClient();
   return useMutation({
     mutationFn: (partial: Partial<ServerConfig>) =>
-      apiFetch<ServerConfig>(
-        "/config",
-        { method: "PATCH", body: JSON.stringify(partial) },
-        serverUrl,
+      Effect.runPromise(
+        apiFetch<ServerConfig>(
+          "/config",
+          { method: "PATCH", body: JSON.stringify(partial) },
+          serverUrl,
+        ),
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["config", serverUrl] });
@@ -308,6 +347,7 @@ export function useUpdateConfig(serverUrl?: string) {
 export function useLogs(serverUrl?: string) {
   return useQuery({
     queryKey: ["logs", serverUrl],
-    queryFn: () => apiFetch<{ logs: LogEntry[] }>("/logs", {}, serverUrl),
+    queryFn: () =>
+      Effect.runPromise(apiFetch<{ logs: LogEntry[] }>("/logs", {}, serverUrl)),
   });
 }

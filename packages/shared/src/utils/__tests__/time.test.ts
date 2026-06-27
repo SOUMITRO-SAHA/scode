@@ -1,45 +1,54 @@
 import { describe, expect, it } from "vitest";
 
-import { dateFromFilename, daysOld } from "../time";
+import { Effect } from "effect";
+
+import { dateFromFilename, daysOld, formatTime } from "../time";
+
+describe("formatTime", () => {
+  it("formats time in 12h format", () => {
+    const date = new Date("2025-01-01T14:30:00");
+    expect(Effect.runSync(formatTime(date))).toBe("2:30 PM");
+  });
+});
 
 describe("dateFromFilename", () => {
   it("parses dated log filename", () => {
-    const d = dateFromFilename("scode.2025-06-01.log");
-    expect(d).not.toBeNull();
-    expect(d!.toISOString()).toBe("2025-06-01T00:00:00.000Z");
+    const result = Effect.runSync(dateFromFilename("scode.2025-06-01.log"));
+    expect(result.toISOString()).toBe("2025-06-01T00:00:00.000Z");
   });
 
   it("parses dated gz filename", () => {
-    const d = dateFromFilename("scode.2025-06-01.log.gz");
-    expect(d).not.toBeNull();
-    expect(d!.toISOString()).toBe("2025-06-01T00:00:00.000Z");
+    const result = Effect.runSync(dateFromFilename("scode.2025-06-01.log.gz"));
+    expect(result.toISOString()).toBe("2025-06-01T00:00:00.000Z");
   });
 
-  it("returns null for non-matching name", () => {
-    expect(dateFromFilename("random.txt")).toBeNull();
+  it("returns error for non-matching name", () => {
+    expect(() => Effect.runSync(dateFromFilename("random.txt"))).toThrow();
   });
 
-  it("returns null for name without date part", () => {
-    expect(dateFromFilename("scode.log")).toBeNull();
+  it("returns error for name without date part", () => {
+    expect(() => Effect.runSync(dateFromFilename("scode.log"))).toThrow();
   });
 
-  it("returns null for invalid date", () => {
-    expect(dateFromFilename("scode.2025-13-01.log")).toBeNull();
+  it("returns error for invalid date", () => {
+    expect(() =>
+      Effect.runSync(dateFromFilename("scode.2025-13-01.log")),
+    ).toThrow();
   });
 });
 
 describe("daysOld", () => {
   it("returns 0 for today", () => {
-    expect(daysOld(new Date())).toBe(0);
+    expect(Effect.runSync(daysOld(new Date()))).toBe(0);
   });
 
   it("returns 1 for yesterday", () => {
     const yesterday = new Date(Date.now() - 86400000);
-    expect(daysOld(yesterday)).toBe(1);
+    expect(Effect.runSync(daysOld(yesterday))).toBe(1);
   });
 
   it("returns positive for past dates", () => {
     const old = new Date("2020-01-01T00:00:00Z");
-    expect(daysOld(old)).toBeGreaterThan(1000);
+    expect(Effect.runSync(daysOld(old))).toBeGreaterThan(1000);
   });
 });

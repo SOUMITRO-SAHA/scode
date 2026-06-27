@@ -1,3 +1,5 @@
+import { Effect } from "effect";
+
 import type { LLMProvider } from "./provider";
 
 import { parseModelString } from "@scode/shared/utils";
@@ -14,11 +16,7 @@ export class ProviderRegistry {
   }
 
   parseModelString(input: string): { providerId: string; model: string } {
-    const parsed = parseModelString(input);
-    if (!parsed)
-      throw new Error(
-        `Invalid model string: "${input}" (expected format: provider/model)`,
-      );
+    const parsed = Effect.runSync(parseModelString(input));
     return parsed;
   }
 

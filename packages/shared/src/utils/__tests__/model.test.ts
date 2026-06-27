@@ -1,35 +1,48 @@
 import { describe, expect, it } from "vitest";
 
+import { Effect } from "effect";
+
 import { formatModelName, parseModelString } from "../model";
 
 describe("parseModelString", () => {
   it("parses provider/model format", () => {
-    expect(parseModelString("anthropic/claude-sonnet-4-20250515")).toEqual({
+    const result = Effect.runSync(
+      parseModelString("anthropic/claude-sonnet-4-20250515"),
+    );
+    expect(result).toEqual({
       providerId: "anthropic",
       model: "claude-sonnet-4-20250515",
     });
   });
 
-  it("returns null for missing slash", () => {
-    expect(parseModelString("claude-sonnet-4")).toBeNull();
+  it("returns error for missing slash", () => {
+    const result = Effect.runSync(
+      Effect.flip(parseModelString("claude-sonnet-4")),
+    );
+    expect(result._tag).toBe("ModelParseError");
   });
 
-  it("returns null for empty parts", () => {
-    expect(parseModelString("/model")).toBeNull();
-    expect(parseModelString("provider/")).toBeNull();
+  it("returns error for empty parts", () => {
+    const err1 = Effect.runSync(Effect.flip(parseModelString("/model")));
+    expect(err1._tag).toBe("ModelParseError");
+    const err2 = Effect.runSync(Effect.flip(parseModelString("provider/")));
+    expect(err2._tag).toBe("ModelParseError");
   });
 });
 
 describe("formatModelName", () => {
   it("formats claude model name", () => {
-    expect(formatModelName("claude-sonnet-4-20250515")).toBe("Sonnet 4");
+    const result = Effect.runSync(formatModelName("claude-sonnet-4-20250515"));
+    expect(result).toBe("Sonnet 4");
   });
 
   it("handles non-claude models", () => {
-    expect(formatModelName("deepseek-chat")).toBe("Deepseek Chat");
+    const result = Effect.runSync(formatModelName("deepseek-chat"));
+    expect(result).toBe("Deepseek Chat");
   });
 
   it("handles empty string", () => {
-    expect(formatModelName("")).toBe("");
+    const result = Effect.runSync(formatModelName(""));
+    expect(result).toBe("");
   });
 });

@@ -1,3 +1,5 @@
+import { Effect, Option } from "effect";
+
 import type { ComposerLayout, ModelInfo } from "./types";
 
 import { formatModelName, parseModelString } from "@scode/shared/utils";
@@ -19,12 +21,14 @@ export function parseModelDisplay(modelDisplay?: string): ModelInfo {
     return { modelName: "", providerName: "", hasModel: false };
   }
 
-  const parsed = parseModelString(modelDisplay);
+  const parsed = Option.getOrNull(
+    Effect.runSync(Effect.option(parseModelString(modelDisplay))),
+  );
   if (!parsed) {
     return { modelName: "", providerName: "", hasModel: false };
   }
 
-  const modelName = formatModelName(parsed.model);
+  const modelName = Effect.runSync(formatModelName(parsed.model));
   const providerName = parsed.providerId ?? "";
 
   return {

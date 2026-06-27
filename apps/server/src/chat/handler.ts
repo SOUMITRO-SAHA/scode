@@ -79,9 +79,7 @@ function extractCauseMsg(
   providerId: string,
   model: string,
 ): string {
-  const error = Cause.isFailType(cause)
-    ? cause.error
-    : cause.reasons?.find(Cause.isFailReason)?.error;
+  const error = cause.reasons?.find(Cause.isFailReason)?.error;
   return extractErrorMsg(error, providerId, model);
 }
 
