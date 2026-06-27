@@ -57,22 +57,6 @@ export function Landing({
           <box height={1} />
         </box>
       )}
-      <box flexDirection="row" justifyContent="center" paddingBottom={1}>
-        {health?.healthy && hasModel && (
-          <>
-            <text fg={theme.text.primary} paddingLeft={2}>
-              <strong>{modelName}</strong>
-            </text>
-            {providerName && <text fg={theme.text.muted}> {providerName}</text>}
-            <text fg={theme.warning}> {effortLevel}</text>
-          </>
-        )}
-        {health?.healthy && !hasModel && (
-          <text fg={theme.warning} paddingLeft={2}>
-            No model selected — Ctrl+M to choose
-          </text>
-        )}
-      </box>
       <Composer
         onSubmit={onSubmit}
         streaming={streaming}
