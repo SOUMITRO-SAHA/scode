@@ -85,9 +85,7 @@ export function matchSkills(prompt: string, skills: Skill[]): Skill[] {
   const promptTokens = tokenize(prompt);
 
   const scored = skills.map((skill) => {
-    const skillTokens = tokenize(
-      `${skill.name} ${skill.description} ${skill.body}`,
-    );
+    const skillTokens = tokenize(`${skill.name} ${skill.description}`);
     return { skill, score: keywordOverlap(promptTokens, skillTokens) };
   });
 

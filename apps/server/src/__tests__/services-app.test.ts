@@ -40,7 +40,9 @@ describe("AppLayer composition", () => {
           hasProvider: typeof prov.listProviders === "function",
           hasTool: typeof tool.definitions === "function",
           hasAc: typeof ac.register === "function",
-          hasSkill: typeof sk.loadAllSkills === "function",
+          hasSkill:
+            typeof sk.loadAllSkills === "object" && sk.loadAllSkills !== null,
+          hasSkillMatch: typeof sk.matchSkills === "function",
         };
       }),
     );
@@ -51,6 +53,7 @@ describe("AppLayer composition", () => {
     expect(result.hasTool).toBe(true);
     expect(result.hasAc).toBe(true);
     expect(result.hasSkill).toBe(true);
+    expect(result.hasSkillMatch).toBe(true);
   });
 
   it("runtime resolves services with correct capabilities", async () => {

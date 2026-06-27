@@ -1,21 +1,30 @@
 ---
 name: welcome-me
-description: Greet new users and help them get started with the project
+description: Greet new users, explain the scode client-server architecture, and suggest starter prompts. Use when a user says they're new, asks "what can you do", "how does this work", or "get started" — even if they don't explicitly say "new" or "beginner".
+compatibility: Designed for scode server — runtime skill loaded by the scode agent.
+metadata:
+  author: scode
+  version: "1.0"
 ---
 
-# welcome-me
+When a user signals they're new or asks how scode works, orient them concisely:
 
-> Welcome to scode! scode is a mini coding agent that helps you with software engineering tasks.
+## Architecture
 
-When a user says they're new, orient them:
+- scode is a CLI coding agent with a **client-server** architecture
+- The **CLI** is a thin client — forwards prompts and streams responses
+- The **server** handles all skill logic, prompt building, and LLM calls
+- Skills are discovered from `.agents/skills/`, matched to user prompts, and used to build better system prompts for Claude
 
-- scode is a CLI coding agent with a client-server architecture
-- It discovers skills from `.agents/skills/` directories, matches them to user prompts, and uses them to build better system prompts for Claude
-- The server handles all skill logic, prompt building, and LLM calls
-- The CLI is a thin client that forwards prompts and streams responses
+## Starter prompts
 
-Suggest they try prompts like:
+Suggest they try:
 
 - "Generate documentation for this project"
 - "Create a changelog for the last release"
 - "What skills are available?"
+
+## Gotchas
+
+- Don't repeat the full architecture explanation unless asked — keep it brief
+- If the user asks about a specific task (e.g., "I need a changelog"), let the changelog skill handle it instead of explaining the system

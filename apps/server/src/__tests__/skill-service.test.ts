@@ -47,7 +47,7 @@ describe("SkillService", () => {
   it("loads all skills via layer", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SkillService;
-      return svc.loadAllSkills();
+      return yield* svc.loadAllSkills;
     });
     const skills = runSync(Effect.provide(effect, SkillServiceLive));
     expect(skills).toHaveLength(2);
@@ -57,7 +57,7 @@ describe("SkillService", () => {
   it("discovers skill directories", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SkillService;
-      return svc.discover();
+      return yield* svc.discover;
     });
     const dirs = runSync(Effect.provide(effect, SkillServiceLive));
     expect(dirs).toHaveLength(2);

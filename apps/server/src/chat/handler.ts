@@ -8,7 +8,7 @@ import { buildPrompt } from "../prompt/builder";
 import type { SessionService } from "../session/service";
 import type { SkillService } from "../skill/service";
 import type { ToolService } from "../tool/service";
-import type { StreamEvent } from "../types";
+import type { Skill, StreamEvent } from "../types";
 
 import { DebugLogger, Logger } from "@scode/shared/logger";
 
@@ -75,7 +75,11 @@ export async function handleChat(
   session.messages.push({ role: "user", content: prompt });
   runSync(deps.sessionService.update(session));
 
-  const skills = deps.skillService.loadAllSkills();
+  const skills = runSync(
+    Effect.catch(deps.skillService.loadAllSkills, () =>
+      Effect.succeed([] as Skill[]),
+    ),
+  );
   const matched = deps.skillService.matchSkills(prompt, skills);
   const toolDefs = deps.toolService.definitions();
   const { system } = buildPrompt(matched, prompt, toolDefs);
