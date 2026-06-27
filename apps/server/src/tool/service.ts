@@ -8,6 +8,7 @@ import * as globTool from "./glob";
 import * as grepTool from "./grep";
 import * as readTool from "./read";
 import { ToolRegistry } from "./registry";
+import * as skillTool from "./skill";
 import * as writeTool from "./write";
 
 export class ToolService extends Context.Service<
@@ -26,6 +27,7 @@ function buildToolRegistry(): ToolRegistry {
   reg.register("bash", bashTool.definition, bashTool.handler);
   reg.register("grep", grepTool.definition, grepTool.handler);
   reg.register("glob", globTool.definition, globTool.handler);
+  reg.register("skill", skillTool.definition, skillTool.handler);
   return reg;
 }
 

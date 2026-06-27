@@ -20,13 +20,13 @@ const tools: ToolDefinition[] = [
 ];
 
 describe("buildPrompt", () => {
-  it("builds system prompt with skills and tools", () => {
+  it("builds system prompt with skill list and tools", () => {
     const result = buildPrompt(skills, "hello", tools);
     expect(result.system).toContain("You are scode");
-    expect(result.system).toContain("## Available Skills");
+    expect(result.system).toContain("<available_skills>");
+    expect(result.system).toContain("<name>test</name>");
     expect(result.system).toContain("## Available Tools");
-    expect(result.system).toContain("test");
-    expect(result.system).toContain("read");
+    expect(result.system).toContain("`skill`");
   });
 
   it("includes user message", () => {
@@ -37,7 +37,7 @@ describe("buildPrompt", () => {
 
   it("handles empty skills", () => {
     const result = buildPrompt([], "hello", tools);
-    expect(result.system).toContain("(none matched)");
+    expect(result.system).not.toContain("<available_skills>");
   });
 
   it("handles empty tools", () => {

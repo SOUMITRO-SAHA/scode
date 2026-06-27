@@ -19,9 +19,17 @@ describe("ToolService", () => {
       return svc.definitions();
     });
     const defs = runSync(Effect.provide(effect, ToolServiceLive));
-    expect(defs.length).toBeGreaterThanOrEqual(6);
+    expect(defs.length).toBeGreaterThanOrEqual(7);
     const names = defs.map((d) => d.name).sort();
-    expect(names).toEqual(["bash", "edit", "glob", "grep", "read", "write"]);
+    expect(names).toEqual([
+      "bash",
+      "edit",
+      "glob",
+      "grep",
+      "read",
+      "skill",
+      "write",
+    ]);
   });
 
   it("settles a known tool call", async () => {

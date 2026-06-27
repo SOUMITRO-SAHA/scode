@@ -80,13 +80,13 @@ export async function handleChat(
       Effect.succeed([] as Skill[]),
     ),
   );
-  const matched = deps.skillService.matchSkills(prompt, skills);
+  const available = deps.skillService.matchSkills(prompt, skills);
   const toolDefs = deps.toolService.definitions();
-  const { system } = buildPrompt(matched, prompt, toolDefs);
+  const { system } = buildPrompt(available, prompt, toolDefs);
 
-  dbg.log("skills matched", {
+  dbg.log("skills available", {
     total: skills.length,
-    matched: matched.map((s) => s.name),
+    available: available.map((s) => s.name),
   });
   dbg.log("tools available", { count: toolDefs.length });
 

@@ -73,7 +73,7 @@ describe("AppLayer composition", () => {
       }),
     );
 
-    expect(result.toolCount).toBe(6);
+    expect(result.toolCount).toBe(7);
     expect(result.providerCount).toBeGreaterThanOrEqual(5);
     expect(result.toolNames).toEqual([
       "bash",
@@ -81,6 +81,7 @@ describe("AppLayer composition", () => {
       "glob",
       "grep",
       "read",
+      "skill",
       "write",
     ]);
     expect(result.providerIds).toContain("claude");
