@@ -107,6 +107,8 @@ function AppInner({
   const [paletteVisible, setPaletteVisible] = useState(false);
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
+  const [skillsBrowserOpen, setSkillsBrowserOpen] = useState(false);
+  const [prefill, setPrefill] = useState<string | undefined>(undefined);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const bumpFocus = useCallback(() => setFocusTrigger((n) => n + 1), []);
   const handleOpenModelPicker = useCallback(() => setModelPickerOpen(true), []);
@@ -114,6 +116,14 @@ function AppInner({
     () => setProviderPickerOpen(true),
     [],
   );
+  const handleOpenSkillsBrowser = useCallback(
+    () => setSkillsBrowserOpen(true),
+    [],
+  );
+  const handleSkillSelect = useCallback((skillName: string) => {
+    setPrefill(`/${skillName} `);
+    setTimeout(() => setPrefill(undefined), 0);
+  }, []);
   const apiRef = useRef(new ApiClient(serverUrl));
 
   // Initialize model from props on first render if not set
@@ -148,12 +158,14 @@ function AppInner({
           serverUrl,
           currentSessionId,
           debugEnabled: debug,
+          messages,
           setModel: handleSetModel,
           setCurrentSessionId: handleSetSessionId,
           clearMessages,
           toggleDebug,
           openModelPicker: handleOpenModelPicker,
           openProviderPicker: handleOpenProviderPicker,
+          openSkillsBrowser: handleOpenSkillsBrowser,
           addSystemMessage,
           showToast: toast.show,
           onExit,
@@ -177,6 +189,7 @@ function AppInner({
       serverUrl,
       currentSessionId,
       debug,
+      messages,
       handleSetModel,
       handleSetSessionId,
       clearMessages,
@@ -196,12 +209,14 @@ function AppInner({
         serverUrl,
         currentSessionId,
         debugEnabled: debug,
+        messages,
         setModel: handleSetModel,
         setCurrentSessionId: handleSetSessionId,
         clearMessages,
         toggleDebug,
         openModelPicker: handleOpenModelPicker,
         openProviderPicker: handleOpenProviderPicker,
+        openSkillsBrowser: handleOpenSkillsBrowser,
         addSystemMessage,
         showToast: toast.show,
         onExit,
@@ -220,12 +235,14 @@ function AppInner({
       serverUrl,
       currentSessionId,
       debug,
+      messages,
       handleSetModel,
       handleSetSessionId,
       clearMessages,
       toggleDebug,
       handleOpenModelPicker,
       handleOpenProviderPicker,
+      handleOpenSkillsBrowser,
       addSystemMessage,
       toast,
     ],
@@ -269,6 +286,7 @@ function AppInner({
         serverUrl={serverUrl}
         height={height}
         focusTrigger={focusTrigger}
+        prefill={prefill}
         paletteVisible={paletteVisible}
         setPaletteVisible={setPaletteVisible}
         bumpFocus={bumpFocus}
@@ -277,6 +295,9 @@ function AppInner({
         setModelPickerOpen={setModelPickerOpen}
         providerPickerOpen={providerPickerOpen}
         setProviderPickerOpen={setProviderPickerOpen}
+        skillsBrowserOpen={skillsBrowserOpen}
+        setSkillsBrowserOpen={setSkillsBrowserOpen}
+        onSkillSelect={handleSkillSelect}
         sessionName={sessionName}
         mainContentWidth={mainContentWidth}
       />

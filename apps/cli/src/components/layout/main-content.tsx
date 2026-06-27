@@ -8,6 +8,7 @@ import type { Command } from "@/components/commands/commands.js";
 import { CommandPalette } from "@/components/commands/index.js";
 import { ConnectProvider } from "@/components/commands/index.js";
 import { ModelSwitcher } from "@/components/commands/index.js";
+import { SkillBrowser } from "@/components/commands/index.js";
 import { Composer } from "@/components/composer/index.js";
 import type { Message } from "@scode/shared/types";
 
@@ -21,6 +22,7 @@ interface MainContentProps {
   serverUrl: string;
   height: number;
   focusTrigger: number;
+  prefill?: string;
   paletteVisible: boolean;
   setPaletteVisible: (visible: boolean) => void;
   bumpFocus: () => void;
@@ -29,6 +31,9 @@ interface MainContentProps {
   setModelPickerOpen: (open: boolean) => void;
   providerPickerOpen: boolean;
   setProviderPickerOpen: (open: boolean) => void;
+  skillsBrowserOpen: boolean;
+  setSkillsBrowserOpen: (open: boolean) => void;
+  onSkillSelect: (skillName: string) => void;
   sessionName?: string;
   mainContentWidth: number;
 }
@@ -43,6 +48,7 @@ export function MainContent({
   serverUrl,
   height,
   focusTrigger,
+  prefill,
   paletteVisible,
   setPaletteVisible,
   bumpFocus,
@@ -51,6 +57,9 @@ export function MainContent({
   setModelPickerOpen,
   providerPickerOpen,
   setProviderPickerOpen,
+  skillsBrowserOpen,
+  setSkillsBrowserOpen,
+  onSkillSelect,
   sessionName,
   mainContentWidth,
 }: MainContentProps) {
@@ -96,6 +105,7 @@ export function MainContent({
             serverUrl={serverUrl}
             focusTrigger={focusTrigger}
             clearTrigger={composerClearTrigger}
+            prefill={prefill}
             containerWidth={mainContentWidth}
           />
         )}
@@ -119,6 +129,15 @@ export function MainContent({
           <ConnectProvider
             onClose={() => {
               setProviderPickerOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+        {skillsBrowserOpen && (
+          <SkillBrowser
+            onSelect={onSkillSelect}
+            onClose={() => {
+              setSkillsBrowserOpen(false);
               bumpFocus();
             }}
           />

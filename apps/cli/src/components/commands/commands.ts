@@ -1,6 +1,6 @@
 import type { ToastInput } from "@/components/ui/toast";
 import type { ApiClient } from "@/services/api";
-import type { AppConfig } from "@scode/shared/types";
+import type { AppConfig, Message } from "@scode/shared/types";
 
 export interface Command {
   name: string;
@@ -28,12 +28,14 @@ export interface CommandContext {
   serverUrl: string;
   currentSessionId?: string;
   debugEnabled: boolean;
+  messages: readonly Message[];
   setModel?: (m: string) => void;
   setCurrentSessionId?: (id: string | undefined) => void;
   clearMessages?: () => void;
   toggleDebug?: () => void;
   openModelPicker?: () => void;
   openProviderPicker?: () => void;
+  openSkillsBrowser?: () => void;
   addSystemMessage?: (text: string) => void;
   showToast?: (options: ToastInput) => void;
   onExit?: () => void;
@@ -82,8 +84,15 @@ export const COMMANDS: Command[] = [
     category: "general",
     suggested: true,
     handler: async (_args, _api, ctx) => {
+      if (ctx.messages.length === 0) {
+        ctx.showToast?.({
+          variant: "info",
+          message: "Session is already empty",
+        });
+        return;
+      }
       ctx.clearMessages?.();
-      ctx.addSystemMessage?.("Conversation cleared");
+      ctx.showToast?.({ variant: "success", message: "Conversation cleared" });
     },
   },
   {
@@ -140,7 +149,7 @@ export const COMMANDS: Command[] = [
       await api.deleteSession(ctx.currentSessionId);
       ctx.setCurrentSessionId?.(undefined);
       ctx.clearMessages?.();
-      return { type: "message", text: "Session deleted" };
+      ctx.showToast?.({ variant: "success", message: "Session deleted" });
     },
   },
   {
@@ -278,7 +287,7 @@ export const COMMANDS: Command[] = [
     description: "List, inspect, reload, or validate skills",
     usage: "/skills [info|reload|validate] [name]",
     category: "skill",
-    handler: async (args, api) => {
+    handler: async (args, api, ctx) => {
       if (args[0] === "info" && args[1]) {
         const skill = await api.getSkill(args[1]);
         return {
@@ -288,7 +297,8 @@ export const COMMANDS: Command[] = [
       }
       if (args[0] === "reload") {
         const result = await api.reloadSkills();
-        return { type: "message", text: result.message };
+        ctx.showToast?.({ variant: "success", message: result.message });
+        return;
       }
       if (args[0] === "validate") {
         const { results } = await api.validateSkills();
@@ -300,14 +310,7 @@ export const COMMANDS: Command[] = [
           text: `\nSkill Validation:\n${lines.join("\n")}\n`,
         };
       }
-      const { skills } = await api.listSkills();
-      if (skills.length === 0)
-        return { type: "message", text: "No skills installed" };
-      const lines = skills.map((s) => `  ${s.name} — ${s.description}`);
-      return {
-        type: "message",
-        text: `\nInstalled Skills:\n${lines.join("\n")}\n`,
-      };
+      ctx.openSkillsBrowser?.();
     },
   },
   {
@@ -343,7 +346,10 @@ export const COMMANDS: Command[] = [
     category: "debug",
     handler: async (_args, _api, ctx) => {
       ctx.toggleDebug?.();
-      ctx.addSystemMessage?.("Debug toggled");
+      ctx.showToast?.({
+        variant: "info",
+        message: `Debug ${ctx.debugEnabled ? "disabled" : "enabled"}`,
+      });
     },
   },
   {

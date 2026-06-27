@@ -25,6 +25,7 @@ export interface ComposerProps {
   serverUrl?: string;
   focusTrigger?: number;
   clearTrigger?: number;
+  prefill?: string;
   containerWidth?: number;
 }
 
@@ -44,12 +45,14 @@ export function Composer({
   serverUrl,
   focusTrigger,
   clearTrigger,
+  prefill,
   containerWidth,
 }: ComposerProps) {
   const [composerKey, setComposerKey] = useState(0);
   const [initialVal, setInitialVal] = useState("");
   const ref = useRef<TextareaRenderable | null>(null);
   const clearTriggerRef = useRef(clearTrigger);
+  const prefillRef = useRef(prefill);
   const currentAgent = useAppStore((s) => s.currentAgent);
   const cycleAgent = useAppStore((s) => s.cycleAgent);
   const effortLevel = useAppStore((s) => s.effortLevel);
@@ -74,6 +77,14 @@ export function Composer({
       setComposerKey((c) => c + 1);
     }
   }, [clearTrigger]);
+
+  useEffect(() => {
+    if (prefill && prefill !== prefillRef.current) {
+      prefillRef.current = prefill;
+      setInitialVal(prefill);
+      setComposerKey((c) => c + 1);
+    }
+  }, [prefill]);
   const { items, categories, maxNameLen } = useAutocomplete({
     query: autoQuery,
     serverUrl,
