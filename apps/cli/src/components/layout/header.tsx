@@ -37,8 +37,9 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
   const modelName = parsed ? formatModelName(parsed.model) : "";
   const hasModel = !!modelName;
 
-  const agentLabel =
-    currentAgent === "chat"
+  const agentLabel = sessionName
+    ? sessionName.slice(0, 24)
+    : currentAgent === "chat"
       ? "Chat"
       : currentAgent === "plan"
         ? "Plan"
@@ -46,27 +47,31 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
 
   return (
     <box
-      height={2}
+      height={1}
+      marginBottom={0.5}
       backgroundColor={theme.background.secondary}
       paddingLeft={1}
       paddingRight={1}
       alignItems="center"
     >
       <box flexDirection="row" width="100%" justifyContent="space-between">
-        <box flexDirection="row" alignItems="center">
-          <box onMouseDown={toggleSidebar}>
-            <text fg={theme.text.disabled}>{sidebarVisible ? "✕" : "☰"}</text>
-          </box>
-          {sessionName && (
-            <text fg={theme.text.muted} paddingLeft={1}>
-              {sessionName.slice(0, 24)}
-            </text>
+        <box flexDirection="row" alignItems="center" gap={0.5}>
+          {sidebarVisible && (
+            <box onMouseDown={toggleSidebar}>
+              <text fg={theme.text.disabled}>☰</text>
+            </box>
           )}
+
+          <text fg={theme.text.muted} paddingLeft={1}>
+            {agentLabel}
+          </text>
         </box>
-        <box flexDirection="row" alignItems="center">
+
+        <box flexDirection="row" alignItems="center" gap={1}>
           <text fg={connected ? theme.success : theme.danger}>
             {connected ? "●" : "○"}
           </text>
+
           {hasModel ? (
             <>
               <text fg={theme.text.primary} paddingLeft={1}>
@@ -83,9 +88,9 @@ export function Header({ modelDisplay, sessionName }: HeaderProps) {
               No model selected
             </text>
           )}
+
           <text
             fg={theme.warning}
-            paddingLeft={2}
             onMouseDown={() => setEffortLevel(cycleEffort(effortLevel))}
           >
             {effortLevel}
