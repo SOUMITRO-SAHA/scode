@@ -6,7 +6,7 @@ import { handleChat } from "./chat/handler";
 import { ConfigManager } from "./config/manager";
 import { getDb } from "./db/client";
 import { ClaudeAdapter } from "./llm/claude/adapter";
-import { CohereAdapter } from "./llm/cohere/adapter";
+import { CommandCodeAdapter } from "./llm/commandcode/adapter";
 import { GeminiAdapter } from "./llm/gemini/adapter";
 import { OpenAICompatAdapter } from "./llm/openai-compat/adapter";
 import { ProviderRegistry } from "./llm/registry";
@@ -63,7 +63,7 @@ function buildProviderRegistry(): ProviderRegistry {
       baseURL: "https://api.minimax.chat/v1",
     }),
   );
-  reg.register(new CohereAdapter());
+  reg.register(new CommandCodeAdapter());
   return reg;
 }
 
