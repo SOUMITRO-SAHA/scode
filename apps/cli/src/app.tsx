@@ -268,7 +268,7 @@ function AppInner({
 
   const modelDisplay = model || undefined;
   const mainContentWidth =
-    width - (sidebarVisible ? layout.sidebar.width : 0) - 4;
+    width - (sidebarVisible ? layout.sidebar.width : 0) - 3;
 
   return (
     <box

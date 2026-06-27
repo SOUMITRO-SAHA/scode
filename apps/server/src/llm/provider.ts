@@ -10,6 +10,8 @@ export interface LLMProvider {
 
   listModels?(apiKey: string): Promise<string[]>;
 
+  getSupportedEfforts(model?: string): EffortLevel[];
+
   streamResponse(params: {
     system: string;
     messages: UnifiedMessage[];

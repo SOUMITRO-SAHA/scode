@@ -1,5 +1,7 @@
 import { useMemo } from "react";
 
+import { ThinkingDisplay } from "@/components/feedback/thinking-display.js";
+import { useAppStore } from "@/store/index";
 import { getMarkdownStyle } from "@/styles/syntaxTheme";
 import { theme } from "@scode/theme";
 
@@ -11,15 +13,23 @@ export function AssistantMessage({
   isStreaming: boolean;
 }) {
   const style = useMemo(() => getMarkdownStyle(), []);
+  const thought = useAppStore((s) => s.thought);
+  const thoughtStartTime = useAppStore((s) => s.thoughtStartTime);
+  const streaming = useAppStore((s) => s.streaming);
 
   if (!content && !isStreaming) return null;
 
   return (
-    <box paddingLeft={2} paddingRight={2} paddingTop={1} paddingBottom={1}>
+    <box paddingTop={1} paddingBottom={1}>
       <box flexDirection="column">
-        {!content && isStreaming ? (
-          <text fg={theme.text.muted}>Thinking...</text>
-        ) : (
+        {thought || (isStreaming && !content) ? (
+          <ThinkingDisplay
+            thought={thought}
+            thoughtStartTime={thoughtStartTime}
+            streaming={streaming}
+          />
+        ) : null}
+        {content ? (
           <markdown
             content={content}
             syntaxStyle={style}
@@ -32,7 +42,7 @@ export function AssistantMessage({
               cellPadding: 1,
             }}
           />
-        )}
+        ) : null}
       </box>
     </box>
   );

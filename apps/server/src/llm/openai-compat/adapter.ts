@@ -6,6 +6,30 @@ import type { UnifiedMessage } from "../types";
 
 import type { EffortLevel } from "@scode/shared/types";
 
+const REASONING_EFFORTS: EffortLevel[] = ["low", "medium", "high"];
+
+function openaiReasoningEfforts(modelId: string): EffortLevel[] {
+  const id = modelId.toLowerCase();
+  if (id.includes("deep-research")) return ["medium"];
+  if (id.includes("pro")) return ["high"];
+  if (id.includes("codex-max"))
+    return ["none", "low", "medium", "high", "xhigh"];
+  if (id.includes("codex")) return ["low", "medium", "high", "xhigh"];
+  if (id.includes("chat")) return ["medium"];
+  return REASONING_EFFORTS;
+}
+
+function openaiSupportsReasoning(model: string): boolean {
+  const id = model.toLowerCase();
+  return (
+    id.includes("o1") ||
+    id.includes("o3") ||
+    id.includes("o4") ||
+    id.includes("gpt-5") ||
+    id.includes("gpt-4o")
+  );
+}
+
 export interface OpenAICompatConfig {
   id: string;
   name: string;
@@ -39,19 +63,27 @@ export class OpenAICompatAdapter implements LLMProvider {
     }
   }
 
+  getSupportedEfforts(model?: string): EffortLevel[] {
+    const m = model ?? this.defaultModel;
+    if (!openaiSupportsReasoning(m)) return [];
+    return openaiReasoningEfforts(m);
+  }
+
   async *streamResponse(
     params: Parameters<LLMProvider["streamResponse"]>[0],
   ): ReturnType<LLMProvider["streamResponse"]> {
     const client = new OpenAI({ apiKey: params.apiKey, baseURL: this.baseURL });
     const model = params.model ?? this.defaultModel;
 
+    const effort = params.effortLevel;
+    const validEffort = effort !== undefined && effort !== "max";
     const stream = await client.chat.completions.create({
       model,
       messages: toOpenAIMessages(params.messages, params.system),
       tools: toOpenAITools(params.tools),
       stream: true,
       max_tokens: 8192,
-      ...(params.effortLevel ? { reasoning_effort: params.effortLevel } : {}),
+      ...(validEffort ? { reasoning_effort: effort as any } : {}),
     });
 
     const toolCallAccumulators: Map<

@@ -2,12 +2,14 @@ import type { ToolCall } from "./entities";
 
 export type StreamEvent =
   | { type: "text"; delta: string }
+  | { type: "thought"; text: string }
   | { type: "tool_use"; toolCall: ToolCall }
   | { type: "error"; message: string }
   | { type: "done" };
 
 export type StreamChunk =
   | { type: "text"; delta: string }
+  | { type: "thought"; text: string }
   | { type: "error"; message: string }
   | { type: "meta"; sessionId: string; model?: string };
 

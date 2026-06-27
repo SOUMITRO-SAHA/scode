@@ -136,6 +136,7 @@ export function createV1Router(deps: RouterDeps): Hono {
       provider: string;
       providerName: string;
       defaultModel: string;
+      supportedEfforts: string[];
     }> = [];
 
     await Promise.all(
@@ -149,6 +150,7 @@ export function createV1Router(deps: RouterDeps): Hono {
                 provider: p.id,
                 providerName: p.name,
                 defaultModel: id,
+                supportedEfforts: p.getSupportedEfforts(id),
               });
             }
             return;
@@ -158,6 +160,7 @@ export function createV1Router(deps: RouterDeps): Hono {
           provider: p.id,
           providerName: p.name,
           defaultModel: p.defaultModel,
+          supportedEfforts: p.getSupportedEfforts(p.defaultModel),
         });
       }),
     );

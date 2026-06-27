@@ -5,18 +5,38 @@ import Anthropic from "@anthropic-ai/sdk";
 import type { MessageParam } from "@anthropic-ai/sdk/resources/messages";
 import type { EffortLevel } from "@scode/shared/types";
 
+const CLAUDE_EFFORTS: EffortLevel[] = ["low", "medium", "high"];
+
 function effortToThinkingBudget(
   level: EffortLevel | undefined,
 ): number | undefined {
   if (!level) return undefined;
   switch (level) {
+    case "none":
+      return undefined;
+    case "minimal":
+      return 1024;
     case "low":
       return 2048;
     case "medium":
       return 8192;
     case "high":
       return 16384;
+    case "xhigh":
+      return 32000;
+    case "max":
+      return 64000;
   }
+}
+
+function claudeSupportsThinking(model: string): boolean {
+  const id = model.toLowerCase();
+  return (
+    id.includes("sonnet-4") ||
+    id.includes("opus-4") ||
+    id.includes("claude-4") ||
+    id.includes("fable-5")
+  );
 }
 
 export class ClaudeAdapter implements LLMProvider {
@@ -35,6 +55,12 @@ export class ClaudeAdapter implements LLMProvider {
     } catch {
       return [this.defaultModel];
     }
+  }
+
+  getSupportedEfforts(model?: string): EffortLevel[] {
+    const m = model ?? this.defaultModel;
+    if (claudeSupportsThinking(m)) return CLAUDE_EFFORTS;
+    return [];
   }
 
   async *streamResponse(

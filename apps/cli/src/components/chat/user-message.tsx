@@ -12,8 +12,6 @@ export function UserMessage({ content }: { content: string }) {
       paddingRight={1}
       paddingTop={0}
       paddingBottom={0}
-      marginLeft={6}
-      marginRight={2}
       minHeight={3}
     >
       <text fg={theme.chat.user.text}>{content}</text>

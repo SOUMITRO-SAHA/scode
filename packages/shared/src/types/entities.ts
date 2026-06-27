@@ -9,6 +9,7 @@ export interface ModelInfo {
   provider: string;
   providerName: string;
   defaultModel: string;
+  supportedEfforts: string[];
 }
 
 export interface SkillInfo {
@@ -98,7 +99,14 @@ export type ContentBlock =
     }
   | { type: "tool_result"; tool_use_id: string; content: string };
 
-export type EffortLevel = "low" | "medium" | "high";
+export type EffortLevel =
+  | "none"
+  | "minimal"
+  | "low"
+  | "medium"
+  | "high"
+  | "xhigh"
+  | "max";
 
 export interface ToolDefinition {
   name: string;

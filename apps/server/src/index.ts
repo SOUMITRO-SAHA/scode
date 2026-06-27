@@ -19,6 +19,7 @@ import { logger } from "./services/logger";
 import { serve } from "@hono/node-server";
 import { DEFAULT_PORT, healthUrl } from "@scode/shared/constants";
 import { initDebugLog } from "@scode/shared/logger";
+import { encodeStreamChunk } from "@scode/shared/types";
 
 const runSync = Effect.runSync;
 
@@ -66,7 +67,12 @@ app.post("/process", (c) =>
       const text = message ?? prompt;
       if (!text) {
         c.status(400);
-        await s.write(JSON.stringify({ error: "message or prompt required" }));
+        await s.write(
+          encodeStreamChunk({
+            type: "error",
+            message: "message or prompt required",
+          }),
+        );
         return;
       }
       const cfg = runSync(deps.configService.get);
@@ -74,8 +80,9 @@ app.post("/process", (c) =>
       if (!modelStr) {
         c.status(400);
         await s.write(
-          JSON.stringify({
-            error: "No model selected. Use /models to select a model.",
+          encodeStreamChunk({
+            type: "error",
+            message: "No model selected. Use /models to select a model.",
           }),
         );
         return;
@@ -96,7 +103,7 @@ app.post("/process", (c) =>
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : String(err);
       logger.error(`Process handler error: ${msg}`);
-      await s.write(JSON.stringify({ error: msg }));
+      await s.write(encodeStreamChunk({ type: "error", message: msg }));
     }
   }),
 );

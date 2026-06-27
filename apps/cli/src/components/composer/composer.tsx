@@ -8,13 +8,14 @@ import { useAutocomplete } from "./useAutocomplete.js";
 import { useHistory } from "./useHistory.js";
 
 import type { Command } from "@/components/commands/commands.js";
-import { AGENT_LABELS, EFFORT_LEVELS, useAppStore } from "@/store/index";
+import { AGENT_LABELS, useAppStore } from "@/store/index";
 import {
   type KeyEvent,
   TextAttributes,
   type TextareaRenderable,
 } from "@opentui/core";
 import type { EffortLevel } from "@scode/shared/types";
+import { apiFetch } from "@scode/shared/utils";
 import { theme, layout as themeLayout } from "@scode/theme";
 
 export interface ComposerProps {
@@ -59,6 +60,9 @@ export function Composer({
   const cycleAgent = useAppStore((s) => s.cycleAgent);
   const effortLevel = useAppStore((s) => s.effortLevel);
   const setEffortLevel = useAppStore((s) => s.setEffortLevel);
+  const model = useAppStore((s) => s.model);
+  const supportedEfforts = useAppStore((s) => s.supportedEfforts);
+  const setSupportedEfforts = useAppStore((s) => s.setSupportedEfforts);
   const selectedSkills = useAppStore((s) => s.selectedSkills);
   const removeSelectedSkill = useAppStore((s) => s.removeSelectedSkill);
   const clearSelectedSkills = useAppStore((s) => s.clearSelectedSkills);
@@ -70,13 +74,43 @@ export function Composer({
 
   const { modelName, providerName, hasModel } = parseModelDisplay(modelDisplay);
 
-  function cycleEffort(level: EffortLevel): EffortLevel {
-    const idx = EFFORT_LEVELS.indexOf(level);
-    return EFFORT_LEVELS[(idx + 1) % EFFORT_LEVELS.length];
-  }
+  useEffect(() => {
+    if (!model || !serverUrl) return;
+    const slashIdx = model.indexOf("/");
+    if (slashIdx === -1) return;
+    const providerId = model.slice(0, slashIdx);
+    const modelId = model.slice(slashIdx + 1);
+    if (!providerId || !modelId) return;
+
+    let cancelled = false;
+    apiFetch<{
+      models: Array<{
+        provider: string;
+        defaultModel: string;
+        supportedEfforts: string[];
+      }>;
+    }>("/models", {}, serverUrl)
+      .then((res) => {
+        if (cancelled) return;
+        const match = res.models.find(
+          (m) => m.provider === providerId && m.defaultModel === modelId,
+        );
+        setSupportedEfforts(match?.supportedEfforts ?? []);
+      })
+      .catch(() => {
+        if (!cancelled) setSupportedEfforts([]);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [model, serverUrl, setSupportedEfforts]);
 
   function handleCycleEffort() {
-    setEffortLevel(cycleEffort(effortLevel));
+    const efforts = supportedEfforts;
+    if (efforts.length === 0) return;
+    const idx = efforts.indexOf(effortLevel);
+    const next = idx === -1 ? efforts[0] : efforts[(idx + 1) % efforts.length];
+    setEffortLevel(next as EffortLevel);
   }
 
   useEffect(() => {
@@ -203,13 +237,7 @@ export function Composer({
   const hasActiveSkills = selectedSkills.length > 0;
 
   return (
-    <box
-      paddingBottom={2}
-      paddingLeft={1.5}
-      paddingRight={1.5}
-      width={effectiveWidth}
-      alignItems="stretch"
-    >
+    <box paddingBottom={2} width={effectiveWidth} alignItems="stretch">
       <box
         borderStyle="rounded"
         borderColor={
@@ -285,6 +313,7 @@ export function Composer({
           currentAgent={currentAgent}
           effortLevel={effortLevel}
           onCycleEffort={handleCycleEffort}
+          supportedEfforts={supportedEfforts}
           modelName={modelName}
           providerName={providerName}
           hasModel={hasModel}

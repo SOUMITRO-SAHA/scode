@@ -15,13 +15,33 @@ function effortToThinkingBudget(
 ): number | undefined {
   if (!level) return undefined;
   switch (level) {
+    case "none":
+      return undefined;
+    case "minimal":
+      return 1024;
     case "low":
       return 2048;
     case "medium":
       return 8192;
     case "high":
       return 16384;
+    case "xhigh":
+      return 32000;
+    case "max":
+      return 64000;
   }
+}
+
+function geminiEfforts(modelId: string): EffortLevel[] {
+  const id = modelId.toLowerCase();
+  if (!id.includes("gemini-3") && !id.includes("gemini-2.5")) return [];
+  if (id.includes("gemini-3")) {
+    if (id.includes("flash-image")) return ["minimal", "high"];
+    if (id.includes("pro-image")) return ["high"];
+    if (id.includes("flash")) return ["minimal", "low", "medium", "high"];
+    return ["low", "medium", "high"];
+  }
+  return ["low", "high"];
 }
 
 export class GeminiAdapter implements LLMProvider {
@@ -43,6 +63,10 @@ export class GeminiAdapter implements LLMProvider {
     } catch {
       return [this.defaultModel];
     }
+  }
+
+  getSupportedEfforts(model?: string): EffortLevel[] {
+    return geminiEfforts(model ?? this.defaultModel);
   }
 
   async *streamResponse(

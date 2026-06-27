@@ -34,8 +34,6 @@ export function ChatArea({
     <scrollbox
       flexGrow={1}
       ref={scrollRef}
-      paddingLeft={2}
-      paddingRight={2}
       paddingTop={1}
       paddingBottom={1}
       stickyScroll
@@ -45,7 +43,7 @@ export function ChatArea({
         msg.role === "user" ? (
           <UserMessage key={i} content={msg.content} />
         ) : msg.role === "system" ? (
-          <box key={i} paddingLeft={2} paddingTop={1} paddingBottom={1}>
+          <box key={i} paddingTop={1} paddingBottom={1}>
             <text fg={theme.text.muted}>{msg.content}</text>
           </box>
         ) : (

@@ -1,6 +1,5 @@
 import { AGENT_LABELS, type AgentId } from "../../store/index";
 
-import type { EffortLevel } from "@scode/shared/types";
 import { theme } from "@scode/theme";
 
 const AGENT_COLORS: Record<string, string> = {
@@ -12,8 +11,9 @@ const AGENT_COLORS: Record<string, string> = {
 interface ComposerFooterProps {
   isCommand: boolean;
   currentAgent: AgentId;
-  effortLevel: EffortLevel;
+  effortLevel: string;
   onCycleEffort: () => void;
+  supportedEfforts: string[];
   modelName: string;
   providerName: string;
   hasModel: boolean;
@@ -25,6 +25,7 @@ export function ComposerFooter({
   currentAgent,
   effortLevel,
   onCycleEffort,
+  supportedEfforts,
   modelName,
   providerName,
   hasModel,
@@ -53,10 +54,14 @@ export function ComposerFooter({
         ) : (
           <text fg={theme.warning}>No model selected</text>
         )}
-        <text fg={theme.text.disabled}> · </text>
-        <text fg={theme.warning} onMouseDown={onCycleEffort}>
-          {effortLevel}
-        </text>
+        {supportedEfforts.length > 0 && (
+          <>
+            <text fg={theme.text.disabled}> · </text>
+            <text fg={theme.warning} onMouseDown={onCycleEffort}>
+              {effortLevel}
+            </text>
+          </>
+        )}
         <text fg={theme.text.disabled}>
           {" "}
           | {streaming ? "Processing..." : "Ready"}

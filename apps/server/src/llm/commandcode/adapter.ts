@@ -1,6 +1,8 @@
 import type { LLMProvider } from "../provider";
 import type { UnifiedMessage } from "../types";
 
+import type { EffortLevel } from "@scode/shared/types";
+
 const BASE_URL = "https://api.commandcode.ai/provider/v1";
 
 interface OpenAIChunk {
@@ -36,6 +38,10 @@ export class CommandCodeAdapter implements LLMProvider {
     } catch {
       return [this.defaultModel];
     }
+  }
+
+  getSupportedEfforts(_model?: string): EffortLevel[] {
+    return [];
   }
 
   async *streamResponse(

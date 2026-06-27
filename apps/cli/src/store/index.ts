@@ -20,6 +20,7 @@ interface AppStore {
   streamingSessionId: string | undefined;
   model: string | undefined;
   effortLevel: EffortLevel;
+  supportedEfforts: string[];
   debug: boolean;
   sidebarVisible: boolean;
   messages: Message[];
@@ -35,6 +36,7 @@ interface AppStore {
   setStreamingSessionId: (id: string | undefined) => void;
   setModel: (m: string | undefined) => void;
   setEffortLevel: (level: EffortLevel) => void;
+  setSupportedEfforts: (efforts: string[]) => void;
   toggleDebug: () => void;
   toggleSidebar: () => void;
   addUserMessage: (content: string) => void;
@@ -60,6 +62,7 @@ export const useAppStore = create<AppStore>((set) => ({
   streamingSessionId: undefined,
   model: undefined,
   effortLevel: "high",
+  supportedEfforts: [],
   debug: false,
   sidebarVisible: false,
   messages: [],
@@ -75,6 +78,7 @@ export const useAppStore = create<AppStore>((set) => ({
   setStreamingSessionId: (id) => set({ streamingSessionId: id }),
   setModel: (m) => set({ model: m }),
   setEffortLevel: (level) => set({ effortLevel: level }),
+  setSupportedEfforts: (efforts) => set({ supportedEfforts: efforts }),
   toggleDebug: () => set((s) => ({ debug: !s.debug })),
   toggleSidebar: () => set((s) => ({ sidebarVisible: !s.sidebarVisible })),
   addUserMessage: (content) =>
