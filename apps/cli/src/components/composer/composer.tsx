@@ -13,19 +13,18 @@ import {
   TextAttributes,
   type TextareaRenderable,
 } from "@opentui/core";
-import { useTerminalDimensions } from "@opentui/react";
-import { theme } from "@scode/theme";
+import { theme, layout as themeLayout } from "@scode/theme";
 
 export interface ComposerProps {
   onSubmit: (value: string) => void;
   streaming: boolean;
-  width: number;
+  width?: number;
   lines?: number;
   placeholder?: string;
   modelDisplay?: string;
   serverUrl?: string;
   focusTrigger?: number;
-  fullWidth?: boolean;
+  containerWidth?: number;
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -43,7 +42,7 @@ export function Composer({
   modelDisplay,
   serverUrl,
   focusTrigger,
-  fullWidth = false,
+  containerWidth,
 }: ComposerProps) {
   const [composerKey, setComposerKey] = useState(0);
   const [initialVal, setInitialVal] = useState("");
@@ -56,7 +55,6 @@ export function Composer({
   const [autoIdx, setAutoIdx] = useState(0);
   const [inputMode, setInputMode] = useState<"keyboard" | "mouse">("keyboard");
   const skipSubmitRef = useRef(false);
-  const { width: termWidth } = useTerminalDimensions();
 
   const { modelName, providerName, hasModel } = parseModelDisplay(modelDisplay);
 
@@ -75,7 +73,8 @@ export function Composer({
     setComposerKey,
   });
 
-  const layout = calculateLayout(fullWidth ? width : termWidth, fullWidth);
+  const effectiveWidth = width ?? containerWidth;
+  const layout = calculateLayout(effectiveWidth ?? 80);
 
   function handleAutoSelect(cmd: Command) {
     const ta = ref.current!;
@@ -150,17 +149,13 @@ export function Composer({
   const isCommand = initialVal.trim().startsWith("/");
 
   return (
-    <box
-      paddingLeft={layout.borderPad}
-      paddingRight={layout.borderPad}
-      paddingBottom={2}
-    >
+    <box paddingBottom={2} width={effectiveWidth} alignItems="center">
       <box
         borderStyle="rounded"
         borderColor={
           isCommand ? theme.brand.primary : AGENT_COLORS[currentAgent]
         }
-        width={layout.boxWidth}
+        width="100%"
         flexDirection="column"
       >
         <textarea

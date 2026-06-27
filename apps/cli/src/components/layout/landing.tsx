@@ -4,13 +4,14 @@ import { TipSection } from "@/components/feedback/tip-section";
 import { useHealth } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
 import { formatModelName, parseModelString } from "@scode/shared/utils";
-import { theme } from "@scode/theme";
+import { layout, theme } from "@scode/theme";
 
 interface LandingProps {
   onSubmit: (value: string) => void;
   streaming: boolean;
   height: number;
   modelDisplay?: string;
+  mainContentWidth: number;
 }
 
 export function Landing({
@@ -18,6 +19,7 @@ export function Landing({
   streaming,
   height,
   modelDisplay,
+  mainContentWidth,
 }: LandingProps) {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const model = useAppStore((s) => s.model);
@@ -60,7 +62,7 @@ export function Landing({
       <Composer
         onSubmit={onSubmit}
         streaming={streaming}
-        width={80}
+        width={Math.min(mainContentWidth, layout.content.promptMaxWidth)}
         lines={composerLines}
         modelDisplay={modelDisplay}
         serverUrl={serverUrl}

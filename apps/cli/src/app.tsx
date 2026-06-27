@@ -16,7 +16,7 @@ import { ApiClient } from "@/services/api";
 import { useAppStore } from "@/store/index";
 import { useTerminalDimensions } from "@opentui/react";
 import { apiFetch } from "@scode/shared/utils";
-import { theme } from "@scode/theme";
+import { layout, theme } from "@scode/theme";
 
 export function App({
   serverUrl,
@@ -212,6 +212,8 @@ export function App({
   });
 
   const modelDisplay = model || undefined;
+  const mainContentWidth =
+    width - (sidebarVisible ? layout.sidebar.width : 0) - 4;
 
   return (
     <DialogProvider>
@@ -242,6 +244,7 @@ export function App({
             providerPickerOpen={providerPickerOpen}
             setProviderPickerOpen={setProviderPickerOpen}
             sessionName={sessionName}
+            mainContentWidth={mainContentWidth}
           />
         </box>
       </ToastProvider>

@@ -28,6 +28,7 @@ interface MainContentProps {
   providerPickerOpen: boolean;
   setProviderPickerOpen: (open: boolean) => void;
   sessionName?: string;
+  mainContentWidth: number;
 }
 
 export function MainContent({
@@ -49,57 +50,68 @@ export function MainContent({
   providerPickerOpen,
   setProviderPickerOpen,
   sessionName,
+  mainContentWidth,
 }: MainContentProps) {
   return (
     <box flexDirection="column" flexGrow={1}>
       {hasConversation && (
         <Header modelDisplay={modelDisplay} sessionName={sessionName} />
       )}
-      {hasConversation ? (
-        <ChatArea messages={messages} streaming={streaming} />
-      ) : (
-        <Landing
-          onSubmit={handleSubmit}
-          streaming={streaming}
-          height={height}
-          modelDisplay={modelDisplay}
-        />
-      )}
-      {hasConversation && (
-        <Composer
-          onSubmit={handleSubmit}
-          streaming={streaming}
-          lines={composerLines}
-          placeholder={streaming ? "Waiting..." : "Ask anything..."}
-          modelDisplay={modelDisplay}
-          serverUrl={serverUrl}
-          focusTrigger={focusTrigger}
-        />
-      )}
-      <CommandPalette
-        visible={paletteVisible}
-        onClose={() => {
-          setPaletteVisible(false);
-          bumpFocus();
-        }}
-        onSelect={handlePaletteSelect}
-      />
-      {modelPickerOpen && (
-        <ModelSwitcher
+
+      <box
+        flexDirection="column"
+        paddingLeft={1.5}
+        paddingRight={1.5}
+        flexGrow={1}
+      >
+        {hasConversation ? (
+          <ChatArea messages={messages} streaming={streaming} />
+        ) : (
+          <Landing
+            onSubmit={handleSubmit}
+            streaming={streaming}
+            height={height}
+            modelDisplay={modelDisplay}
+            mainContentWidth={mainContentWidth}
+          />
+        )}
+        {hasConversation && (
+          <Composer
+            onSubmit={handleSubmit}
+            streaming={streaming}
+            lines={composerLines}
+            placeholder={streaming ? "Waiting..." : "Ask anything..."}
+            modelDisplay={modelDisplay}
+            serverUrl={serverUrl}
+            focusTrigger={focusTrigger}
+            containerWidth={mainContentWidth}
+          />
+        )}
+        <CommandPalette
+          visible={paletteVisible}
           onClose={() => {
-            setModelPickerOpen(false);
+            setPaletteVisible(false);
             bumpFocus();
           }}
+          onSelect={handlePaletteSelect}
         />
-      )}
-      {providerPickerOpen && (
-        <ConnectProvider
-          onClose={() => {
-            setProviderPickerOpen(false);
-            bumpFocus();
-          }}
-        />
-      )}
+        {modelPickerOpen && (
+          <ModelSwitcher
+            onClose={() => {
+              setModelPickerOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+        {providerPickerOpen && (
+          <ConnectProvider
+            onClose={() => {
+              setProviderPickerOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+      </box>
     </box>
   );
 }
