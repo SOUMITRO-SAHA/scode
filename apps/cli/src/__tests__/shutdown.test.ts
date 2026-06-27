@@ -1,5 +1,7 @@
 import { beforeEach, describe, expect, it, vi } from "vitest";
 
+import * as Effect from "effect/Effect";
+
 import { stopServer } from "../services/daemon";
 import {
   getClientId,
@@ -14,15 +16,20 @@ vi.mock("@scode/shared/utils", () => ({
   apiFetch: vi.fn(),
 }));
 
+const mockStopServer = vi.fn();
 vi.mock("../services/daemon", () => ({
-  stopServer: vi.fn(),
+  stopServer: Effect.sync(() => {
+    mockStopServer();
+  }),
 }));
+
+const runPromise = Effect.runPromise;
 
 describe("shutdown", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     setClientId(null);
-    setRendererCleanup(null);
+    setRendererCleanup(null!);
   });
 
   it("setClientId and getClientId", () => {
@@ -37,7 +44,7 @@ describe("shutdown", () => {
     const exitSpy = vi
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
-    await gracefulShutdown(0);
+    await runPromise(gracefulShutdown(0));
     expect(apiFetch).not.toHaveBeenCalled();
     exitSpy.mockRestore();
   });
@@ -55,14 +62,14 @@ describe("shutdown", () => {
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
 
-    await gracefulShutdown(0, "http://localhost:4100");
+    await runPromise(gracefulShutdown(0, "http://localhost:4100"));
 
     expect(mockApiFetch).toHaveBeenCalledWith(
       "/active-clients/client-1",
       { method: "DELETE" },
       "http://localhost:4100",
     );
-    expect(stopServer).not.toHaveBeenCalled();
+    expect(mockStopServer).not.toHaveBeenCalled();
     expect(exitSpy).toHaveBeenCalledWith(0);
 
     exitSpy.mockRestore();
@@ -77,9 +84,9 @@ describe("shutdown", () => {
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
 
-    await gracefulShutdown(0, "http://localhost:4100");
+    await runPromise(gracefulShutdown(0, "http://localhost:4100"));
 
-    expect(stopServer).toHaveBeenCalled();
+    expect(mockStopServer).toHaveBeenCalled();
     exitSpy.mockRestore();
   });
 
@@ -92,9 +99,9 @@ describe("shutdown", () => {
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
 
-    await gracefulShutdown(1, "http://localhost:4100");
+    await runPromise(gracefulShutdown(1, "http://localhost:4100"));
 
-    expect(stopServer).not.toHaveBeenCalled();
+    expect(mockStopServer).not.toHaveBeenCalled();
     expect(exitSpy).toHaveBeenCalledWith(1);
     exitSpy.mockRestore();
   });
@@ -106,7 +113,7 @@ describe("shutdown", () => {
     const exitSpy = vi
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
-    await gracefulShutdown(0);
+    await runPromise(gracefulShutdown(0));
     expect(destroy).toHaveBeenCalled();
     exitSpy.mockRestore();
   });
@@ -115,7 +122,7 @@ describe("shutdown", () => {
     const exitSpy = vi
       .spyOn(process, "exit")
       .mockImplementation(() => undefined as never);
-    await gracefulShutdown(0);
+    await runPromise(gracefulShutdown(0));
     expect(exitSpy).toHaveBeenCalledWith(0);
     exitSpy.mockRestore();
   });

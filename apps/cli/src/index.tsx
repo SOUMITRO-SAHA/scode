@@ -1,10 +1,9 @@
 import * as Effect from "effect/Effect";
-import { stdin, stdout } from "node:process";
-import { createInterface } from "node:readline";
 
 import { App } from "@/app";
 import { ErrorBoundary } from "@/components/error/index";
-import { sendPrompt } from "@/services/client";
+import { parseArgs, runRepl } from "@/headless/index";
+import { runHeadless } from "@/headless/run";
 import { CliConfig } from "@/services/config";
 import { initializeApp } from "@/services/init";
 import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
@@ -24,11 +23,16 @@ const queryClient = new QueryClient({
 const logger = new Logger({ stderr: true });
 
 async function main() {
-  const args = process.argv.slice(2);
-  const promptIndex = args.indexOf("--prompt");
-  const directPrompt = promptIndex !== -1 ? args[promptIndex + 1] : null;
-  const modelIndex = args.indexOf("--model");
-  const model = modelIndex !== -1 ? args[modelIndex + 1] : undefined;
+  try {
+    const headlessHandled = await Effect.runPromise(runHeadless);
+    if (headlessHandled) return;
+  } catch (err) {
+    logger.error(`Headless mode failed: ${(err as Error).message}`);
+    process.exit(1);
+  }
+
+  const args = Effect.runSync(parseArgs);
+  const model = args.mode.kind !== "none" ? args.mode.model : undefined;
 
   let serverUrl: string;
   try {
@@ -42,35 +46,13 @@ async function main() {
     process.exit(1);
   }
 
-  if (directPrompt) {
-    logger.info(`Single-shot mode: "${directPrompt.slice(0, 60)}..."`);
-    if (model) logger.info(`Using model: ${model}`);
-    try {
-      await sendPrompt(
-        directPrompt,
-        serverUrl,
-        (token) => {
-          stdout.write(token);
-        },
-        model,
-      );
-    } catch (err) {
-      logger.error(`Prompt failed: ${(err as Error).message}`);
-      await gracefulShutdown(1, serverUrl);
-      return;
-    }
-    stdout.write("\n");
-    await gracefulShutdown(0, serverUrl);
-    return;
-  }
-
   const tuiOk = await tryTui(serverUrl, model);
   if (tuiOk) return;
 
   logger.warn(
     "TUI unavailable — falling back to REPL mode. Try resetting your terminal if this persists.",
   );
-  await repl(serverUrl, model);
+  await Effect.runPromise(runRepl(serverUrl, model));
 }
 
 async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
@@ -83,22 +65,22 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
     setRendererCleanup(() => renderer.destroy());
 
     process.on("SIGINT", () => {
-      void gracefulShutdown(0, serverUrl);
+      void Effect.runPromise(gracefulShutdown(0, serverUrl));
     });
 
     process.on("uncaughtException", (err) => {
       logger.error(`Uncaught exception: ${err.message}`);
-      void gracefulShutdown(1, serverUrl);
+      void Effect.runPromise(gracefulShutdown(1, serverUrl));
     });
 
     process.on("unhandledRejection", (reason) => {
       const message = reason instanceof Error ? reason.message : String(reason);
       logger.error(`Unhandled rejection: ${message}`);
-      void gracefulShutdown(1, serverUrl);
+      void Effect.runPromise(gracefulShutdown(1, serverUrl));
     });
 
     const handleExit = () => {
-      void gracefulShutdown(0, serverUrl);
+      void Effect.runPromise(gracefulShutdown(0, serverUrl));
     };
 
     createRoot(renderer).render(
@@ -117,37 +99,10 @@ async function tryTui(serverUrl: string, model?: string): Promise<boolean> {
   }
 }
 
-async function repl(serverUrl: string, model?: string): Promise<void> {
-  console.log("scode REPL — type your prompt, or /q to quit");
-  const rl = createInterface({ input: stdin, output: stdout, terminal: true });
-
-  rl.on("line", async (line) => {
-    const input = line.trim();
-    if (!input) {
-      rl.prompt();
-      return;
-    }
-    if (input === "/q") {
-      rl.close();
-      return;
-    }
-    console.log();
-    await sendPrompt(input, serverUrl, (token) => stdout.write(token), model);
-    console.log("\n");
-    rl.prompt();
-  });
-
-  rl.on("close", () => {
-    void gracefulShutdown(0, serverUrl);
-  });
-
-  rl.prompt();
-}
-
 main().catch((err) => {
   logger.error(`Fatal: ${(err as Error).message}`);
   if (err instanceof Error && err.stack) {
     logger.error(err.stack);
   }
-  void gracefulShutdown(1);
+  void Effect.runPromise(gracefulShutdown(1));
 });

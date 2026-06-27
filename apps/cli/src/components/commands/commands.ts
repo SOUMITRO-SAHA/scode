@@ -1,3 +1,5 @@
+import * as Effect from "effect/Effect";
+
 import type { ToastInput } from "@/components/ui/toast";
 import type { ApiClient } from "@/services/api";
 import type { AppConfig, Message } from "@scode/shared/types";
@@ -104,7 +106,7 @@ export const COMMANDS: Command[] = [
     category: "session",
     suggested: true,
     handler: async (_args, api, ctx) => {
-      const config = await api.getConfig();
+      const config = await Effect.runPromise(api.getConfig());
       const model = ctx.model ?? config.defaultModel;
       if (!model) {
         ctx.showToast?.({
@@ -114,7 +116,7 @@ export const COMMANDS: Command[] = [
         });
         return;
       }
-      const session = await api.createSession("", model);
+      const session = await Effect.runPromise(api.createSession("", model));
       ctx.setCurrentSessionId?.(session.id);
       ctx.clearMessages?.();
       ctx.setModel?.(`${session.provider}/${session.model}`);
@@ -134,7 +136,7 @@ export const COMMANDS: Command[] = [
       const name = args.join(" ");
       if (!name || !ctx.currentSessionId)
         return { type: "error", text: "Usage: /rename <name>" };
-      await api.renameSession(ctx.currentSessionId, name);
+      await Effect.runPromise(api.renameSession(ctx.currentSessionId, name));
       return { type: "message", text: `Session renamed to: ${name}` };
     },
   },
@@ -147,7 +149,7 @@ export const COMMANDS: Command[] = [
     handler: async (_args, api, ctx) => {
       if (!ctx.currentSessionId)
         return { type: "error", text: "No active session" };
-      await api.deleteSession(ctx.currentSessionId);
+      await Effect.runPromise(api.deleteSession(ctx.currentSessionId));
       ctx.setCurrentSessionId?.(undefined);
       ctx.clearMessages?.();
       ctx.showToast?.({ variant: "success", message: "Session deleted" });
@@ -162,7 +164,9 @@ export const COMMANDS: Command[] = [
     handler: async (_args, api, ctx) => {
       if (!ctx.currentSessionId)
         return { type: "error", text: "No active session" };
-      const { messages } = await api.getMessages(ctx.currentSessionId);
+      const { messages } = await Effect.runPromise(
+        api.getMessages(ctx.currentSessionId),
+      );
       const lines = messages.map(
         (m, i) =>
           `  ${i + 1}. [${m.role}] ${typeof m.content === "string" ? m.content.slice(0, 100) : "(structured)"}`,
@@ -192,7 +196,9 @@ export const COMMANDS: Command[] = [
     category: "provider",
     handler: async (args, api, ctx) => {
       if (args.length >= 2) {
-        const result = await api.connectProvider(args[0], args[1]);
+        const result = await Effect.runPromise(
+          api.connectProvider(args[0], args[1]),
+        );
         return {
           type: "message",
           text: `Provider connected: ${result.provider}`,
@@ -209,18 +215,20 @@ export const COMMANDS: Command[] = [
     category: "provider",
     handler: async (args, api, ctx) => {
       if (args[0] === "connect" && args[1] && args[2]) {
-        const result = await api.connectProvider(args[1], args[2]);
+        const result = await Effect.runPromise(
+          api.connectProvider(args[1], args[2]),
+        );
         return {
           type: "message",
           text: `Provider connected: ${result.provider}`,
         };
       }
       if (args[0] === "disconnect" && args[1]) {
-        await api.disconnectProvider(args[1]);
+        await Effect.runPromise(api.disconnectProvider(args[1]));
         return { type: "message", text: `Provider disconnected: ${args[1]}` };
       }
       if (args[0] === "use" && args[1]) {
-        const result = await api.setDefaultProvider(args[1]);
+        const result = await Effect.runPromise(api.setDefaultProvider(args[1]));
         ctx.setModel?.(`${result.provider}/${result.defaultModel}`);
         return {
           type: "message",
@@ -239,7 +247,7 @@ export const COMMANDS: Command[] = [
     handler: async (args, api) => {
       if (!args[0])
         return { type: "error", text: "Usage: /disconnect <provider>" };
-      await api.disconnectProvider(args[0]);
+      await Effect.runPromise(api.disconnectProvider(args[0]));
       return { type: "message", text: `Provider disconnected: ${args[0]}` };
     },
   },
@@ -251,7 +259,7 @@ export const COMMANDS: Command[] = [
     category: "model",
     handler: async (args, api, ctx) => {
       if (args[0] === "use" && args[1]) {
-        const result = await api.setDefaultModel(args[1]);
+        const result = await Effect.runPromise(api.setDefaultModel(args[1]));
         ctx.setModel?.(args[1]);
         return { type: "message", text: `Default model: ${result.model}` };
       }
@@ -266,19 +274,19 @@ export const COMMANDS: Command[] = [
     category: "skill",
     handler: async (args, api, ctx) => {
       if (args[0] === "info" && args[1]) {
-        const skill = await api.getSkill(args[1]);
+        const skill = await Effect.runPromise(api.getSkill(args[1]));
         return {
           type: "message",
           text: `\nSkill: ${skill.name}\nDescription: ${skill.description}\nBody:\n${skill.body}\n`,
         };
       }
       if (args[0] === "reload") {
-        const result = await api.reloadSkills();
+        const result = await Effect.runPromise(api.reloadSkills());
         ctx.showToast?.({ variant: "success", message: result.message });
         return;
       }
       if (args[0] === "validate") {
-        const { results } = await api.validateSkills();
+        const { results } = await Effect.runPromise(api.validateSkills());
         const lines = results.map(
           (r) => `  ${r.name} — ${r.valid ? "OK valid" : "ERROR: " + r.error}`,
         );
@@ -301,13 +309,15 @@ export const COMMANDS: Command[] = [
         const key = args[1] as keyof AppConfig;
         const value = args.slice(2).join(" ");
         const num = Number(value);
-        await api.updateConfig({ [key]: isNaN(num) ? value : num });
+        await Effect.runPromise(
+          api.updateConfig({ [key]: isNaN(num) ? value : num }),
+        );
         return {
           type: "message",
           text: `Config updated: ${key} = ${isNaN(num) ? value : num}`,
         };
       }
-      const config = await api.getConfig();
+      const config = await Effect.runPromise(api.getConfig());
       const lines = Object.entries(config).map(([k, v]) => `  ${k}: ${v}`);
       return {
         type: "message",
@@ -336,7 +346,7 @@ export const COMMANDS: Command[] = [
     usage: "/logs",
     category: "debug",
     handler: async (_args, api) => {
-      const { logs } = await api.getLogs();
+      const { logs } = await Effect.runPromise(api.getLogs());
       if (logs.length === 0) return { type: "message", text: "No logs found" };
       const lines = logs.flatMap((l) => [
         `--- ${l.file} (${l.size} bytes) ---`,
@@ -352,7 +362,7 @@ export const COMMANDS: Command[] = [
     usage: "/health",
     category: "debug",
     handler: async (_args, api) => {
-      const health = await api.health();
+      const health = await Effect.runPromise(api.health());
       const lines = [
         `  Status: ${health.healthy ? "OK Healthy" : "FAIL Unhealthy"}`,
         `  Uptime: ${health.uptime}s`,
@@ -383,7 +393,7 @@ export const COMMANDS: Command[] = [
     usage: "/agent",
     category: "general",
     handler: async (_args, api, ctx) => {
-      const config = await api.getConfig();
+      const config = await Effect.runPromise(api.getConfig());
       const modelStr = ctx.model ?? config.defaultModel;
       return {
         type: "message",
@@ -398,7 +408,7 @@ export const COMMANDS: Command[] = [
     usage: "/context",
     category: "general",
     handler: async (_args, api, ctx) => {
-      const config = await api.getConfig();
+      const config = await Effect.runPromise(api.getConfig());
       const modelStr = ctx.model ?? config.defaultModel;
       return {
         type: "message",

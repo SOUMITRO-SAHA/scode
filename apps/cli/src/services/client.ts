@@ -1,4 +1,7 @@
+import * as Effect from "effect/Effect";
 import { Readable } from "node:stream";
+
+import { StreamError } from "./errors";
 
 import { Logger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
@@ -7,74 +10,113 @@ import { apiFetchStream } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
-export async function sendPrompt(
+export const sendPrompt = (
   prompt: string,
   serverUrl: string,
   onToken: (token: string) => void,
   model?: string,
   effortLevel?: EffortLevel,
-): Promise<string> {
-  logger.debug(`Sending prompt to ${serverUrl} (${prompt.slice(0, 60)}...)`);
+): Effect.Effect<string, StreamError> =>
+  Effect.gen(function* () {
+    logger.debug(`Sending prompt to ${serverUrl} (${prompt.slice(0, 60)}...)`);
+    const startTime = Date.now();
 
-  const startTime = Date.now();
-  const body: Record<string, unknown> = { prompt };
-  if (model) body.model = model;
-  if (effortLevel) body.effortLevel = effortLevel;
+    const body: Record<string, unknown> = { prompt };
+    if (model) body.model = model;
+    if (effortLevel) body.effortLevel = effortLevel;
 
-  const stream = await apiFetchStream("/process", body, serverUrl);
-  const decoder = new TextDecoder();
-  let full = "";
-  const buffer: string[] = [];
-  let flushTimer: ReturnType<typeof setTimeout> | null = null;
-  let lineBuf = "";
+    const stream = yield* Effect.tryPromise({
+      try: () =>
+        apiFetchStream("/process", body, serverUrl) as Promise<Readable>,
+      catch: (cause) =>
+        new StreamError({ message: "Failed to open stream", cause }),
+    });
 
-  function flush() {
-    if (buffer.length > 0) {
-      const chunk = buffer.join("");
-      buffer.length = 0;
-      onToken(chunk);
-    }
-    flushTimer = null;
-  }
+    const decoder = new TextDecoder();
+    let full = "";
+    const buffer: string[] = [];
+    let flushTimer: ReturnType<typeof setTimeout> | null = null;
+    let lineBuf = "";
 
-  function processText(text: string) {
-    lineBuf += text;
-    const lines = lineBuf.split("\n");
-    for (let i = 0; i < lines.length - 1; i++) {
-      const line = lines[i].trim();
-      if (!line) continue;
-      const parsed = decodeStreamChunk(line);
-      if (!parsed) {
-        full += line;
-        buffer.push(line);
-        continue;
+    const flush = () => {
+      if (buffer.length > 0) {
+        const chunk = buffer.join("");
+        buffer.length = 0;
+        onToken(chunk);
       }
-      if (parsed.type === "text") {
-        full += parsed.delta;
-        buffer.push(parsed.delta);
+      flushTimer = null;
+    };
+
+    const processText = (text: string) => {
+      lineBuf += text;
+      const lines = lineBuf.split("\n");
+      for (let i = 0; i < lines.length - 1; i++) {
+        const line = lines[i].trim();
+        if (!line) continue;
+        const parsed = decodeStreamChunk(line);
+        if (!parsed) {
+          full += line;
+          buffer.push(line);
+          continue;
+        }
+        if (parsed.type === "text") {
+          full += parsed.delta;
+          buffer.push(parsed.delta);
+        }
       }
-    }
-    lineBuf = lines[lines.length - 1];
-  }
+      lineBuf = lines[lines.length - 1];
+    };
 
-  try {
-    for await (const chunk of stream as Readable) {
-      const text = decoder.decode(chunk as Uint8Array, { stream: true });
-      processText(text);
+    yield* Effect.callback<void, StreamError>((resume) => {
+      let closed = false;
 
-      if (!flushTimer) {
-        flushTimer = setTimeout(flush, 0);
-      }
-    }
-  } finally {
-    (stream as Readable).destroy();
-  }
+      const onData = (chunk: Uint8Array) => {
+        const text = decoder.decode(chunk, { stream: true });
+        processText(text);
+        if (!flushTimer) {
+          flushTimer = setTimeout(flush, 0);
+        }
+      };
 
-  if (flushTimer) clearTimeout(flushTimer);
-  flush();
+      const onEnd = () => {
+        closed = true;
+        cleanup();
+        if (flushTimer) clearTimeout(flushTimer);
+        flush();
+        resume(Effect.succeed(undefined));
+      };
 
-  const elapsed = Date.now() - startTime;
-  logger.info(`Response complete (${full.length} chars in ${elapsed}ms)`);
+      const onError = (err: Error) => {
+        closed = true;
+        cleanup();
+        resume(
+          Effect.fail(
+            new StreamError({ message: "Stream read error", cause: err }),
+          ),
+        );
+      };
 
-  return full;
-}
+      const cleanup = () => {
+        stream.removeListener("data", onData);
+        stream.removeListener("end", onEnd);
+        stream.removeListener("error", onError);
+      };
+
+      stream.on("data", onData);
+      stream.on("end", onEnd);
+      stream.on("error", onError);
+      stream.resume();
+
+      return Effect.sync(() => {
+        if (!closed) {
+          cleanup();
+          stream.destroy();
+        }
+      });
+    });
+
+    const elapsed = Date.now() - startTime;
+    logger.info(`Response complete (${full.length} chars in ${elapsed}ms)`);
+
+    return full;
+  });

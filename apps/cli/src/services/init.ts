@@ -1,5 +1,4 @@
-import { Data } from "effect";
-import * as Effect from "effect/Effect";
+import { Data, Effect } from "effect";
 
 import { CliConfig } from "./config";
 import { ensureServer, registerActiveClient } from "./daemon";
@@ -26,17 +25,9 @@ export const initializeApp = Effect.gen(function* () {
     maxPolls: config.maxPolls,
   });
 
-  const serverUrl = yield* Effect.tryPromise({
-    try: () => ensureServer(),
-    catch: (cause) =>
-      new InitError({ message: "Failed to ensure server", cause }),
-  });
+  const serverUrl = yield* ensureServer;
 
-  const id = yield* Effect.tryPromise({
-    try: () => registerActiveClient(),
-    catch: (cause) =>
-      new InitError({ message: "Failed to register client", cause }),
-  });
+  const id = yield* registerActiveClient;
 
   if (id) {
     setClientId(id);

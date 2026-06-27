@@ -1,5 +1,7 @@
 import { useCallback, useState } from "react";
 
+import * as Effect from "effect/Effect";
+
 import { sendPrompt } from "../services/client";
 
 import type { Message } from "@scode/shared/types";
@@ -24,18 +26,20 @@ export function useStreaming(serverUrl: string, model?: string) {
       (async () => {
         let full = "";
         try {
-          await sendPrompt(
-            userMsg,
-            serverUrl,
-            (token: string) => {
-              full += token;
-              setMessages((prev) => {
-                const copy = [...prev];
-                copy[copy.length - 1] = { role: "assistant", content: full };
-                return copy;
-              });
-            },
-            model,
+          await Effect.runPromise(
+            sendPrompt(
+              userMsg,
+              serverUrl,
+              (token: string) => {
+                full += token;
+                setMessages((prev) => {
+                  const copy = [...prev];
+                  copy[copy.length - 1] = { role: "assistant", content: full };
+                  return copy;
+                });
+              },
+              model,
+            ),
           );
         } catch (err) {
           setMessages((prev) => {

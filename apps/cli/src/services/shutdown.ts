@@ -1,3 +1,6 @@
+import * as Effect from "effect/Effect";
+import * as MutableRef from "effect/MutableRef";
+
 import { stopServer } from "./daemon";
 
 import { Logger } from "@scode/shared/logger";
@@ -6,44 +9,45 @@ import { apiFetch } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
-let clientId: string | null = null;
-let rendererDestroy: (() => void) | null = null;
+const clientIdRef = MutableRef.make<string | null>(null);
+const rendererDestroyRef = MutableRef.make<(() => void) | null>(null);
 
-export function setRendererCleanup(destroy: () => void) {
-  rendererDestroy = destroy;
+export function setRendererCleanup(destroy: (() => void) | null): void {
+  MutableRef.set(rendererDestroyRef, destroy);
 }
 
-export function setClientId(id: string | null) {
-  clientId = id;
+export function setClientId(id: string | null): void {
+  MutableRef.set(clientIdRef, id);
 }
 
 export function getClientId(): string | null {
-  return clientId;
+  return MutableRef.get(clientIdRef);
 }
 
-export async function gracefulShutdown(
+export const gracefulShutdown = (
   exitCode: number = 0,
   baseUrl?: string,
-): Promise<void> {
-  if (clientId && baseUrl) {
-    const id = clientId;
-    clientId = null;
-    try {
-      const data = await apiFetch<UnregisterClientResponse>(
-        `/active-clients/${encodeURIComponent(id)}`,
-        { method: "DELETE" },
-        baseUrl,
+): Effect.Effect<void> =>
+  Effect.gen(function* () {
+    const id = MutableRef.get(clientIdRef);
+    if (id !== null && baseUrl) {
+      MutableRef.set(clientIdRef, null);
+      const data = yield* Effect.promise<UnregisterClientResponse | undefined>(
+        () =>
+          apiFetch<UnregisterClientResponse>(
+            `/active-clients/${encodeURIComponent(id)}`,
+            { method: "DELETE" },
+            baseUrl,
+          ).catch(() => undefined),
       );
-      if (data.wasLast) {
+      if (data && data.wasLast) {
         logger.info("Last client — shutting down server");
-        stopServer();
+        yield* stopServer;
       }
-    } catch {
-      /* server may already be down */
     }
-  }
 
-  rendererDestroy?.();
-  logger.close();
-  process.exit(exitCode);
-}
+    const destroy = MutableRef.get(rendererDestroyRef);
+    if (destroy) destroy();
+    logger.close();
+    process.exit(exitCode);
+  });
