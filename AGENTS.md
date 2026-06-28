@@ -221,6 +221,11 @@ import { useAppStore } from "../../store/index";
 - `apiFetchStream` lacks abort signal / timeout support (unlike `apiFetch<T>` which accepts `RequestInit` with `signal`).
 - Server sends raw text chunks (not SSE/JSON). Both CLI callers decode raw `Uint8Array` via `TextDecoder` with `{ stream: true }` for multi-byte UTF-8 safety.
 
+## Provider ID consistency (two sources of truth)
+
+- Provider adapter IDs are defined in `apps/server/src/llm/provider-service.ts` (`"claude"`, `"gemini"`, `"deepseek"`, `"zai"`, `"minimax"`, `"commandcode"`).
+- `PROVIDER_ENV_MAP` in `packages/shared/src/constants/providers.ts` maps provider IDs to env var names — but this map is independently maintained from the adapter registration in provider-service.ts. They can and have drifted (e.g., adapter ID `"commandcode"` vs old map key `"cohere"`). Always update both when adding/changing a provider.
+
 ## TypeScript version convergence
 
 - Previous "5.x vs 6.x divergence" is obsoleted: all packages now use `"typescript": "catalog:"` → `^6.0.3` via pnpm catalog (except root which also uses catalog). Resolution differences between `tsx` and `tsc` may still occur but the version gap is gone.

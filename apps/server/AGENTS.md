@@ -20,6 +20,10 @@
 - Server depends on `@scode/shared` (pino logging, constants) but NOT on `@scode/theme` (no UI).
 - Core deps: hono, @hono/node-server, @anthropic-ai/sdk, yaml.
 
+## CommandCode adapter
+
+- `CommandCodeAdapter` in `llm/commandcode/adapter.ts` uses raw `fetch()` to call `api.commandcode.ai` with an OpenAI-compatible API format. No SDK dependency needed.
+
 ## Testing (TDD)
 
 - **What's tested:** registry (5 tests), matcher (5 tests), active-clients (8 tests), prompt-builder (2 tests), types (2 tests) — all 100% line coverage.

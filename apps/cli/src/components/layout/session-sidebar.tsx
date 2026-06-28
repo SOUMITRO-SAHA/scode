@@ -75,15 +75,6 @@ function groupSessionsByDate(sessions: SessionInfo[]): SidebarItem[] {
   return items;
 }
 
-function sessionItemsOnly(items: SidebarItem[]): SessionInfo[] {
-  return items
-    .filter(
-      (item): item is SidebarItem & { type: "session" } =>
-        item.type === "session",
-    )
-    .map((item) => item.session);
-}
-
 export function SessionSidebar() {
   const toast = useToast();
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
@@ -376,7 +367,7 @@ export function SessionSidebar() {
           </box>
         </box>
 
-        <box flexDirection="column" flexGrow={1}>
+        <scrollbox flexGrow={1}>
           {isLoading && <text fg={theme.text.muted}>Loading...</text>}
           {isError && <text fg={theme.danger}>Failed to load</text>}
           {!isLoading && !isError && sessionCount === 0 && (
@@ -387,13 +378,18 @@ export function SessionSidebar() {
           {sidebarItems.map((item, index) => {
             if (item.type === "header") {
               return (
-                <box key={item.key} height={1} paddingTop={1}>
-                  <text
-                    fg={theme.brand.primary}
-                    attributes={TextAttributes.BOLD}
-                  >
-                    {item.label}
-                  </text>
+                <box key={item.key} height={2} flexDirection="column">
+                  <box flexDirection="row" width="100%">
+                    <box flexGrow={1} flexShrink={1}>
+                      <text
+                        fg={theme.brand.primary}
+                        attributes={TextAttributes.BOLD}
+                      >
+                        {item.label}
+                      </text>
+                    </box>
+                    <box width={2} flexShrink={0} />
+                  </box>
                 </box>
               );
             }
@@ -461,7 +457,7 @@ export function SessionSidebar() {
               </box>
             );
           })}
-        </box>
+        </scrollbox>
       </box>
 
       {deleteConfirm && (

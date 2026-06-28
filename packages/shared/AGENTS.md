@@ -24,7 +24,7 @@
 
 - `endpoints.ts` — server port, base URLs, all API v1 endpoint builders
 - `paths.ts` — `SCODE_DIR`, `scodePath()`, config/auth/db/logs paths
-- `providers.ts` — `PROVIDER_ENV_MAP` (provider ID → env var name)
+- `providers.ts` — `PROVIDER_ENV_MAP` (provider ID → env var name). Must be kept in sync with adapter IDs registered in `apps/server/src/llm/provider-service.ts` — they are independently maintained and can drift.
 - `defaults.ts` — `DEFAULT_MODEL_STRING`, `DEFAULT_APP_CONFIG`
 - `api-routes.ts` — route path constants + parameterized path helpers
 - `limits.ts` — numeric constants (buffers, timeouts, retries, log thresholds)
