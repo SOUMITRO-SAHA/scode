@@ -317,6 +317,7 @@ export function SessionSidebar() {
                     flexDirection="row"
                     flexGrow={1}
                     flexShrink={1}
+                    overflow="hidden"
                     onMouseDown={() => handleSwitch(sess.id)}
                   >
                     <text
@@ -327,8 +328,9 @@ export function SessionSidebar() {
                     </text>
                     <text
                       fg={active ? theme.brand.primary : theme.text.primary}
+                      wrapMode="none"
                     >
-                      {sess.name.slice(0, 12)}
+                      {sess.name}
                     </text>
                   </box>
                   <box
