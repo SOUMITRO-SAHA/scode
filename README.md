@@ -18,14 +18,14 @@ pnpm cli --prompt "Generate documentation for this project"
 ## Architecture
 
 ```
-┌────────────────┐      HTTP/TCP      ┌─────────────────────────────────────┐
-│  CLI (OpenTUI) │ ──────────────────→ │  Server (Hono, singleton)           │
-│  Thin client   │ ←── stream ────── │  • Skill discovery & matching       │
-└────────────────┘                    │  • Prompt building                  │
-                                       │  • LLM (Claude/Gemini/DeepSeek/Z.ai/MiniMax/CommandCode)│
-                                      │  • Tool execution (read, write, …)  │
-                                      │  • SQLite via Drizzle ORM           │
-                                      └─────────────────────────────────────┘
+┌────────────────┐      HTTP/TCP        ┌───────────────────────────────────────────────────────────┐
+│  CLI (OpenTUI) │ ───────────────────→ │  Server (Hono, singleton)                                 │
+│  Thin client   │ ←── stream ───────── │  • Skill discovery & matching                             │
+└────────────────┘                      │  • Prompt building                                        │
+                                        │  • LLM (Claude/Gemini/DeepSeek/Z.ai/MiniMax/CommandCode)  │
+                                        │  • Tool execution (read, write, …)                        │
+                                        │  • SQLite via Drizzle ORM                                 │
+                                        └───────────────────────────────────────────────────────────┘
 ```
 
 ## Project Structure

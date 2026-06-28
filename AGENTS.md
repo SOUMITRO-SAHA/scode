@@ -49,7 +49,7 @@ scode/
 │       │       ├── bash.ts     # Shell commands
 │       │       ├── grep.ts     # Regex content search
 │       │       └── glob.ts     # Glob pattern file search
-│       ├── package.json       # @scode/server — deps: hono, @hono/node-server, @anthropic-ai/sdk, yaml
+│       ├── package.json       # @scode/server — deps: hono, @hono/node-server, @anthropic-ai/sdk, @google/genai, openai, yaml
 │       └── tsconfig.json
 ├── .agents/
 │   └── skills/
@@ -72,9 +72,9 @@ scode (terminal)
   → If running → connect to existing server
   → If not running → spawn server as child process, poll until healthy, then connect
   → Send user prompt to server via HTTP POST /process
-  → Server: discover → match → load → build → call Claude with tools
-  → Claude may call tools (read, write, bash, grep, glob, edit) — server executes them, returns results
-  → Claude generates final response
+   → Server: discover → match → load → build → call LLM (Claude/Gemini/DeepSeek/Z.ai/MiniMax/CommandCode) with tools
+   → LLM may call tools (read, write, bash, grep, glob, edit) — server executes them, returns results
+   → LLM generates final response
   → CLI receives streamed response via chunked transfer → display to terminal
 ```
 
