@@ -387,7 +387,10 @@ export function SessionSidebar() {
                   width="100%"
                 >
                   <text width={2}> </text>
-                  <text fg={theme.text.muted} attributes={TextAttributes.BOLD}>
+                  <text
+                    fg={theme.brand.active}
+                    attributes={TextAttributes.BOLD}
+                  >
                     {item.label.toUpperCase()}
                   </text>
                 </box>
