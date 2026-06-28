@@ -18,6 +18,7 @@ import type { KeyEvent } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import type { ProviderInfo } from "@scode/shared/types";
 import { theme } from "@scode/theme";
+import { useQueryClient } from "@tanstack/react-query";
 
 type View = "providers" | "api-key";
 
@@ -36,6 +37,7 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
     null,
   );
   const dialog = useDialog();
+  const qc = useQueryClient();
 
   const handleClose = useCallback(() => {
     setOpen(false);
@@ -71,6 +73,7 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
           selectedProvider.id,
         );
         setModel(`${result.provider}/${result.defaultModel}`);
+        qc.invalidateQueries({ queryKey: ["models", serverUrl] });
         toast.show({
           variant: "success",
           message: `Connected to ${selectedProvider.name}`,
@@ -85,7 +88,14 @@ export function ConnectProvider({ onClose }: { onClose?: () => void }) {
         setSelectedProvider(null);
       }
     },
-    [selectedProvider, connectProvider, setDefaultProvider, setModel],
+    [
+      selectedProvider,
+      connectProvider,
+      setDefaultProvider,
+      setModel,
+      qc,
+      serverUrl,
+    ],
   );
 
   const handleApiKeyCancel = useCallback(() => {

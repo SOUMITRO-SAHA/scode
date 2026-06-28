@@ -103,6 +103,7 @@ export function useConnectProvider(serverUrl?: string) {
       ),
     onSuccess: () => {
       qc.invalidateQueries({ queryKey: ["providers", serverUrl] });
+      qc.invalidateQueries({ queryKey: ["models", serverUrl] });
     },
   });
 }
@@ -156,8 +157,7 @@ export function useModels(serverUrl?: string) {
           serverUrl,
         ),
       ),
-    staleTime: 0,
-    refetchOnMount: true,
+    staleTime: 5 * 60 * 1000,
   });
 }
 
