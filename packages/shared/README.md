@@ -1,8 +1,22 @@
 # @scode/shared
 
-Shared types and utilities used across `@scode/cli` and `@scode/server`.
+Shared types, utilities, constants, and logger used across `@scode/cli` and `@scode/server`.
 
-## Logger (`shared/logger`)
+Developed by [SOUMITRA SAHA](mailto:soumitrosahaofficial@gmail.com).
+
+## Subpath Exports
+
+| Subpath       | Contents                                                |
+| ------------- | ------------------------------------------------------- |
+| `./logger`    | Pino logger with daily rotation, compression, retention |
+| `./constants` | Ports, URLs, paths, provider env map, limits, effort    |
+| `./types`     | Entities, API types, stream chunk codec                 |
+| `./utils`     | API client, ID gen, model parsing, time, error, JSON    |
+| `./effect`    | Effect-based service wrappers (debug, env config)       |
+
+> **Note:** There is no root `"."` export. Always import via subpath, e.g. `@scode/shared/logger`.
+
+## Logger
 
 Daily-rotating logger built on [Pino](https://getpino.io) + [pino-roll](https://github.com/mcollina/pino-roll).
 

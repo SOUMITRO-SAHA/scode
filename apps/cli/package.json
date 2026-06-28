@@ -1,5 +1,6 @@
 {
   "name": "@scode/cli",
+  "author": "SOUMITRA SAHA <soumitrosahaofficial@gmail.com>",
   "type": "module",
   "bin": {
     "scode": "./src/index.ts"

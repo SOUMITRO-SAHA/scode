@@ -14,11 +14,75 @@ import { useAppStore } from "@/store/index";
 import { type InputRenderable, RGBA, TextAttributes } from "@opentui/core";
 import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { DebugLogger } from "@scode/shared/logger";
-import type { UnifiedMessage } from "@scode/shared/types";
+import type { SessionInfo, UnifiedMessage } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
 import { theme } from "@scode/theme";
 
 const dbg = new DebugLogger("client:sidebar");
+
+type SidebarItem =
+  | { type: "header"; label: string; key: string }
+  | { type: "session"; session: SessionInfo; flatIndex: number };
+
+function getDateGroupLabel(dateStr: string): string {
+  const date = new Date(dateStr);
+  const now = new Date();
+  const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const sessionDay = new Date(
+    date.getFullYear(),
+    date.getMonth(),
+    date.getDate(),
+  );
+
+  if (sessionDay.getTime() === today.getTime()) return "Today";
+  if (sessionDay.getTime() === yesterday.getTime()) return "Yesterday";
+
+  const sameYear = date.getFullYear() === now.getFullYear();
+  return date.toLocaleDateString("en-US", {
+    weekday: "short",
+    month: "short",
+    day: "numeric",
+    ...(sameYear ? {} : { year: "numeric" }),
+  });
+}
+
+function groupSessionsByDate(sessions: SessionInfo[]): SidebarItem[] {
+  const groups = new Map<string, SessionInfo[]>();
+
+  for (const session of sessions) {
+    const label = getDateGroupLabel(session.updatedAt);
+    const existing = groups.get(label);
+    if (existing) {
+      existing.push(session);
+    } else {
+      groups.set(label, [session]);
+    }
+  }
+
+  const items: SidebarItem[] = [];
+  let flatIndex = 0;
+
+  for (const [label, groupSessions] of groups) {
+    items.push({ type: "header", label, key: `header-${label}` });
+    for (const session of groupSessions) {
+      items.push({ type: "session", session, flatIndex });
+      flatIndex++;
+    }
+  }
+
+  return items;
+}
+
+function sessionItemsOnly(items: SidebarItem[]): SessionInfo[] {
+  return items
+    .filter(
+      (item): item is SidebarItem & { type: "session" } =>
+        item.type === "session",
+    )
+    .map((item) => item.session);
+}
 
 export function SessionSidebar() {
   const toast = useToast();
@@ -184,15 +248,34 @@ export function SessionSidebar() {
   );
 
   const sessions = data?.sessions ?? [];
-  const filteredSessions = searchQuery
+  const sortedSessions = searchQuery
     ? fuzzysort.go(searchQuery, sessions, { keys: ["name"] }).map((r) => r.obj)
     : sessions;
+  const sidebarItems = groupSessionsByDate(sortedSessions);
+  const sessionCount = sortedSessions.length;
 
   dbg.log("Sessions computed", {
     totalSessions: sessions.length,
-    filteredCount: filteredSessions.length,
+    filteredCount: sortedSessions.length,
     searchQuery,
   });
+
+  const getNextSelectableIndex = useCallback(
+    (current: number, direction: 1 | -1): number => {
+      let next = current + direction;
+      while (next >= 0 && next < sidebarItems.length) {
+        if (sidebarItems[next].type === "session") return next;
+        next += direction;
+      }
+      if (direction === 1) {
+        for (let i = sidebarItems.length - 1; i >= 0; i--) {
+          if (sidebarItems[i].type === "session") return i;
+        }
+      }
+      return current;
+    },
+    [sidebarItems],
+  );
 
   useKeyboard((key) => {
     if (!sidebarVisible) return;
@@ -203,29 +286,34 @@ export function SessionSidebar() {
     }
 
     if (key.name === "up") {
-      setSidebarSelectedIndex(Math.max(0, sidebarSelectedIndex - 1));
+      setSidebarSelectedIndex(getNextSelectableIndex(sidebarSelectedIndex, -1));
     } else if (key.name === "down") {
-      setSidebarSelectedIndex(
-        Math.min(filteredSessions.length - 1, sidebarSelectedIndex + 1),
-      );
+      setSidebarSelectedIndex(getNextSelectableIndex(sidebarSelectedIndex, 1));
     } else if (key.name === "return") {
       if (deleteConfirm) {
         executeDelete(deleteConfirm.id);
         setDeleteConfirm(null);
-      } else if (filteredSessions[sidebarSelectedIndex]) {
-        handleSwitch(filteredSessions[sidebarSelectedIndex].id);
+      } else {
+        const item = sidebarItems[sidebarSelectedIndex];
+        if (item?.type === "session") {
+          handleSwitch(item.session.id);
+        }
       }
     }
   });
 
   useEffect(() => {
-    if (
-      filteredSessions.length > 0 &&
-      sidebarSelectedIndex >= filteredSessions.length
-    ) {
-      setSidebarSelectedIndex(filteredSessions.length - 1);
+    if (sessionCount > 0 && sidebarSelectedIndex >= sidebarItems.length) {
+      const lastSession = getNextSelectableIndex(sidebarItems.length, -1);
+      setSidebarSelectedIndex(lastSession);
     }
-  }, [filteredSessions.length, sidebarSelectedIndex, setSidebarSelectedIndex]);
+  }, [
+    sessionCount,
+    sidebarSelectedIndex,
+    sidebarItems.length,
+    getNextSelectableIndex,
+    setSidebarSelectedIndex,
+  ]);
 
   useEffect(() => {
     if (sidebarVisible && inputRef.current && !deleteConfirm) {
@@ -291,18 +379,32 @@ export function SessionSidebar() {
         <box flexDirection="column" flexGrow={1}>
           {isLoading && <text fg={theme.text.muted}>Loading...</text>}
           {isError && <text fg={theme.danger}>Failed to load</text>}
-          {!isLoading && !isError && filteredSessions.length === 0 && (
+          {!isLoading && !isError && sessionCount === 0 && (
             <text fg={theme.text.disabled}>
               {searchQuery ? "No matches" : "No sessions"}
             </text>
           )}
-          {filteredSessions.map((sess, index) => {
-            const active = sess.id === currentSessionId;
-            const isStreaming = sess.id === streamingSessionId;
+          {sidebarItems.map((item, index) => {
+            if (item.type === "header") {
+              return (
+                <box key={item.key} height={1} paddingTop={1}>
+                  <text
+                    fg={theme.brand.primary}
+                    attributes={TextAttributes.BOLD}
+                  >
+                    {item.label}
+                  </text>
+                </box>
+              );
+            }
+
+            const { session } = item;
+            const active = session.id === currentSessionId;
+            const isStreaming = session.id === streamingSessionId;
             const isSelected = index === sidebarSelectedIndex;
             return (
               <box
-                key={sess.id}
+                key={session.id}
                 height={1}
                 backgroundColor={
                   isSelected
@@ -318,9 +420,8 @@ export function SessionSidebar() {
                     flexGrow={1}
                     flexShrink={1}
                     overflow="hidden"
-                    onMouseDown={() => handleSwitch(sess.id)}
+                    onMouseDown={() => handleSwitch(session.id)}
                   >
-                    {/* Active Indicator */}
                     <text
                       fg={active ? theme.brand.primary : theme.text.primary}
                       width={2}
@@ -333,7 +434,7 @@ export function SessionSidebar() {
                       wrapMode="word"
                       truncate={true}
                     >
-                      {sess.name}
+                      {session.name}
                     </text>
                   </box>
 
@@ -349,7 +450,7 @@ export function SessionSidebar() {
                       <text
                         fg={theme.text.muted}
                         onMouseDown={() =>
-                          handleDeleteRequest(sess.id, sess.name)
+                          handleDeleteRequest(session.id, session.name)
                         }
                       >
                         ×

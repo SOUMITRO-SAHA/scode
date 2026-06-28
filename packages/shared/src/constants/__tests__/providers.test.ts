@@ -14,7 +14,7 @@ describe("PROVIDER_ENV_MAP", () => {
       deepseek: "DEEPSEEK_API_KEY",
       zai: "ZHIPU_API_KEY",
       minimax: "MINIMAX_API_KEY",
-      cohere: "COHERE_API_KEY",
+      commandcode: "COMMANDCODE_API_KEY",
     });
   });
 });

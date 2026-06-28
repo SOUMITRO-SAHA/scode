@@ -1,5 +1,6 @@
 {
   "name": "@scode/shared",
+  "author": "SOUMITRA SAHA <soumitrosahaofficial@gmail.com>",
   "type": "module",
   "exports": {
     "./logger": "./src/logger/index.ts",

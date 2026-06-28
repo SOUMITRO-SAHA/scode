@@ -4,5 +4,5 @@ export const PROVIDER_ENV_MAP: Record<string, string> = {
   deepseek: "DEEPSEEK_API_KEY",
   zai: "ZHIPU_API_KEY",
   minimax: "MINIMAX_API_KEY",
-  cohere: "COHERE_API_KEY",
+  commandcode: "COMMANDCODE_API_KEY",
 };

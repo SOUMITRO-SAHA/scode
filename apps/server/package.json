@@ -1,5 +1,6 @@
 {
   "name": "@scode/server",
+  "author": "SOUMITRA SAHA <soumitrosahaofficial@gmail.com>",
   "type": "module",
   "scripts": {
     "dev": "tsx watch src/index.ts",
@@ -16,7 +17,6 @@
     "@hono/node-server": "^2.0.6",
     "@scode/shared": "workspace:*",
     "better-sqlite3": "^12.11.1",
-    "cohere-ai": "^8.0.0",
     "drizzle-orm": "^0.45.2",
     "hono": "^4.12.27",
     "openai": "^6.45.0",
