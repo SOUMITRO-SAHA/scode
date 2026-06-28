@@ -3,6 +3,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Effect } from "effect";
 import fuzzysort from "fuzzysort";
 
+import { SessionDeleteConfirm } from "@/components/commands/index";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
 import {
@@ -12,7 +13,7 @@ import {
 } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
 import { type InputRenderable, RGBA, TextAttributes } from "@opentui/core";
-import { useKeyboard, useTerminalDimensions } from "@opentui/react";
+import { useKeyboard } from "@opentui/react";
 import { DebugLogger } from "@scode/shared/logger";
 import type { SessionInfo, UnifiedMessage } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
@@ -77,7 +78,6 @@ function groupSessionsByDate(sessions: SessionInfo[]): SidebarItem[] {
 
 export function SessionSidebar() {
   const toast = useToast();
-  const { width: termWidth, height: termHeight } = useTerminalDimensions();
   const serverUrl = useAppStore((s) => s.serverUrl);
   const currentSessionId = useAppStore((s) => s.currentSessionId);
   const streamingSessionId = useAppStore((s) => s.streamingSessionId);
@@ -99,6 +99,7 @@ export function SessionSidebar() {
     id: string;
     name: string;
   } | null>(null);
+  const pendingSelectIdRef = useRef<string | null>(null);
 
   dbg.log("SessionSidebar rendered", {
     sidebarVisible,
@@ -132,49 +133,6 @@ export function SessionSidebar() {
       });
     }
   }, [createSession, setCurrentSessionId, model, toast]);
-
-  const executeDelete = useCallback(
-    async (id: string) => {
-      const wasActive = currentSessionId === id;
-      dbg.log("Deleting session", { id, wasActive });
-      await deleteSession.mutateAsync(id);
-      dbg.log("Session deleted successfully", { id });
-      if (wasActive) {
-        setCurrentSessionId(undefined);
-        clearMessages();
-        dbg.log("Active session deleted, creating new session");
-        try {
-          const res = await createSession.mutateAsync({
-            name: "New Session",
-            model: model ?? "",
-            provider: "",
-          });
-          dbg.log("New session created after delete", { id: res.id });
-          setCurrentSessionId(res.id);
-          toast.show({
-            variant: "success",
-            message: "Session deleted. New session created.",
-          });
-        } catch (err) {
-          dbg.error("Failed to create new session after delete", {
-            error: (err as Error).message,
-          });
-          toast.show({ variant: "success", message: "Session deleted" });
-        }
-      } else {
-        toast.show({ variant: "success", message: "Session deleted" });
-      }
-    },
-    [
-      deleteSession,
-      currentSessionId,
-      setCurrentSessionId,
-      clearMessages,
-      createSession,
-      model,
-      toast,
-    ],
-  );
 
   const handleDeleteRequest = useCallback(
     (id: string, name: string) => {
@@ -268,27 +226,68 @@ export function SessionSidebar() {
     [sidebarItems],
   );
 
+  const executeDelete = useCallback(
+    async (id: string) => {
+      const wasActive = currentSessionId === id;
+      dbg.log("Deleting session", { id, wasActive });
+
+      // Choose the session to focus next: the one just below in the current
+      // list, otherwise the one just above. Computed before deletion.
+      const deleteIdx = sortedSessions.findIndex((s) => s.id === id);
+      const nextSession =
+        deleteIdx >= 0
+          ? (sortedSessions[deleteIdx + 1] ?? sortedSessions[deleteIdx - 1])
+          : undefined;
+      const nextSessionId = nextSession?.id;
+
+      await deleteSession.mutateAsync(id);
+      dbg.log("Session deleted successfully", { id, nextSessionId });
+
+      // After the sessions list refetches, move the sidebar highlight to the
+      // next session instead of leaving the selection stale.
+      if (nextSessionId) {
+        pendingSelectIdRef.current = nextSessionId;
+      }
+
+      if (wasActive) {
+        if (nextSessionId) {
+          dbg.log("Switching active session to next after delete", {
+            nextSessionId,
+          });
+          await handleSwitch(nextSessionId);
+        } else {
+          dbg.log("No remaining sessions; clearing active session");
+          setCurrentSessionId(undefined);
+          clearMessages();
+        }
+      }
+
+      toast.show({ variant: "success", message: "Session deleted" });
+    },
+    [
+      currentSessionId,
+      sortedSessions,
+      deleteSession,
+      handleSwitch,
+      setCurrentSessionId,
+      clearMessages,
+      toast,
+    ],
+  );
+
   useKeyboard((key) => {
     if (!sidebarVisible) return;
-
-    if (key.name === "escape" && deleteConfirm) {
-      setDeleteConfirm(null);
-      return;
-    }
+    // When the delete-confirm overlay is open, let it own the keyboard.
+    if (deleteConfirm) return;
 
     if (key.name === "up") {
       setSidebarSelectedIndex(getNextSelectableIndex(sidebarSelectedIndex, -1));
     } else if (key.name === "down") {
       setSidebarSelectedIndex(getNextSelectableIndex(sidebarSelectedIndex, 1));
     } else if (key.name === "return") {
-      if (deleteConfirm) {
-        executeDelete(deleteConfirm.id);
-        setDeleteConfirm(null);
-      } else {
-        const item = sidebarItems[sidebarSelectedIndex];
-        if (item?.type === "session") {
-          handleSwitch(item.session.id);
-        }
+      const item = sidebarItems[sidebarSelectedIndex];
+      if (item?.type === "session") {
+        handleSwitch(item.session.id);
       }
     }
   });
@@ -306,6 +305,20 @@ export function SessionSidebar() {
     setSidebarSelectedIndex,
   ]);
 
+  // After a deletion, move the highlight to the next session once the
+  // refetched list is available.
+  useEffect(() => {
+    const targetId = pendingSelectIdRef.current;
+    if (targetId == null) return;
+    pendingSelectIdRef.current = null;
+    const idx = sidebarItems.findIndex(
+      (it) => it.type === "session" && it.session.id === targetId,
+    );
+    if (idx >= 0) {
+      setSidebarSelectedIndex(idx);
+    }
+  }, [sidebarItems, setSidebarSelectedIndex]);
+
   useEffect(() => {
     if (sidebarVisible && inputRef.current && !deleteConfirm) {
       inputRef.current.focus();
@@ -313,8 +326,6 @@ export function SessionSidebar() {
   }, [sidebarVisible, deleteConfirm]);
 
   if (!sidebarVisible) return null;
-
-  const confirmDialogWidth = Math.min(Math.floor(termWidth * 0.5), 40);
 
   return (
     <>
@@ -455,68 +466,14 @@ export function SessionSidebar() {
       </box>
 
       {deleteConfirm && (
-        <box
-          position="absolute"
-          left={0}
-          top={0}
-          width={termWidth}
-          height={termHeight}
-          flexDirection="column"
-          alignItems="center"
-          justifyContent="center"
-          zIndex={4000}
-        >
-          <box
-            backgroundColor={theme.background.surface}
-            width={confirmDialogWidth}
-            borderStyle="rounded"
-            borderColor={theme.border.focus}
-            flexDirection="column"
-            paddingLeft={2}
-            paddingRight={2}
-            paddingTop={1}
-            paddingBottom={1}
-          >
-            <box flexDirection="row" justifyContent="space-between">
-              <text fg={theme.text.primary} attributes={TextAttributes.BOLD}>
-                Delete Session
-              </text>
-              <text
-                fg={theme.text.muted}
-                onMouseDown={() => setDeleteConfirm(null)}
-              >
-                esc
-              </text>
-            </box>
-            <box paddingTop={1} paddingBottom={1}>
-              <text fg={theme.text.muted}>
-                Delete &quot;
-                {deleteConfirm.name.slice(0, 20)}
-                {deleteConfirm.name.length > 20 ? "..." : ""}&quot;?
-              </text>
-            </box>
-            <box flexDirection="row" justifyContent="flex-end" gap={2}>
-              <box
-                paddingLeft={1}
-                paddingRight={1}
-                onMouseDown={() => setDeleteConfirm(null)}
-              >
-                <text fg={theme.text.muted}>Cancel</text>
-              </box>
-              <box
-                paddingLeft={1}
-                paddingRight={1}
-                backgroundColor={theme.danger}
-                onMouseDown={() => {
-                  executeDelete(deleteConfirm.id);
-                  setDeleteConfirm(null);
-                }}
-              >
-                <text fg={theme.text.inverse}>Delete</text>
-              </box>
-            </box>
-          </box>
-        </box>
+        <SessionDeleteConfirm
+          name={deleteConfirm.name}
+          onConfirm={() => {
+            executeDelete(deleteConfirm.id);
+            setDeleteConfirm(null);
+          }}
+          onCancel={() => setDeleteConfirm(null)}
+        />
       )}
     </>
   );
