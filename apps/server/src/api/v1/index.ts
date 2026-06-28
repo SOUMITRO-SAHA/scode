@@ -168,8 +168,15 @@ export function createV1Router(deps: RouterDeps): Hono {
       }),
     );
 
+    const defaults: Record<string, string> = {};
+    for (const m of models) {
+      if (!defaults[m.provider]) defaults[m.provider] = m.defaultModel;
+    }
+    for (const p of providers) {
+      if (!defaults[p.id]) defaults[p.id] = p.defaultModel;
+    }
     const cfg = runSync(deps.configService.get);
-    return c.json({ models, defaultModel: cfg.defaultModel });
+    return c.json({ models, defaultModel: cfg.defaultModel, defaults });
   });
 
   router.patch("/models/default", async (c) => {
