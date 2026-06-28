@@ -81,5 +81,5 @@ pnpm start --port=4100
 
 ## Dependencies
 
-- **Runtime:** Hono, Anthropic SDK, Google Gen AI, OpenAI, Cohere, Drizzle ORM, better-sqlite3, YAML, `@scode/shared`
+- **Runtime:** Hono, Anthropic SDK, Google Gen AI, OpenAI (DeepSeek/Z.ai/MiniMax), CommandCode, Drizzle ORM, better-sqlite3, YAML, `@scode/shared`
 - **Dev:** tsx, TypeScript, vitest, drizzle-kit

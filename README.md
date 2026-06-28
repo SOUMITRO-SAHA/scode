@@ -22,7 +22,7 @@ pnpm cli --prompt "Generate documentation for this project"
 │  CLI (OpenTUI) │ ──────────────────→ │  Server (Hono, singleton)           │
 │  Thin client   │ ←── stream ────── │  • Skill discovery & matching       │
 └────────────────┘                    │  • Prompt building                  │
-                                      │  • LLM (Claude/Gemini/OpenAI/Cohere)│
+                                       │  • LLM (Claude/Gemini/DeepSeek/Z.ai/MiniMax/CommandCode)│
                                       │  • Tool execution (read, write, …)  │
                                       │  • SQLite via Drizzle ORM           │
                                       └─────────────────────────────────────┘
@@ -74,7 +74,7 @@ scode/
 3. Server **matches** user prompt to relevant skills (keyword overlap)
 4. Server **loads** matched SKILL.md files (YAML frontmatter + body)
 5. Server **builds** a system prompt with skill context + tool definitions
-6. Server calls **LLM** (Claude Sonnet / Gemini / OpenAI-compat / Cohere) with tools
+6. Server calls **LLM** (Claude / Gemini / DeepSeek / Z.ai / MiniMax / CommandCode) with tools
 7. LLM may call tools → server executes → feeds results back (up to 10 rounds)
 8. Final response **streams** back to CLI via chunked transfer
 
@@ -101,7 +101,8 @@ Skills are stored in `.agents/skills/<name>/SKILL.md` with YAML frontmatter.
 
 - Node.js >= 18
 - pnpm 9
-- At least one API key configured (Anthropic, Gemini, OpenAI-compat, or Cohere)
+- **bun >= 1.3.14** (dev only — used by `pnpm cli` and `pnpm dev:cli` for fast startup; not required in production)
+- At least one API key configured (Anthropic, Gemini, DeepSeek, Z.ai, MiniMax, or CommandCode)
 
 ## License
 
