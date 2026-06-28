@@ -30,7 +30,7 @@ import {
   SCODE_LOGS_DIR,
 } from "@scode/shared/constants";
 import { encodeStreamChunk } from "@scode/shared/types";
-import type { AppConfig, Skill } from "@scode/shared/types";
+import type { AppConfig, Skill, UnifiedMessage } from "@scode/shared/types";
 import { calcUptime, errorMessage } from "@scode/shared/utils";
 
 const runSync = Effect.runSync;
@@ -254,6 +254,25 @@ export function createV1Router(deps: RouterDeps): Hono {
       deps.sessionService.getMessages(c.req.param("id")),
     );
     return c.json({ messages });
+  });
+
+  router.post("/sessions/:id/messages", async (c) => {
+    const { role, content } = await c.req.json<{
+      role: string;
+      content: string;
+    }>();
+    if (!role || content === undefined) {
+      return c.json({ error: "role and content required" }, 400);
+    }
+    const session = runSync(deps.sessionService.get(c.req.param("id")));
+    if (!session) return c.json({ error: "Session not found" }, 404);
+    runSync(
+      deps.sessionService.addMessage(c.req.param("id"), {
+        role: role as UnifiedMessage["role"],
+        content,
+      }),
+    );
+    return c.json({ ok: true });
   });
 
   router.get("/skills", (c) => {

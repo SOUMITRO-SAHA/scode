@@ -8,7 +8,12 @@ import type { StreamError } from "../services/errors";
 import { useAppStore } from "../store/index";
 
 import { useToast } from "@/components/ui/toast";
-import { CHAT_PATH, CONFIG_PATH, SESSIONS_PATH } from "@scode/shared/constants";
+import {
+  CHAT_PATH,
+  CONFIG_PATH,
+  SESSIONS_PATH,
+  sessionMessagesPath,
+} from "@scode/shared/constants";
 import { DebugLogger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
 import type { ToolCallState } from "@scode/shared/types";
@@ -247,6 +252,23 @@ export function useStreamChat(serverUrl: string) {
         dbg.error("stream failed", { error: errMsg });
         useAppStore.getState().setLastAssistantError(errMsg);
         toast.show({ variant: "error", message: errMsg });
+        // Persist error to server so it survives session reload
+        const sid = useAppStore.getState().currentSessionId;
+        if (sid) {
+          Effect.runPromise(
+            apiFetch(
+              sessionMessagesPath(sid),
+              {
+                method: "POST",
+                body: JSON.stringify({
+                  role: "system",
+                  content: `Error: ${errMsg}`,
+                }),
+              },
+              serverUrl,
+            ).pipe(Effect.catch(() => Effect.void)),
+          ).catch(() => {});
+        }
       } finally {
         dbg.log("stream flow complete, resetting state");
         const stream = streamRef.current;

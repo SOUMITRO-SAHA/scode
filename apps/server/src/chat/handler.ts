@@ -173,6 +173,7 @@ export async function handleChat(
   let fullResponse = "";
   let hadError = false;
   let thoughtText = "";
+  let lastErrorMessage = "";
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     let toolCalled = false;
@@ -192,6 +193,7 @@ export async function handleChat(
       const msg = extractErrorMsg(err, provider.id, model);
       dbg.error("llm init failed", { error: msg });
       const errText = `LLM call failed - ${msg}`;
+      lastErrorMessage = errText;
       await streamWriter(
         encodeStreamChunk({ type: "error", message: errText }),
       );
@@ -229,6 +231,7 @@ export async function handleChat(
         );
       } else if (event.type === "error") {
         hadError = true;
+        lastErrorMessage = event.message;
         await streamWriter(
           encodeStreamChunk({ type: "error", message: event.message }),
         );
@@ -341,9 +344,11 @@ export async function handleChat(
   });
 
   if (fullResponse || hadError || thoughtText) {
+    const content =
+      hadError && !fullResponse ? `Error: ${lastErrorMessage}` : fullResponse;
     session.messages.push({
       role: "assistant",
-      content: fullResponse || "",
+      content,
       ...(thoughtText ? { thought: thoughtText } : {}),
     });
     Effect.runSync(deps.sessionService.update(session));
