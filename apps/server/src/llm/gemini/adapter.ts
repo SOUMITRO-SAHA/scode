@@ -78,11 +78,6 @@ export class GeminiAdapter implements LLMProvider {
       },
     });
 
-    let aggregatedFunctionCalls: Array<{
-      name: string;
-      args: Record<string, unknown>;
-    }> = [];
-
     for await (const chunk of stream) {
       const parts = chunk.candidates?.[0]?.content?.parts;
       if (parts) {
@@ -95,24 +90,17 @@ export class GeminiAdapter implements LLMProvider {
         }
       }
       if (chunk.functionCalls) {
-        aggregatedFunctionCalls = chunk.functionCalls.map(
-          (fc: FunctionCall) => ({
-            name: fc.name ?? "",
-            args: (fc.args ?? {}) as Record<string, unknown>,
-          }),
-        );
+        for (const fc of chunk.functionCalls) {
+          yield {
+            type: "tool_use",
+            toolCall: {
+              id: fc.name ?? "",
+              name: fc.name ?? "",
+              input: (fc.args ?? {}) as Record<string, unknown>,
+            },
+          };
+        }
       }
-    }
-
-    for (const fc of aggregatedFunctionCalls) {
-      yield {
-        type: "tool_use",
-        toolCall: {
-          id: fc.name,
-          name: fc.name,
-          input: fc.args,
-        },
-      };
     }
 
     yield { type: "done" };

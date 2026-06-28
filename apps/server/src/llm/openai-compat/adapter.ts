@@ -115,8 +115,34 @@ export class OpenAICompatAdapter implements LLMProvider {
           if (tc.function?.arguments) acc.arguments += tc.function.arguments;
         }
       }
+
+      // When the model signals tool calls are complete, yield immediately
+      if (
+        choice.finish_reason === "tool_calls" &&
+        toolCallAccumulators.size > 0
+      ) {
+        for (const acc of toolCallAccumulators.values()) {
+          if (!acc.name) continue;
+          let input: Record<string, unknown> = {};
+          try {
+            input = JSON.parse(acc.arguments);
+          } catch {
+            input = { raw: acc.arguments };
+          }
+          yield {
+            type: "tool_use",
+            toolCall: {
+              id: acc.id || acc.name,
+              name: acc.name,
+              input,
+            },
+          };
+        }
+        toolCallAccumulators.clear();
+      }
     }
 
+    // Yield any remaining tool calls not caught by finish_reason check
     for (const acc of toolCallAccumulators.values()) {
       if (!acc.name) continue;
       let input: Record<string, unknown> = {};

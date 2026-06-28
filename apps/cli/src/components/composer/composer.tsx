@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import React, { useCallback, useEffect, useRef, useState } from "react";
 
 import { Effect } from "effect";
 
@@ -32,6 +32,7 @@ export interface ComposerProps {
   clearTrigger?: number;
   prefill?: string;
   containerWidth?: number;
+  textareaRef?: React.RefObject<TextareaRenderable | null>;
 }
 
 const AGENT_COLORS: Record<string, string> = {
@@ -52,6 +53,7 @@ export function Composer({
   clearTrigger,
   prefill,
   containerWidth,
+  textareaRef: externalRef,
 }: ComposerProps) {
   const [composerKey, setComposerKey] = useState(0);
   const [initialVal, setInitialVal] = useState("");
@@ -258,7 +260,12 @@ export function Composer({
         <box paddingLeft={1} flexDirection="column">
           <textarea
             key={composerKey}
-            ref={ref}
+            ref={(node) => {
+              ref.current = node;
+              if (externalRef) {
+                externalRef.current = node;
+              }
+            }}
             initialValue={initialVal}
             onSubmit={handleSubmit}
             onKeyDown={handleKeyDown}

@@ -25,7 +25,7 @@ import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
 import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
 import { useAppStore } from "@/store/index";
-import { createCliRenderer } from "@opentui/core";
+import { type TextareaRenderable, createCliRenderer } from "@opentui/core";
 import { createRoot } from "@opentui/react";
 import { useTerminalDimensions } from "@opentui/react";
 import {
@@ -209,6 +209,7 @@ function AppInner({
     useAppStore.getState().addSelectedSkill(skillName);
   }, []);
   const apiRef = useRef(new ApiClient(serverUrl));
+  const textareaRef = useRef<TextareaRenderable | null>(null);
 
   // Initialize model from props on first render if not set
   if (!model && initialModel) useAppStore.getState().setModel(initialModel);
@@ -227,6 +228,10 @@ function AppInner({
     },
     [setModel],
   );
+
+  const handleRefreshSessions = useCallback(() => {
+    queryClient.invalidateQueries({ queryKey: ["sessions", serverUrl] });
+  }, [serverUrl]);
 
   const hasConversation = messages.length > 0;
   const composerLines = height < 20 ? 1 : height < 28 ? 2 : 3;
@@ -254,6 +259,7 @@ function AppInner({
           addSystemMessage,
           showToast: toast.show,
           onExit,
+          refreshSessions: handleRefreshSessions,
         };
         const result = await executeCommand(value, apiRef.current, ctx);
         if (result) {
@@ -284,6 +290,7 @@ function AppInner({
       addSystemMessage,
       toast,
       chatSubmit,
+      handleRefreshSessions,
     ],
   );
 
@@ -306,6 +313,7 @@ function AppInner({
         addSystemMessage,
         showToast: toast.show,
         onExit,
+        refreshSessions: handleRefreshSessions,
       };
       const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
       if (result) {
@@ -328,10 +336,10 @@ function AppInner({
       toggleDebug,
       handleOpenModelPicker,
       handleOpenProviderPicker,
-      handleOpenSkillsBrowser,
       toggleSidebar,
       addSystemMessage,
       toast,
+      handleRefreshSessions,
     ],
   );
 
@@ -349,6 +357,8 @@ function AppInner({
     toggleDebug,
     onExit,
     bumpFocus,
+    textareaRef,
+    showToast: toast.show,
   });
 
   const modelDisplay = model || undefined;
@@ -387,6 +397,7 @@ function AppInner({
         onSkillSelect={handleSkillSelect}
         sessionName={sessionName}
         mainContentWidth={mainContentWidth}
+        textareaRef={textareaRef}
       />
     </box>
   );

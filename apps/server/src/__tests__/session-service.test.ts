@@ -24,10 +24,12 @@ vi.mock("../session/manager", () => ({
   SessionManager: class {
     create = vi.fn((name: string, model: string, provider: string) => {
       nextId++;
-      const s = {
-        ...mockSession,
+      const s: Session = {
         id: `test-session-${nextId}`,
         name,
+        createdAt: mockSession.createdAt,
+        updatedAt: mockSession.updatedAt,
+        messages: [],
         model,
         provider,
       };
@@ -145,5 +147,54 @@ describe("SessionService", () => {
     });
     const session = runSync(Effect.provide(effect, SessionServiceLive));
     expect(session!.name).toBe("Updated");
+  });
+
+  it("auto-renames session with first user message content", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* SessionService;
+      const created = yield* svc.create("Session default", "m1", "p1");
+      yield* svc.addMessage(created.id, {
+        role: "user",
+        content: "Refactor auth module to use strategy pattern",
+      });
+      yield* svc.addMessage(created.id, {
+        role: "assistant",
+        content: "Here's how...",
+      });
+      const userMessages = (yield* svc.getMessages(created.id)).filter(
+        (m) => m.role === "user",
+      );
+      expect(userMessages).toHaveLength(1);
+      const first =
+        typeof userMessages[0].content === "string"
+          ? userMessages[0].content
+          : "";
+      const clean = first.split("\n")[0].trim().slice(0, 60);
+      if (clean && clean !== created.name) {
+        created.name = clean;
+        yield* svc.update(created);
+      }
+      const updated = yield* svc.get(created.id);
+      return updated!;
+    });
+    const session = runSync(Effect.provide(effect, SessionServiceLive));
+    expect(session.name).toBe("Refactor auth module to use strategy pattern");
+  });
+
+  it("keeps manual rename after messages added", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* SessionService;
+      const created = yield* svc.create("Manual name", "m1", "p1");
+      yield* svc.addMessage(created.id, {
+        role: "user",
+        content: "Hello world",
+      });
+      created.name = "My Custom Title";
+      yield* svc.update(created);
+      const updated = yield* svc.get(created.id);
+      return updated!;
+    });
+    const session = runSync(Effect.provide(effect, SessionServiceLive));
+    expect(session.name).toBe("My Custom Title");
   });
 });

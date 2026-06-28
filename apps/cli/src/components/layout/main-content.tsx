@@ -1,4 +1,4 @@
-import { useState } from "react";
+import React, { useState } from "react";
 
 import { Header } from "./header";
 import { Landing } from "./landing";
@@ -10,6 +10,7 @@ import { ConnectProvider } from "@/components/commands/index";
 import { ModelSwitcher } from "@/components/commands/index";
 import { SkillBrowser } from "@/components/commands/index";
 import { Composer } from "@/components/composer/index";
+import type { TextareaRenderable } from "@opentui/core";
 import type { Message } from "@scode/shared/types";
 
 interface MainContentProps {
@@ -36,6 +37,7 @@ interface MainContentProps {
   onSkillSelect: (skillName: string) => void;
   sessionName?: string;
   mainContentWidth: number;
+  textareaRef?: React.RefObject<TextareaRenderable | null>;
 }
 
 export function MainContent({
@@ -62,6 +64,7 @@ export function MainContent({
   onSkillSelect,
   sessionName,
   mainContentWidth,
+  textareaRef,
 }: MainContentProps) {
   const [composerClearTrigger, setComposerClearTrigger] = useState(0);
 
@@ -91,6 +94,7 @@ export function MainContent({
             mainContentWidth={mainContentWidth}
             clearTrigger={composerClearTrigger}
             focusTrigger={focusTrigger}
+            textareaRef={textareaRef}
           />
         )}
         {hasConversation && (
@@ -105,6 +109,7 @@ export function MainContent({
             clearTrigger={composerClearTrigger}
             prefill={prefill}
             containerWidth={mainContentWidth}
+            textareaRef={textareaRef}
           />
         )}
         <CommandPalette

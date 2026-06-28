@@ -5,6 +5,7 @@ import { KeyboardHints } from "@/components/feedback/keyboard-hints";
 import { TipSection } from "@/components/feedback/tip-section";
 import { useConnectionStatus, useHealth } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
+import type { TextareaRenderable } from "@opentui/core";
 import { formatModelName, parseModelString } from "@scode/shared/utils";
 import { layout, theme } from "@scode/theme";
 
@@ -16,6 +17,7 @@ interface LandingProps {
   mainContentWidth: number;
   clearTrigger?: number;
   focusTrigger?: number;
+  textareaRef?: React.RefObject<TextareaRenderable | null>;
 }
 
 export function Landing({
@@ -26,6 +28,7 @@ export function Landing({
   mainContentWidth,
   clearTrigger,
   focusTrigger,
+  textareaRef,
 }: LandingProps) {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const model = useAppStore((s) => s.model);
@@ -79,6 +82,7 @@ export function Landing({
         serverUrl={serverUrl}
         clearTrigger={clearTrigger}
         focusTrigger={focusTrigger}
+        textareaRef={textareaRef}
       />
       <KeyboardHints />
       <TipSection show={showTips} />

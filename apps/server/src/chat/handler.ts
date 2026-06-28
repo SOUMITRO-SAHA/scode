@@ -5,6 +5,7 @@ import { resolveApiKey } from "../llm/config";
 import { LLMError, ToolFailure } from "../llm/error";
 import type { ProviderService } from "../llm/provider-service";
 import { buildPrompt } from "../prompt/builder";
+import type { Session } from "../session/manager";
 import type { SessionService } from "../session/service";
 import type { SkillService } from "../skill/service";
 import type { ToolService } from "../tool/service";
@@ -325,5 +326,28 @@ export async function handleChat(
     );
   }
 
+  if (!hadError && fullResponse) {
+    autoRenameSession(deps.sessionService, session);
+  }
+
   return session.id;
+}
+
+function autoRenameSession(
+  sessionService: HandlerDeps["sessionService"],
+  session: Session,
+): void {
+  const userMessages = session.messages.filter((m) => m.role === "user");
+  if (userMessages.length !== 1) return;
+
+  const firstMsg = userMessages[0];
+  const firstText =
+    typeof firstMsg.content === "string" ? firstMsg.content : "";
+  if (!firstText) return;
+
+  const clean = firstText.split("\n")[0].trim().slice(0, 60);
+  if (!clean || clean === session.name) return;
+
+  session.name = clean;
+  Effect.runSync(sessionService.update(session));
 }

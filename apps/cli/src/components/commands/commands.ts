@@ -42,6 +42,7 @@ export interface CommandContext {
   addSystemMessage?: (text: string) => void;
   showToast?: (options: ToastInput) => void;
   onExit?: () => void;
+  refreshSessions?: () => void;
 }
 
 export interface CommandResult {
@@ -132,11 +133,13 @@ export const COMMANDS: Command[] = [
     description: "Rename the current conversation",
     usage: "/rename <name>",
     category: "session",
+    suggested: true,
     handler: async (args, api, ctx) => {
       const name = args.join(" ");
       if (!name || !ctx.currentSessionId)
         return { type: "error", text: "Usage: /rename <name>" };
       await Effect.runPromise(api.renameSession(ctx.currentSessionId, name));
+      ctx.refreshSessions?.();
       return { type: "message", text: `Session renamed to: ${name}` };
     },
   },

@@ -65,7 +65,24 @@ export class ClaudeAdapter implements LLMProvider {
         : {}),
     });
 
+    // Track tool calls yielded during streaming so we don't duplicate from finalMessage
+    const yieldedToolCallIds = new Set<string>();
+
     for await (const event of stream) {
+      if (
+        event.type === "content_block_start" &&
+        event.content_block.type === "tool_use"
+      ) {
+        yieldedToolCallIds.add(event.content_block.id);
+        yield {
+          type: "tool_use",
+          toolCall: {
+            id: event.content_block.id,
+            name: event.content_block.name,
+            input: event.content_block.input as Record<string, unknown>,
+          },
+        };
+      }
       if (
         event.type === "content_block_delta" &&
         event.delta.type === "text_delta"
@@ -82,8 +99,9 @@ export class ClaudeAdapter implements LLMProvider {
 
     const finalMessage = await stream.finalMessage();
 
+    // Yield any tool_use blocks not caught during streaming (fallback)
     for (const block of finalMessage.content) {
-      if (block.type === "tool_use") {
+      if (block.type === "tool_use" && !yieldedToolCallIds.has(block.id)) {
         yield {
           type: "tool_use",
           toolCall: {
