@@ -1,144 +1,42 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it, vi } from "vitest";
 
-import { execSync } from "node:child_process";
-
-import {
-  isMac,
-  readClipboard,
-  writeNative,
-  writeOsc52,
-} from "../utils/clipboard";
-
-vi.mock("node:child_process", () => ({
-  execSync: vi.fn(),
-}));
+import { copyCommand } from "../utils/clipboard";
 
 describe("clipboard", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
-  describe("isMac", () => {
-    it("returns true on darwin", () => {
-      vi.stubGlobal("process", { ...process, platform: "darwin" });
-      expect(isMac()).toBe(true);
+  describe("copyCommand", () => {
+    it("returns osascript on darwin when available", () => {
+      const result = copyCommand("darwin", false, () => true);
+      expect(result).toEqual(["osascript"]);
     });
 
-    it("returns false on linux", () => {
-      vi.stubGlobal("process", { ...process, platform: "linux" });
-      expect(isMac()).toBe(false);
+    it("returns undefined on darwin when osascript missing", () => {
+      const result = copyCommand("darwin", false, () => false);
+      expect(result).toBeUndefined();
     });
 
-    it("returns false on win32", () => {
-      vi.stubGlobal("process", { ...process, platform: "win32" });
-      expect(isMac()).toBe(false);
-    });
-  });
-
-  describe("readClipboard", () => {
-    it("uses pbpaste on mac", () => {
-      vi.stubGlobal("process", { ...process, platform: "darwin" });
-      vi.mocked(execSync).mockReturnValue("clipboard content");
-
-      const result = readClipboard();
-
-      expect(execSync).toHaveBeenCalledWith("pbpaste", { encoding: "utf-8" });
-      expect(result).toBe("clipboard content");
+    it("returns wl-copy on linux with wayland", () => {
+      const result = copyCommand("linux", true, (name) => name === "wl-copy");
+      expect(result).toEqual(["wl-copy"]);
     });
 
-    it("uses xclip on linux", () => {
-      vi.stubGlobal("process", { ...process, platform: "linux" });
-      vi.mocked(execSync).mockReturnValue("linux content");
-
-      const result = readClipboard();
-
-      expect(execSync).toHaveBeenCalledWith("xclip -selection clipboard -o", {
-        encoding: "utf-8",
-      });
-      expect(result).toBe("linux content");
+    it("returns xclip on linux without wayland", () => {
+      const result = copyCommand("linux", false, (name) => name === "xclip");
+      expect(result).toEqual(["xclip", "-selection", "clipboard"]);
     });
 
-    it("returns empty string on failure", () => {
-      vi.stubGlobal("process", { ...process, platform: "darwin" });
-      vi.mocked(execSync).mockImplementation(() => {
-        throw new Error("command not found");
-      });
-
-      const result = readClipboard();
-
-      expect(result).toBe("");
-    });
-  });
-
-  describe("writeOsc52", () => {
-    it("writes base64 encoded text to stdout", () => {
-      const writeSpy = vi
-        .spyOn(process.stdout, "write")
-        .mockImplementation(() => true);
-
-      const ok = writeOsc52("hello");
-
-      expect(ok).toBe(true);
-      expect(writeSpy).toHaveBeenCalledWith("\x1b]52;c;aGVsbG8=\x07");
-      writeSpy.mockRestore();
+    it("returns xsel on linux without xclip", () => {
+      const result = copyCommand("linux", false, (name) => name === "xsel");
+      expect(result).toEqual(["xsel", "--clipboard", "--input"]);
     });
 
-    it("wraps in tmux passthrough when TMUX is set", () => {
-      vi.stubGlobal("process", {
-        ...process,
-        env: { ...process.env, TMUX: "1" },
-      });
-      const writeSpy = vi
-        .spyOn(process.stdout, "write")
-        .mockImplementation(() => true);
-
-      writeOsc52("hi");
-
-      expect(writeSpy).toHaveBeenCalledWith(
-        "\x1bPtmux;\x1b\x1b]52;c;aGk=\x07\x1b\\",
-      );
-      writeSpy.mockRestore();
+    it("returns powershell on win32", () => {
+      const result = copyCommand("win32", false, () => true);
+      expect(result?.[0]).toBe("powershell.exe");
     });
 
-    it("returns false on write failure", () => {
-      vi.spyOn(process.stdout, "write").mockImplementation(() => {
-        throw new Error("write error");
-      });
-
-      const ok = writeOsc52("test");
-
-      expect(ok).toBe(false);
-    });
-  });
-
-  describe("writeNative", () => {
-    it("uses pbcopy on mac", () => {
-      vi.stubGlobal("process", { ...process, platform: "darwin" });
-      vi.mocked(execSync).mockReturnValue(Buffer.from(""));
-
-      writeNative("test text");
-
-      expect(execSync).toHaveBeenCalledWith("pbcopy", { input: "test text" });
-    });
-
-    it("uses xclip on linux", () => {
-      vi.stubGlobal("process", { ...process, platform: "linux" });
-      vi.mocked(execSync).mockReturnValue(Buffer.from(""));
-
-      writeNative("test text");
-
-      expect(execSync).toHaveBeenCalledWith("xclip -selection clipboard", {
-        input: "test text",
-      });
-    });
-
-    it("does not throw on failure", () => {
-      vi.stubGlobal("process", { ...process, platform: "darwin" });
-      vi.mocked(execSync).mockImplementation(() => {
-        throw new Error("command not found");
-      });
-
-      expect(() => writeNative("test")).not.toThrow();
+    it("returns undefined when no command found", () => {
+      const result = copyCommand("linux", false, () => false);
+      expect(result).toBeUndefined();
     });
   });
 });

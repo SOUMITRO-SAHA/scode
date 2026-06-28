@@ -1,8 +1,6 @@
-import { useCallback, useRef } from "react";
+import { useRef } from "react";
 
-import type { ToastInput } from "@/components/ui/toast";
-import { readClipboard, writeNative, writeOsc52 } from "@/utils/clipboard";
-import type { KeyEvent, TextareaRenderable } from "@opentui/core";
+import type { KeyEvent } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { DebugLogger } from "@scode/shared/logger";
 
@@ -21,8 +19,6 @@ interface KeyboardShortcutsOptions {
   toggleDebug: () => void;
   onExit?: () => void;
   bumpFocus: () => void;
-  textareaRef?: React.RefObject<TextareaRenderable | null>;
-  showToast?: (options: ToastInput) => void;
 }
 
 export function useKeyboardShortcuts({
@@ -38,56 +34,9 @@ export function useKeyboardShortcuts({
   toggleDebug,
   onExit,
   bumpFocus,
-  textareaRef,
-  showToast,
 }: KeyboardShortcutsOptions) {
   const onExitRef = useRef(onExit);
   onExitRef.current = onExit;
-
-  const showToastRef = useRef(showToast);
-  showToastRef.current = showToast;
-
-  const handleCopy = useCallback(() => {
-    const ta = textareaRef?.current;
-    dbg.log("copy triggered", {
-      taExists: !!ta,
-      isDestroyed: ta?.isDestroyed,
-      hasSelection: ta?.hasSelection?.(),
-    });
-    if (!ta || !ta.hasSelection()) return;
-    const selectedText = ta.getSelectedText();
-    dbg.log("selected text", {
-      length: selectedText?.length,
-      text: selectedText,
-    });
-    if (!selectedText) return;
-    writeOsc52(selectedText);
-    writeNative(selectedText);
-    dbg.log("clipboard write done (osc52 + native)");
-    showToastRef.current?.({
-      variant: "success",
-      message: "Copied ✓",
-    });
-  }, [textareaRef]);
-
-  const handlePaste = useCallback(() => {
-    const ta = textareaRef?.current;
-    dbg.log("paste triggered", {
-      taExists: !!ta,
-      isDestroyed: ta?.isDestroyed,
-    });
-    if (!ta) return;
-    const text = readClipboard();
-    dbg.log("clipboard read result", {
-      textExists: !!text,
-      textLength: text?.length,
-      text,
-    });
-    if (text) {
-      ta.insertText(text);
-      dbg.log("insertText done");
-    }
-  }, [textareaRef]);
 
   useKeyboard((key: KeyEvent) => {
     dbg.log("key event", {
@@ -127,15 +76,6 @@ export function useKeyboardShortcuts({
       setModelPickerOpen((v) => !v);
     } else if (key.ctrl && key.shift && key.name === "p") {
       setProviderPickerOpen((v) => !v);
-    } else if ((key.meta || key.super) && key.name === "c") {
-      // Mac: Cmd+C copies selected text (super on Kitty, meta on ANSI)
-      handleCopy();
-    } else if ((key.meta || key.super) && key.name === "v") {
-      // Mac: Cmd+V pastes from clipboard (super on Kitty, meta on ANSI)
-      handlePaste();
-    } else if (key.ctrl && key.name === "v") {
-      // Non-Mac: Ctrl+V pastes from clipboard
-      handlePaste();
     } else if (key.ctrl && (key.name === "c" || key.name === "q")) {
       onExitRef.current?.();
     }

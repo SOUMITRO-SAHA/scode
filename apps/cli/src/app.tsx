@@ -25,8 +25,9 @@ import { useStreamChat } from "@/hooks/useStreamChat";
 import { ApiClient } from "@/services/api";
 import { gracefulShutdown, setRendererCleanup } from "@/services/shutdown";
 import { useAppStore } from "@/store/index";
+import { copy as copySelection } from "@/utils/selection";
 import { type TextareaRenderable, createCliRenderer } from "@opentui/core";
-import { createRoot } from "@opentui/react";
+import { createRoot, useRenderer } from "@opentui/react";
 import { useTerminalDimensions } from "@opentui/react";
 import {
   QUERY_RETRY,
@@ -141,6 +142,7 @@ function AppInner({
     submit: chatSubmit,
   } = useStreamChat(serverUrl);
   const { width, height } = useTerminalDimensions();
+  const renderer = useRenderer();
 
   const currentSessionId = useAppStore((s) => s.currentSessionId);
   const model = useAppStore((s) => s.model);
@@ -360,13 +362,15 @@ function AppInner({
     toggleDebug,
     onExit,
     bumpFocus,
-    textareaRef,
-    showToast: toast.show,
   });
 
   const modelDisplay = model || undefined;
   const mainContentWidth =
     width - (sidebarVisible ? layout.sidebar.width : 0) - 3;
+
+  const handleMouseUp = useCallback(() => {
+    copySelection(renderer, toast);
+  }, [renderer, toast]);
 
   return (
     <box
@@ -374,6 +378,7 @@ function AppInner({
       width={width}
       height={height}
       backgroundColor={theme.background.surface}
+      onMouseUp={handleMouseUp}
     >
       <SessionSidebar />
       <MainContent
