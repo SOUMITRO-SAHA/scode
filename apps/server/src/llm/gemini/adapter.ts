@@ -54,7 +54,11 @@ export class GeminiAdapter implements LLMProvider {
     const client = new GoogleGenAI({ apiKey: params.apiKey });
     const model = params.model ?? this.defaultModel;
     const { systemInstruction, contents } = toGeminiContents(params.messages);
-    const thinkingBudget = EFFORT_THINKING_BUDGET[params.effortLevel ?? "none"];
+    const efforts = geminiEfforts(model);
+    const effortLevel = efforts.includes(params.effortLevel ?? "none")
+      ? params.effortLevel
+      : undefined;
+    const thinkingBudget = EFFORT_THINKING_BUDGET[effortLevel ?? "none"];
 
     const stream = await client.models.generateContentStream({
       model,
