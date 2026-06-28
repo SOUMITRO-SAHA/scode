@@ -45,10 +45,26 @@ function buildProviderRegistry(): ProviderRegistry {
   );
   reg.register(
     new OpenAICompatAdapter({
+      id: "zai-coding-plan",
+      name: "Z.ai Coding Plan",
+      defaultModel: "glm-5.1",
+      baseURL: "https://api.z.ai/api/coding/paas/v4/",
+    }),
+  );
+  reg.register(
+    new OpenAICompatAdapter({
       id: "minimax",
       name: "MiniMax",
       defaultModel: "minimax-m3",
       baseURL: "https://api.minimax.chat/v1",
+    }),
+  );
+  reg.register(
+    new OpenAICompatAdapter({
+      id: "openai",
+      name: "OpenAI",
+      defaultModel: "gpt-4o",
+      baseURL: "https://api.openai.com/v1",
     }),
   );
   reg.register(new CommandCodeAdapter());
