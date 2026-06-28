@@ -44,6 +44,11 @@ const deps = await runtime.runPromise(
   }),
 );
 
+const removedEmpty = runSync(deps.sessionService.cleanupEmpty);
+if (removedEmpty > 0) {
+  logger.info(`Cleaned up ${removedEmpty} empty session(s) from database`);
+}
+
 const app = new Hono();
 
 const v1 = createV1Router({ ...deps, startTime });

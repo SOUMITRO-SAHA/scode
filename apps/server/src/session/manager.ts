@@ -77,6 +77,14 @@ export class SessionManager {
     return result.changes > 0;
   }
 
+  cleanupEmpty(): number {
+    const result = getDb()
+      .delete(sessions)
+      .where(eq(sessions.messages, "[]"))
+      .run();
+    return result.changes;
+  }
+
   list(): Session[] {
     const rows = getDb()
       .select()

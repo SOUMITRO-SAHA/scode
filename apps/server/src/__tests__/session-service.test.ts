@@ -42,6 +42,16 @@ vi.mock("../session/manager", () => ({
       sessions.set(s.id, s);
     });
     delete = vi.fn((id: string) => sessions.delete(id));
+    cleanupEmpty = vi.fn(() => {
+      let count = 0;
+      for (const [id, s] of sessions) {
+        if (s.messages.length === 0) {
+          sessions.delete(id);
+          count++;
+        }
+      }
+      return count;
+    });
     list = vi.fn(() => Array.from(sessions.values()));
     addMessage = vi.fn((id: string, msg: UnifiedMessage) => {
       const s = sessions.get(id);
@@ -120,6 +130,30 @@ describe("SessionService", () => {
     const result = runSync(Effect.provide(effect, SessionServiceLive));
     expect(result.deleted).toBe(true);
     expect(result.after).toBeNull();
+  });
+
+  it("cleans up empty sessions but keeps ones with messages", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* SessionService;
+      const empty = yield* svc.create("Empty", "m1", "p1");
+      yield* svc.create("Also empty", "m2", "p2");
+      const full = yield* svc.create("Full", "m1", "p1");
+      yield* svc.addMessage(full.id, { role: "user", content: "hi" });
+      const removed = yield* svc.cleanupEmpty;
+      const list = yield* svc.list;
+      const emptyGone = (yield* svc.get(empty.id)) === null;
+      return {
+        removed,
+        remaining: list.map((s) => s.id),
+        fullId: full.id,
+        emptyGone,
+      };
+    });
+    const result = runSync(Effect.provide(effect, SessionServiceLive));
+    expect(result.removed).toBe(2);
+    expect(result.emptyGone).toBe(true);
+    expect(result.remaining).toHaveLength(1);
+    expect(result.remaining[0]).toBe(result.fullId);
   });
 
   it("adds a message to a session", () => {
