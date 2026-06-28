@@ -11,7 +11,7 @@ function claudeSupportsThinking(model: string): boolean {
   return (
     id.includes("sonnet-4") ||
     id.includes("opus-4") ||
-    id.includes("claude-4") ||
+    /\bclaude-4(?!-5)\b/.test(id) ||
     id.includes("fable-5")
   );
 }
@@ -47,7 +47,9 @@ export class ClaudeAdapter implements LLMProvider {
     const model = params.model ?? this.defaultModel;
 
     const messages = toAnthropicMessages(params.messages);
-    const budgetTokens = EFFORT_THINKING_BUDGET[params.effortLevel ?? "none"];
+    const supportsThinking = claudeSupportsThinking(model);
+    const effortLevel = supportsThinking ? params.effortLevel : undefined;
+    const budgetTokens = EFFORT_THINKING_BUDGET[effortLevel ?? "none"];
 
     const maxTokens = budgetTokens ? budgetTokens + 1024 : 8192;
 
