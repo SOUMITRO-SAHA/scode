@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useState } from "react";
 
 import * as Effect from "effect/Effect";
 
+import { DialogPrompt } from "@/components/ui/dialog-prompt";
 import type { ApiClient } from "@/services/api";
-import { TextAttributes, TextareaRenderable } from "@opentui/core";
-import { useKeyboard } from "@opentui/react";
+import type { KeyEvent } from "@opentui/core";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";
 
 interface SessionRenameProps {
@@ -22,70 +23,72 @@ export function SessionRename({
   onClose,
   onRefresh,
 }: SessionRenameProps) {
-  const textareaRef = useRef<TextareaRenderable | null>(null);
+  const { width: termWidth, height: termHeight } = useTerminalDimensions();
+  const [open, setOpen] = useState(true);
   const [busy, setBusy] = useState(false);
 
-  const confirm = useCallback(() => {
-    if (busy) return;
-    const textarea = textareaRef.current;
-    if (!textarea || textarea.isDestroyed) return;
-    const value = textarea.plainText.trim();
-    if (!value) return;
-    setBusy(true);
-    Effect.runPromise(api.renameSession(sessionId, value))
-      .then(() => {
-        onRefresh();
-        onClose();
-      })
-      .catch(() => {
-        setBusy(false);
-      });
-  }, [busy, sessionId, api, onRefresh, onClose]);
+  const handleClose = useCallback(() => {
+    setOpen(false);
+    onClose();
+  }, [onClose]);
 
-  useKeyboard((event: { name: string }) => {
-    if (event.name === "return") confirm();
-    if (event.name === "escape") onClose();
+  useKeyboard((event: KeyEvent) => {
+    if (!open) return;
+    if (event.name === "escape") {
+      handleClose();
+    }
   });
 
-  useEffect(() => {
-    const textarea = textareaRef.current;
-    if (!textarea || textarea.isDestroyed) return;
-    if (busy) {
-      textarea.blur();
-      return;
-    }
-    textarea.focus();
-    textarea.gotoLineEnd();
-  }, [busy]);
+  const handleConfirm = useCallback(
+    (value: string) => {
+      if (!value.trim() || busy) return;
+      setBusy(true);
+      Effect.runPromise(api.renameSession(sessionId, value.trim()))
+        .then(() => {
+          onRefresh();
+          handleClose();
+        })
+        .catch(() => {
+          setBusy(false);
+        });
+    },
+    [busy, sessionId, api, onRefresh, handleClose],
+  );
+
+  if (!open) return null;
+
+  const paletteWidth = Math.min(Math.floor(termWidth * 0.6), 64);
 
   return (
-    <box paddingLeft={2} paddingRight={2} gap={1}>
-      <box flexDirection="row" justifyContent="space-between">
-        <text attributes={TextAttributes.BOLD} fg={theme.text.primary}>
-          Rename Session
-        </text>
-        <text fg={theme.text.muted} onMouseUp={onClose}>
-          esc
-        </text>
-      </box>
-      <box gap={1}>
-        <textarea
-          height={3}
-          ref={(val: TextareaRenderable | null) => {
-            textareaRef.current = val;
-          }}
-          initialValue={name}
+    <box
+      position="absolute"
+      left={0}
+      top={0}
+      width={termWidth}
+      height={termHeight}
+      alignItems="center"
+      paddingTop={Math.floor(termHeight / 4)}
+      zIndex={3000}
+      flexDirection="column"
+    >
+      <box
+        width={paletteWidth}
+        maxWidth={termWidth - 2}
+        backgroundColor={theme.background.surface}
+        borderStyle="rounded"
+        borderColor={theme.border.focus}
+        paddingTop={1}
+        flexDirection="column"
+      >
+        <DialogPrompt
+          title="Rename Session"
+          value={name}
           placeholder="Enter session name"
-          placeholderColor={theme.text.muted}
-          textColor={busy ? theme.text.muted : theme.text.primary}
-          focusedTextColor={busy ? theme.text.muted : theme.text.primary}
-          cursorColor={busy ? theme.background.primary : theme.text.primary}
+          busy={busy}
+          busyText="Renaming..."
+          onConfirm={handleConfirm}
+          onCancel={handleClose}
         />
-        {busy && <text fg={theme.text.muted}>Saving...</text>}
-      </box>
-      <box paddingBottom={1} gap={1} flexDirection="row">
-        {!busy && <text fg={theme.text.muted}>return submit</text>}
-        {busy && <text fg={theme.text.muted}>processing...</text>}
       </box>
     </box>
   );

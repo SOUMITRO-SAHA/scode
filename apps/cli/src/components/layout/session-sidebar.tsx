@@ -328,7 +328,7 @@ export function SessionSidebar() {
                     </text>
                     <text
                       fg={active ? theme.brand.primary : theme.text.primary}
-                      wrapMode="none"
+                      wrapMode="word"
                     >
                       {sess.name}
                     </text>
