@@ -8,8 +8,10 @@ import type { Command } from "@/components/commands/commands";
 import { CommandPalette } from "@/components/commands/index";
 import { ConnectProvider } from "@/components/commands/index";
 import { ModelSwitcher } from "@/components/commands/index";
+import { SessionRename } from "@/components/commands/index";
 import { SkillBrowser } from "@/components/commands/index";
 import { Composer } from "@/components/composer/index";
+import type { ApiClient } from "@/services/api";
 import type { TextareaRenderable } from "@opentui/core";
 import type { Message } from "@scode/shared/types";
 
@@ -38,6 +40,11 @@ interface MainContentProps {
   sessionName?: string;
   mainContentWidth: number;
   textareaRef?: React.RefObject<TextareaRenderable | null>;
+  renameDialogOpen: boolean;
+  setRenameDialogOpen: (open: boolean) => void;
+  api: ApiClient;
+  currentSessionId?: string;
+  onRefreshSessions: () => void;
 }
 
 export function MainContent({
@@ -65,6 +72,11 @@ export function MainContent({
   sessionName,
   mainContentWidth,
   textareaRef,
+  renameDialogOpen,
+  setRenameDialogOpen,
+  api,
+  currentSessionId,
+  onRefreshSessions,
 }: MainContentProps) {
   const [composerClearTrigger, setComposerClearTrigger] = useState(0);
 
@@ -143,6 +155,18 @@ export function MainContent({
               setSkillsBrowserOpen(false);
               bumpFocus();
             }}
+          />
+        )}
+        {renameDialogOpen && currentSessionId && (
+          <SessionRename
+            name={sessionName}
+            sessionId={currentSessionId}
+            api={api}
+            onClose={() => {
+              setRenameDialogOpen(false);
+              bumpFocus();
+            }}
+            onRefresh={onRefreshSessions}
           />
         )}
       </box>

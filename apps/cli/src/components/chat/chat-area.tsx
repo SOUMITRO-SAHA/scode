@@ -54,6 +54,7 @@ export function ChatArea({
               streaming && i === messages.length - 1 && msg.content === ""
             }
             toolCalls={msg.toolCalls}
+            thought={msg.thought}
           />
         ),
       )}

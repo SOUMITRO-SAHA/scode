@@ -81,6 +81,7 @@ export interface Message {
   role: "user" | "assistant" | "system";
   content: string;
   toolCalls?: ToolCallState[];
+  thought?: string;
 }
 
 export interface ToolCallState {
@@ -97,6 +98,7 @@ export interface UnifiedMessage {
   content: string | ContentBlock[];
   tool_call_id?: string;
   name?: string;
+  thought?: string;
 }
 
 export type ContentBlock =

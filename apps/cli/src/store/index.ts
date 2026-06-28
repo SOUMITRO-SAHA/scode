@@ -130,17 +130,89 @@ export const useAppStore = create<AppStore>((set) => ({
   setSidebarSelectedIndex: (i) => set({ sidebarSelectedIndex: i }),
   setMessages: (unifiedMessages) =>
     set(() => {
-      // Convert UnifiedMessage to Message
-      const messages: Message[] = unifiedMessages
-        .filter(
-          (m) =>
-            m.role === "user" || m.role === "assistant" || m.role === "system",
-        )
-        .map((m) => ({
-          role: m.role as "user" | "assistant" | "system",
-          content: typeof m.content === "string" ? m.content : "",
-        }));
-      return { messages };
+      const messages: Message[] = [];
+      const pendingResults = new Map<
+        string,
+        { msgIdx: number; tcIdx: number }
+      >();
+      let lastThought = "";
+
+      for (const m of unifiedMessages) {
+        if (m.role === "user" || m.role === "system") {
+          messages.push({
+            role: m.role,
+            content: typeof m.content === "string" ? m.content : "",
+          });
+        } else if (m.role === "assistant") {
+          if (Array.isArray(m.content)) {
+            const toolUseBlocks = m.content.filter(
+              (
+                b,
+              ): b is {
+                type: "tool_use";
+                id: string;
+                name: string;
+                input: Record<string, unknown>;
+              } => b.type === "tool_use",
+            );
+            const textBlocks = m.content.filter(
+              (b): b is { type: "text"; text: string } => b.type === "text",
+            );
+
+            if (toolUseBlocks.length > 0) {
+              const toolCalls: ToolCallState[] = toolUseBlocks.map((b) => ({
+                id: b.id,
+                name: b.name,
+                input: b.input,
+                status: "completed" as const,
+              }));
+              const msgIdx = messages.length;
+              messages.push({
+                role: "assistant",
+                content: textBlocks.map((b) => b.text).join(""),
+                toolCalls,
+              });
+              toolUseBlocks.forEach((b, i) => {
+                pendingResults.set(b.id, { msgIdx, tcIdx: i });
+              });
+            } else {
+              messages.push({
+                role: "assistant",
+                content: textBlocks.map((b) => b.text).join(""),
+              });
+            }
+          } else {
+            const msg: Message = {
+              role: "assistant",
+              content: m.content,
+            };
+            if (m.thought) {
+              msg.thought = m.thought;
+              lastThought = m.thought;
+            }
+            messages.push(msg);
+          }
+        } else if (m.role === "tool") {
+          if (m.tool_call_id && pendingResults.has(m.tool_call_id)) {
+            const { msgIdx, tcIdx } = pendingResults.get(m.tool_call_id)!;
+            const target = messages[msgIdx];
+            if (target?.toolCalls?.[tcIdx]) {
+              target.toolCalls[tcIdx].result =
+                typeof m.content === "string"
+                  ? m.content
+                  : JSON.stringify(m.content);
+              target.toolCalls[tcIdx].status = "completed";
+            }
+            pendingResults.delete(m.tool_call_id);
+          }
+        }
+      }
+
+      return {
+        messages,
+        thought: lastThought,
+        thoughtStartTime: lastThought ? Date.now() : 0,
+      };
     }),
   addSelectedSkill: (name) =>
     set((s) => ({

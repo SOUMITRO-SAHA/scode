@@ -193,6 +193,7 @@ function AppInner({
   const [modelPickerOpen, setModelPickerOpen] = useState(false);
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [skillsBrowserOpen, setSkillsBrowserOpen] = useState(false);
+  const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>(undefined);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const bumpFocus = useCallback(() => setFocusTrigger((n) => n + 1), []);
@@ -260,6 +261,7 @@ function AppInner({
           showToast: toast.show,
           onExit,
           refreshSessions: handleRefreshSessions,
+          openRenameDialog: () => setRenameDialogOpen(true),
         };
         const result = await executeCommand(value, apiRef.current, ctx);
         if (result) {
@@ -314,6 +316,7 @@ function AppInner({
         showToast: toast.show,
         onExit,
         refreshSessions: handleRefreshSessions,
+        openRenameDialog: () => setRenameDialogOpen(true),
       };
       const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
       if (result) {
@@ -398,6 +401,11 @@ function AppInner({
         sessionName={sessionName}
         mainContentWidth={mainContentWidth}
         textareaRef={textareaRef}
+        renameDialogOpen={renameDialogOpen}
+        setRenameDialogOpen={setRenameDialogOpen}
+        api={apiRef.current}
+        currentSessionId={currentSessionId}
+        onRefreshSessions={handleRefreshSessions}
       />
     </box>
   );

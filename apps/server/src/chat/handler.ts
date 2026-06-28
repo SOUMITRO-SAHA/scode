@@ -172,6 +172,7 @@ export async function handleChat(
   const conversation = [...session.messages];
   let fullResponse = "";
   let hadError = false;
+  let thoughtText = "";
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     let toolCalled = false;
@@ -222,6 +223,7 @@ export async function handleChat(
           encodeStreamChunk({ type: "text", delta: event.delta }),
         );
       } else if (event.type === "thought") {
+        thoughtText += event.text;
         await streamWriter(
           encodeStreamChunk({ type: "thought", text: event.text }),
         );
@@ -272,14 +274,27 @@ export async function handleChat(
             },
           ],
         });
+        session.messages.push({
+          role: "assistant",
+          content: [
+            {
+              type: "tool_use",
+              id: event.toolCall.id,
+              name: event.toolCall.name,
+              input: event.toolCall.input,
+            },
+          ],
+        });
 
         if (result && typeof result === "object" && "error" in result) {
           const errMsg = (result as { error: string }).error;
-          conversation.push({
-            role: "tool",
+          const toolResultError = {
+            role: "tool" as const,
             tool_call_id: event.toolCall.id,
             content: JSON.stringify({ error: errMsg }),
-          });
+          };
+          conversation.push(toolResultError);
+          session.messages.push(toolResultError);
           // Forward tool_result to client
           await streamWriter(
             encodeStreamChunk({
@@ -294,11 +309,13 @@ export async function handleChat(
           hadError = true;
         } else {
           const resultStr = JSON.stringify(result);
-          conversation.push({
-            role: "tool",
+          const toolResultSuccess = {
+            role: "tool" as const,
             tool_call_id: event.toolCall.id,
             content: resultStr,
-          });
+          };
+          conversation.push(toolResultSuccess);
+          session.messages.push(toolResultSuccess);
           // Forward tool_result to client
           await streamWriter(
             encodeStreamChunk({
@@ -324,12 +341,12 @@ export async function handleChat(
   });
 
   if (fullResponse || hadError) {
-    Effect.runSync(
-      deps.sessionService.addMessage(session.id, {
-        role: "assistant",
-        content: fullResponse || "",
-      }),
-    );
+    session.messages.push({
+      role: "assistant",
+      content: fullResponse || "",
+      ...(thoughtText ? { thought: thoughtText } : {}),
+    });
+    Effect.runSync(deps.sessionService.update(session));
   }
 
   return session.id;
@@ -392,11 +409,13 @@ const autoRenameSession = Effect.fnUntraced(function* (
 
   const firstText =
     typeof userMessages[0].content === "string" ? userMessages[0].content : "";
+  const textAssistant = assistantMessages.find(
+    (m) => typeof m.content === "string" && m.content.length > 0,
+  );
+  if (!firstText || !textAssistant) return;
   const assistantText =
-    typeof assistantMessages[0].content === "string"
-      ? assistantMessages[0].content
-      : "";
-  if (!firstText || !assistantText) return;
+    typeof textAssistant.content === "string" ? textAssistant.content : "";
+  if (!assistantText) return;
 
   const { provider, model } = deps.providerService.resolve(resolvedModel);
 

@@ -41,6 +41,7 @@ export interface CommandContext {
   toggleSidebar?: () => void;
   addSystemMessage?: (text: string) => void;
   showToast?: (options: ToastInput) => void;
+  openRenameDialog?: () => void;
   onExit?: () => void;
   refreshSessions?: () => void;
 }
@@ -131,16 +132,17 @@ export const COMMANDS: Command[] = [
     name: "rename",
     aliases: [],
     description: "Rename the current conversation",
-    usage: "/rename <name>",
+    usage: "/rename [name]",
     category: "session",
     suggested: true,
     handler: async (args, api, ctx) => {
       const name = args.join(" ");
-      if (!name || !ctx.currentSessionId)
-        return { type: "error", text: "Usage: /rename <name>" };
-      await Effect.runPromise(api.renameSession(ctx.currentSessionId, name));
-      ctx.refreshSessions?.();
-      return { type: "message", text: `Session renamed to: ${name}` };
+      if (name && ctx.currentSessionId) {
+        await Effect.runPromise(api.renameSession(ctx.currentSessionId, name));
+        ctx.refreshSessions?.();
+        return { type: "message", text: `Session renamed to: ${name}` };
+      }
+      ctx.openRenameDialog?.();
     },
   },
   {

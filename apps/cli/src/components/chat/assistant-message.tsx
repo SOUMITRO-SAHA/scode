@@ -12,15 +12,18 @@ export function AssistantMessage({
   content,
   isStreaming,
   toolCalls,
+  thought: msgThought,
 }: {
   content: string;
   isStreaming: boolean;
   toolCalls?: ToolCallState[];
+  thought?: string;
 }) {
   const style = useMemo(() => getMarkdownStyle(), []);
-  const thought = useAppStore((s) => s.thought);
+  const storeThought = useAppStore((s) => s.thought);
   const thoughtStartTime = useAppStore((s) => s.thoughtStartTime);
   const streaming = useAppStore((s) => s.streaming);
+  const thought = msgThought ?? storeThought;
 
   if (!content && !isStreaming && (!toolCalls || toolCalls.length === 0))
     return null;
