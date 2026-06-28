@@ -1,4 +1,6 @@
+import { Spinner } from "@/components/ui/spinner";
 import { AGENT_LABELS, type AgentId } from "@/store/index";
+import { RGBA } from "@opentui/core";
 import { theme } from "@scode/theme";
 
 const AGENT_COLORS: Record<string, string> = {
@@ -61,10 +63,15 @@ export function ComposerFooter({
             </text>
           </>
         )}
-        <text fg={theme.text.disabled}>
-          {" "}
-          | {streaming ? "Processing..." : "Ready"}
-        </text>
+        <text fg={theme.text.disabled}> | </text>
+        {streaming ? (
+          <box flexDirection="row">
+            <Spinner fg={RGBA.fromHex(theme.warning)} />
+            <text fg={RGBA.fromHex(theme.warning)}> Processing...</text>
+          </box>
+        ) : (
+          <text fg={theme.text.disabled}>Ready</text>
+        )}
       </box>
     </box>
   );
