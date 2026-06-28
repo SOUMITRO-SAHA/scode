@@ -377,19 +377,19 @@ export function SessionSidebar() {
           )}
           {sidebarItems.map((item, index) => {
             if (item.type === "header") {
+              const hasPrevious = index > 0;
               return (
-                <box key={item.key} height={2} flexDirection="column">
-                  <box flexDirection="row" width="100%">
-                    <box flexGrow={1} flexShrink={1}>
-                      <text
-                        fg={theme.brand.primary}
-                        attributes={TextAttributes.BOLD}
-                      >
-                        {item.label}
-                      </text>
-                    </box>
-                    <box width={2} flexShrink={0} />
-                  </box>
+                <box
+                  key={item.key}
+                  height={1}
+                  marginTop={hasPrevious ? 1 : 0}
+                  flexDirection="row"
+                  width="100%"
+                >
+                  <text width={2}> </text>
+                  <text fg={theme.text.muted} attributes={TextAttributes.BOLD}>
+                    {item.label.toUpperCase()}
+                  </text>
                 </box>
               );
             }
@@ -402,6 +402,8 @@ export function SessionSidebar() {
               <box
                 key={session.id}
                 height={1}
+                flexDirection="row"
+                width="100%"
                 backgroundColor={
                   isSelected
                     ? theme.background.hover
@@ -410,49 +412,38 @@ export function SessionSidebar() {
                       : "transparent"
                 }
               >
-                <box flexDirection="row" width="100%">
-                  <box
-                    flexDirection="row"
-                    flexGrow={1}
-                    flexShrink={1}
-                    overflow="hidden"
-                    onMouseDown={() => handleSwitch(session.id)}
-                  >
-                    <text
-                      fg={active ? theme.brand.primary : theme.text.primary}
-                      width={2}
-                    >
-                      {active ? ">" : " "}
-                    </text>
+                <text
+                  fg={active ? theme.brand.primary : theme.text.primary}
+                  width={2}
+                  onMouseDown={() => handleSwitch(session.id)}
+                >
+                  {active ? ">" : " "}
+                </text>
 
-                    <text
-                      fg={active ? theme.brand.primary : theme.text.primary}
-                      wrapMode="word"
-                      truncate={true}
-                    >
-                      {session.name}
-                    </text>
-                  </box>
+                <text
+                  fg={active ? theme.brand.primary : theme.text.primary}
+                  flexGrow={1}
+                  flexShrink={1}
+                  overflow="hidden"
+                  truncate={true}
+                  onMouseDown={() => handleSwitch(session.id)}
+                >
+                  {session.name}
+                </text>
 
-                  <box
-                    width={2}
-                    flexShrink={0}
-                    justifyContent="center"
-                    alignItems="center"
-                  >
-                    {isStreaming ? (
-                      <Spinner fg={RGBA.fromHex(theme.brand.primary)} />
-                    ) : (
-                      <text
-                        fg={theme.text.muted}
-                        onMouseDown={() =>
-                          handleDeleteRequest(session.id, session.name)
-                        }
-                      >
-                        ×
-                      </text>
-                    )}
-                  </box>
+                <box width={2} flexShrink={0} justifyContent="center">
+                  {isStreaming ? (
+                    <Spinner fg={RGBA.fromHex(theme.brand.primary)} />
+                  ) : (
+                    <text
+                      fg={theme.text.muted}
+                      onMouseDown={() =>
+                        handleDeleteRequest(session.id, session.name)
+                      }
+                    >
+                      ×
+                    </text>
+                  )}
                 </box>
               </box>
             );
