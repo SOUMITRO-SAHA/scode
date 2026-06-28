@@ -69,4 +69,135 @@ describe("matchSkills", () => {
     expect(result).toHaveLength(1);
     expect(result[0].name).toBe("main");
   });
+
+  it("matches hyphenated skill names by component parts", () => {
+    const skills: Skill[] = [
+      {
+        name: "welcome-me",
+        description: "Greet new users",
+        body: "Greet users warmly.",
+      },
+    ];
+    const result = matchSkills("use welcome skill to guide me", skills);
+    expect(result.map((s) => s.name)).toContain("welcome-me");
+  });
+
+  it("matches hyphenated description tokens", () => {
+    const skills: Skill[] = [
+      {
+        name: "client-server",
+        description: "Build client-server architecture",
+        body: "Architecture guidance.",
+      },
+    ];
+    const result = matchSkills("help me with client architecture", skills);
+    expect(result.map((s) => s.name)).toContain("client-server");
+  });
+
+  it("fuzzy matches when exact token not found but substring exists", () => {
+    const skills: Skill[] = [
+      {
+        name: "welcome-me",
+        description: "Greet new users and explain architecture",
+        body: "",
+      },
+    ];
+    const result = matchSkills("use welcome skill please", skills);
+    expect(result.map((s) => s.name)).toContain("welcome-me");
+  });
+
+  it("matches skill name in 'load X skill' query", () => {
+    const skills: Skill[] = [
+      {
+        name: "welcome-me",
+        description: "Greet new users",
+        body: "",
+      },
+      {
+        name: "documentation",
+        description: "Generate project docs",
+        body: "",
+      },
+    ];
+    const result = matchSkills("load welcome skill", skills);
+    expect(result.map((s) => s.name)).toContain("welcome-me");
+  });
+
+  it("returns MAIN_SKILL for irrelevant prompts even with fuzzy", () => {
+    const skills: Skill[] = [
+      {
+        name: "welcome-me",
+        description: "Greet new users",
+        body: "",
+      },
+    ];
+    const result = matchSkills("quantum physics computation", skills);
+    expect(result).toHaveLength(1);
+    expect(result[0].name).toBe("main");
+  });
+
+  it("prefers exact match over fuzzy match", () => {
+    const skills: Skill[] = [
+      {
+        name: "weather",
+        description: "Check weather conditions",
+        body: "",
+      },
+      {
+        name: "welcome-me",
+        description: "Greet new users warmly",
+        body: "",
+      },
+    ];
+    const result = matchSkills("weather", skills);
+    expect(result[0].name).toBe("weather");
+  });
+
+  it("matches partial prompt like 'greet' to welcome-me description", () => {
+    const skills: Skill[] = [
+      {
+        name: "welcome-me",
+        description: "Greet new users and explain architecture",
+        body: "",
+      },
+    ];
+    const result = matchSkills("greet me", skills);
+    expect(result.map((s) => s.name)).toContain("welcome-me");
+  });
+
+  it("matches 'welcome' prompt to welcome-me via fuzzy", () => {
+    const skills: Skill[] = [
+      {
+        name: "welcome-me",
+        description: "Greet new users and explain scode architecture",
+        body: "",
+      },
+    ];
+    const result = matchSkills("welcome", skills);
+    expect(result.map((s) => s.name)).toContain("welcome-me");
+  });
+
+  it("matches changelog skill for 'changelog' prompt", () => {
+    const skills: Skill[] = [
+      {
+        name: "changelog",
+        description: "Generate changelog from git history",
+        body: "",
+      },
+    ];
+    const result = matchSkills("generate changelog", skills);
+    expect(result.map((s) => s.name)).toContain("changelog");
+  });
+
+  it("matches documentation skill for 'docs' prompt", () => {
+    const skills: Skill[] = [
+      {
+        name: "documentation",
+        description: "Generate or update project documentation",
+        body: "",
+      },
+    ];
+    const result = matchSkills("update project documentation", skills);
+    expect(result.map((s) => s.name)).toContain("documentation");
+  });
 });

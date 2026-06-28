@@ -30,18 +30,22 @@ export function AssistantMessage({
           />
         ) : null}
         {content ? (
-          <markdown
-            content={content}
-            syntaxStyle={style}
-            streaming={isStreaming}
-            conceal
-            tableOptions={{
-              style: "grid",
-              borderStyle: "single",
-              borderColor: theme.markdown.tableBorder,
-              cellPadding: 1,
-            }}
-          />
+          content.startsWith("Error: ") ? (
+            <text fg={theme.danger}>{content}</text>
+          ) : (
+            <markdown
+              content={content}
+              syntaxStyle={style}
+              streaming={isStreaming}
+              conceal
+              tableOptions={{
+                style: "grid",
+                borderStyle: "single",
+                borderColor: theme.markdown.tableBorder,
+                cellPadding: 1,
+              }}
+            />
+          )
         ) : null}
       </box>
     </box>

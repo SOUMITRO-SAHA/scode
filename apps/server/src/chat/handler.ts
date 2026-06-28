@@ -8,6 +8,7 @@ import { buildPrompt } from "../prompt/builder";
 import type { SessionService } from "../session/service";
 import type { SkillService } from "../skill/service";
 import type { ToolService } from "../tool/service";
+import { constrainedDefinition } from "../tool/skill";
 import type { Skill, StreamEvent } from "../types";
 
 import { MAX_TOOL_ITERATIONS } from "@scode/shared/constants";
@@ -34,8 +35,6 @@ export interface HandlerDeps {
   toolService: DepsTool;
   skillService: DepsSkill;
 }
-
-const runSync: <A>(eff: Effect.Effect<A>) => A = Effect.runSync;
 
 const errorMsg = (msg: string) => `[Error: ${msg}]`;
 
@@ -93,7 +92,7 @@ export async function handleChat(
   streamWriter: StreamWriter,
   effortLevel?: EffortLevel,
 ): Promise<string> {
-  const cfg = runSync(deps.configService.get);
+  const cfg = Effect.runSync(deps.configService.get);
   const resolvedModel = modelStr || cfg.defaultModel;
 
   if (!resolvedModel) {
@@ -106,21 +105,21 @@ export async function handleChat(
   const apiKey = resolveApiKey(provider.id);
 
   dbg.log("chat request received", {
-    prompt: runSync(truncate(prompt, 120)),
+    prompt: Effect.runSync(truncate(prompt, 120)),
     model: resolvedModel,
     provider: provider.id,
     sessionId,
   });
 
   logger.info(
-    `Chat with ${provider.id}/${model}: "${runSync(truncate(prompt, 80))}"`,
+    `Chat with ${provider.id}/${model}: "${Effect.runSync(truncate(prompt, 80))}"`,
   );
 
-  let session = runSync(deps.sessionService.get(sessionId ?? ""));
+  let session = Effect.runSync(deps.sessionService.get(sessionId ?? ""));
   if (!session) {
-    session = runSync(
+    session = Effect.runSync(
       deps.sessionService.create(
-        runSync(truncate(prompt, 60)),
+        Effect.runSync(truncate(prompt, 60)),
         resolvedModel,
         provider.id,
       ),
@@ -137,23 +136,29 @@ export async function handleChat(
   );
 
   session.messages.push({ role: "user", content: prompt });
-  runSync(deps.sessionService.update(session));
+  Effect.runSync(deps.sessionService.update(session));
 
   const saveSync = (msg: string) =>
-    runSync(persistError(deps, session.id, msg));
+    Effect.runSync(persistError(deps, session.id, msg));
 
-  const skills = runSync(
-    Effect.catch(deps.skillService.loadAllSkills, () =>
-      Effect.succeed([] as Skill[]),
-    ),
+  const skills = Effect.runSync(
+    Effect.orElseSucceed(deps.skillService.loadAllSkills, () => [] as Skill[]),
   );
-  const available = deps.skillService.matchSkills(prompt, skills);
-  const toolDefs = deps.toolService.definitions();
-  const { system } = buildPrompt(available, prompt, toolDefs);
+  const matched = deps.skillService.matchSkills(prompt, skills);
+  const skillNames = skills.map((s) => s.name);
+  const toolDefs = deps.toolService
+    .definitions()
+    .map((def) =>
+      def.name === "skill" ? constrainedDefinition(skillNames) : def,
+    );
+  const { system } = buildPrompt(matched, prompt, toolDefs);
 
-  dbg.log("skills available", {
-    total: skills.length,
-    available: available.map((s) => s.name),
+  dbg.log("skill matching result", {
+    prompt,
+    totalSkills: skills.length,
+    allSkills: skills.map((s) => s.name),
+    matchedSkills: matched.map((s) => s.name),
+    matchCount: matched.length,
   });
   dbg.log("tools available", { count: toolDefs.length });
 
@@ -192,7 +197,6 @@ export async function handleChat(
     ).pipe(
       Stream.catchCause((cause: Cause.Cause<Error>) => {
         const msg = extractCauseMsg(cause, provider.id, model);
-        // Compose the error save effect and emit the error event via Stream.fromEffect
         return Stream.fromEffect(
           Effect.as(persistError(deps, session.id, msg), {
             type: "error" as const,
@@ -215,7 +219,6 @@ export async function handleChat(
           encodeStreamChunk({ type: "thought", text: event.text }),
         );
       } else if (event.type === "error") {
-        // Error events from catchCause already persisted; native error events persist here
         hadError = true;
         await streamWriter(
           encodeStreamChunk({ type: "error", message: event.message }),
@@ -232,7 +235,7 @@ export async function handleChat(
           deps.toolService
             .settle(event.toolCall)
             .pipe(
-              Effect.catch((failure: ToolFailure) =>
+              Effect.catchTag("ToolFailure", (failure: ToolFailure) =>
                 Effect.succeed({ error: failure.error }),
               ),
             ),
@@ -285,9 +288,8 @@ export async function handleChat(
     preview: fullResponse.slice(0, 200),
   });
 
-  // Always save assistant response (even if empty / error-only)
   if (fullResponse || hadError) {
-    runSync(
+    Effect.runSync(
       deps.sessionService.addMessage(session.id, {
         role: "assistant",
         content: fullResponse || "",

@@ -1,9 +1,12 @@
 import type { UnifiedMessage } from "../llm/types";
 import type { Skill, ToolDefinition } from "../types";
 
+const MAIN_SKILL_NAME = "main";
+
 function renderSkillList(skills: Skill[]): string {
-  if (skills.length === 0) return "";
-  return skills
+  const real = skills.filter((s) => s.name !== MAIN_SKILL_NAME);
+  if (real.length === 0) return "";
+  return real
     .map(
       (s) =>
         `  <skill>\n    <name>${s.name}</name>\n    <description>${s.description}</description>\n  </skill>`,
@@ -11,22 +14,30 @@ function renderSkillList(skills: Skill[]): string {
     .join("\n");
 }
 
+function extractMainPreamble(skills: Skill[]): string {
+  const main = skills.find((s) => s.name === MAIN_SKILL_NAME);
+  return (
+    main?.body?.trim() ||
+    "You are scode, an AI coding agent. You help users with software engineering tasks."
+  );
+}
+
 export function buildPrompt(
   skills: Skill[],
   userPrompt: string,
   tools: ToolDefinition[],
 ): { system: string; messages: UnifiedMessage[] } {
-  const skillList =
-    skills.length > 0
-      ? `<available_skills>\n${renderSkillList(skills)}\n</available_skills>`
-      : "";
+  const rendered = renderSkillList(skills);
+  const skillList = rendered
+    ? `<available_skills>\n${rendered}\n</available_skills>`
+    : "";
 
   const toolDescs = tools
     .map((t) => `- \`${t.name}\`: ${t.description}`)
     .join("\n");
 
   const system = [
-    "You are scode, an AI coding agent. You help users with software engineering tasks.",
+    extractMainPreamble(skills),
     "",
     skillList,
     "",

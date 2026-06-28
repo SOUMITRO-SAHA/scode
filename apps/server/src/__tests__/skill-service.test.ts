@@ -6,24 +6,30 @@ import type { SkillDir } from "../skill/discover";
 import { SkillService, SkillServiceLive } from "../skill/service";
 import type { Skill } from "../types";
 
-const mockSkills: Skill[] = [
+const mockSkills = vi.hoisted((): Skill[] => [
   { name: "greeting", description: "Greet users", body: "Greet warmly." },
   { name: "weather", description: "Check weather", body: "Use weather API." },
-];
+]);
 
-const mockDirs: SkillDir[] = [
+const mockDirs = vi.hoisted((): SkillDir[] => [
   { name: "greeting", path: "/fake/greeting" },
   { name: "weather", path: "/fake/weather" },
-];
+]);
 
 vi.mock("../skill/discover", () => ({
-  discover: vi.fn(() => mockDirs),
+  discover: vi.fn(() => Effect.succeed(mockDirs)),
 }));
 
 vi.mock("../skill/loader", () => ({
   loadSkill: vi.fn((dir: SkillDir) => {
     const found = mockSkills.find((s) => s.name === dir.name);
-    return found ?? null;
+    return Effect.succeed(found ?? null);
+  }),
+  loadSkillMeta: vi.fn((dir: SkillDir) => {
+    const found = mockSkills.find((s) => s.name === dir.name);
+    return Effect.succeed(
+      found ? { name: found.name, description: found.description } : null,
+    );
   }),
 }));
 

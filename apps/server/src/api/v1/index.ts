@@ -248,8 +248,10 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/skills", (c) => {
-    const dirs = discover();
-    const skills = dirs.map(loadSkill).filter((s): s is Skill => s !== null);
+    const dirs = Effect.runSync(discover());
+    const skills = dirs
+      .map((d) => Effect.runSync(loadSkill(d)))
+      .filter((s): s is Skill => s !== null);
     return c.json({
       skills: skills.map((s) => ({
         name: s.name,
@@ -259,10 +261,10 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/skills/:name", (c) => {
-    const dirs = discover();
+    const dirs = Effect.runSync(discover());
     for (const dir of dirs) {
       if (dir.name === c.req.param("name")) {
-        const skill = loadSkill(dir);
+        const skill = Effect.runSync(loadSkill(dir));
         if (skill) return c.json(skill);
       }
     }
@@ -274,9 +276,9 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.post("/skills/validate", (c) => {
-    const dirs = discover();
+    const dirs = Effect.runSync(discover());
     const results = dirs.map((dir) => {
-      const skill = loadSkill(dir);
+      const skill = Effect.runSync(loadSkill(dir));
       return {
         name: dir.name,
         valid: skill !== null,
@@ -402,7 +404,7 @@ export function createV1Router(deps: RouterDeps): Hono {
       (sum, s) => sum + s.messages.length,
       0,
     );
-    const dirs = discover();
+    const dirs = Effect.runSync(discover());
     return c.json({
       sessions: sessions.length,
       messages: totalMessages,

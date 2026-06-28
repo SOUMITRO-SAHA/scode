@@ -1,5 +1,7 @@
 import type { Skill } from "../types";
 
+import { DebugLogger } from "@scode/shared/logger";
+
 const STOP_WORDS = new Set([
   "the",
   "a",
@@ -57,17 +59,32 @@ const STOP_WORDS = new Set([
   "need",
 ]);
 
+const dbg = new DebugLogger("server:skill:matcher");
+
 function tokenize(text: string): string[] {
   return text
     .toLowerCase()
     .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/-/g, " ")
     .split(/\s+/)
     .filter((t) => t.length > 2 && !STOP_WORDS.has(t));
 }
 
-function keywordOverlap(a: string[], b: string[]): number {
+function exactOverlap(a: string[], b: string[]): number {
   const setA = new Set(a);
   return b.filter((t) => setA.has(t)).length;
+}
+
+function fuzzyOverlap(a: string[], b: string[]): number {
+  let score = 0;
+  for (const tokenA of a) {
+    for (const tokenB of b) {
+      if (tokenA.includes(tokenB) || tokenB.includes(tokenA)) {
+        score++;
+      }
+    }
+  }
+  return score;
 }
 
 const MAIN_SKILL: Skill = {
@@ -84,15 +101,39 @@ export function matchSkills(prompt: string, skills: Skill[]): Skill[] {
 
   const promptTokens = tokenize(prompt);
 
+  dbg.log("matching skills", {
+    prompt,
+    promptTokens,
+    skillCount: skills.length,
+    skillNames: skills.map((s) => s.name),
+  });
+
   const scored = skills.map((skill) => {
-    const skillTokens = tokenize(`${skill.name} ${skill.description}`);
-    return { skill, score: keywordOverlap(promptTokens, skillTokens) };
+    const skillText = `${skill.name} ${skill.description}`;
+    const skillTokens = tokenize(skillText);
+    const exact = exactOverlap(promptTokens, skillTokens);
+    const fuzzy = fuzzyOverlap(promptTokens, skillTokens);
+    const score = exact > 0 ? exact : fuzzy;
+    dbg.log("skill score", {
+      name: skill.name,
+      exact,
+      fuzzy,
+      score,
+      skillTokens,
+    });
+    return { skill, score };
   });
 
   const matched = scored
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((s) => s.skill);
+
+  dbg.log("match result", {
+    matched: matched.map((s) => s.name),
+    count: matched.length,
+    fallbackOnly: matched.length === 0,
+  });
 
   return matched.length > 0 ? [...matched, MAIN_SKILL] : [MAIN_SKILL];
 }
