@@ -49,9 +49,11 @@ export class ClaudeAdapter implements LLMProvider {
     const messages = toAnthropicMessages(params.messages);
     const budgetTokens = EFFORT_THINKING_BUDGET[params.effortLevel ?? "none"];
 
+    const maxTokens = budgetTokens ? budgetTokens + 1024 : 8192;
+
     const stream = client.messages.stream({
       model,
-      max_tokens: 8192,
+      max_tokens: maxTokens,
       system: params.system,
       messages,
       tools: toAnthropicTools(params.tools),

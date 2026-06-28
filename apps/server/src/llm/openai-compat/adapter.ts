@@ -22,11 +22,10 @@ function openaiReasoningEfforts(modelId: string): EffortLevel[] {
 function openaiSupportsReasoning(model: string): boolean {
   const id = model.toLowerCase();
   return (
-    id.includes("o1") ||
-    id.includes("o3") ||
-    id.includes("o4") ||
-    id.includes("gpt-5") ||
-    id.includes("gpt-4o")
+    id.startsWith("o1") ||
+    id.startsWith("o3") ||
+    id.startsWith("o4") ||
+    id.startsWith("gpt-5")
   );
 }
 
@@ -76,7 +75,10 @@ export class OpenAICompatAdapter implements LLMProvider {
     const model = params.model ?? this.defaultModel;
 
     const effort = params.effortLevel;
-    const validEffort = effort !== undefined && effort !== "max";
+    const validEffort =
+      effort !== undefined &&
+      effort !== "max" &&
+      openaiSupportsReasoning(model);
     const stream = await client.chat.completions.create({
       model,
       messages: toOpenAIMessages(params.messages, params.system),
@@ -97,6 +99,11 @@ export class OpenAICompatAdapter implements LLMProvider {
 
       if (choice.delta?.content) {
         yield { type: "text", delta: choice.delta.content };
+      }
+
+      const reasoningContent = (choice.delta as any)?.reasoning_content;
+      if (reasoningContent) {
+        yield { type: "thought", text: reasoningContent };
       }
 
       if (choice.delta?.tool_calls) {
@@ -226,11 +233,15 @@ function toOpenAIMessages(
           ? msg.content
           : (msg.content.find((b) => b.type === "text")?.text ?? "");
 
-      result.push({
+      const assistantMsg: Record<string, unknown> = {
         role: "assistant",
         content: text || null,
         tool_calls: toolCalls && toolCalls.length > 0 ? toolCalls : undefined,
-      });
+      };
+      if (msg.thought) {
+        assistantMsg.reasoning_content = msg.thought;
+      }
+      result.push(assistantMsg as unknown as ChatCompletionMessageParam);
       continue;
     }
 
