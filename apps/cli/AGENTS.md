@@ -109,11 +109,3 @@
 ## Store access pattern
 
 - `useAppStore.getState()` is used to read Zustand state outside React render cycle (e.g., in `useStreamChat` event handlers, `setTimeout` callbacks, and imperative code). This avoids `useStore()` hook dependency constraints in non-component contexts.
-
-## Phantom imports
-
-- `services/platform/` only contains `runtime.ts`. The `CliConfig` class lives in `services/config.ts`, NOT `services/platform/config.ts`. Several files historically imported from `"./platform/config"` (e.g. `init.ts`, `index.tsx`, `platform.test.ts`) — these imports never resolved. The platform subdirectory is vestigial.
-
-## Pre-commit auto-modifications
-
-- Husky/lint-staged hooks may auto-add `baseUrl: "."` to tsconfig files and `--tsconfig` flags to package.json scripts after commit. These are harmless but unexpected side effects of style/enforcement tooling.

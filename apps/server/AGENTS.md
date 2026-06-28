@@ -50,8 +50,3 @@
 ## Dev mode
 
 - Server uses `tsx watch src/index.ts` for dev (no native FFI). Unlike CLI, there's no bun-based watcher workaround needed.
-
-## Effect v4 API instability (type-only)
-
-- `Cause.isFailType` and `Cause.error` at `apps/server/src/chat/handler.ts:82-83` don't exist on the Effect v4 beta `Cause` type — these produce `tsc --noEmit` errors but work at runtime via `tsx`. See also the root AGENTS.md `tsc vs tsx duality` section.
-- Server imports `Cause` from `"effect"` namespace import but only uses it in one handler function. If Effect's β API surface changes again, this is the only site to patch.
