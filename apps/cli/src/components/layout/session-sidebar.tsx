@@ -320,19 +320,23 @@ export function SessionSidebar() {
                     overflow="hidden"
                     onMouseDown={() => handleSwitch(sess.id)}
                   >
+                    {/* Active Indicator */}
                     <text
                       fg={active ? theme.brand.primary : theme.text.primary}
                       width={2}
                     >
                       {active ? ">" : " "}
                     </text>
+
                     <text
                       fg={active ? theme.brand.primary : theme.text.primary}
                       wrapMode="word"
+                      truncate={true}
                     >
                       {sess.name}
                     </text>
                   </box>
+
                   <box
                     width={2}
                     flexShrink={0}
