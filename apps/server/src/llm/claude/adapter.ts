@@ -69,7 +69,11 @@ export class ClaudeAdapter implements LLMProvider {
         : {}),
     });
 
-    // Track tool calls yielded during streaming so we don't duplicate from finalMessage
+    // Track tool calls by content block index to accumulate input_json_delta
+    const toolCallByIndex = new Map<
+      number,
+      { id: string; name: string; inputJson: string }
+    >();
     const yieldedToolCallIds = new Set<string>();
 
     for await (const event of stream) {
@@ -78,32 +82,49 @@ export class ClaudeAdapter implements LLMProvider {
         event.content_block.type === "tool_use"
       ) {
         yieldedToolCallIds.add(event.content_block.id);
-        yield {
-          type: "tool_use",
-          toolCall: {
-            id: event.content_block.id,
-            name: event.content_block.name,
-            input: event.content_block.input as Record<string, unknown>,
-          },
-        };
+        toolCallByIndex.set(event.index, {
+          id: event.content_block.id,
+          name: event.content_block.name,
+          inputJson: "",
+        });
       }
-      if (
-        event.type === "content_block_delta" &&
-        event.delta.type === "text_delta"
-      ) {
-        yield { type: "text", delta: event.delta.text };
+      if (event.type === "content_block_delta") {
+        if (event.delta.type === "text_delta") {
+          yield { type: "text", delta: event.delta.text };
+        } else if (event.delta.type === "thinking_delta") {
+          yield { type: "thought", text: event.delta.thinking };
+        } else if (event.delta.type === "input_json_delta") {
+          const tracked = toolCallByIndex.get(event.index);
+          if (tracked) {
+            tracked.inputJson += event.delta.partial_json ?? "";
+          }
+        }
       }
-      if (
-        event.type === "content_block_delta" &&
-        event.delta.type === "thinking_delta"
-      ) {
-        yield { type: "thought", text: event.delta.thinking };
+      if (event.type === "content_block_stop") {
+        const tracked = toolCallByIndex.get(event.index);
+        if (tracked) {
+          let input: Record<string, unknown> = {};
+          try {
+            input = tracked.inputJson ? JSON.parse(tracked.inputJson) : {};
+          } catch {
+            input = {};
+          }
+          yield {
+            type: "tool_use",
+            toolCall: {
+              id: tracked.id,
+              name: tracked.name,
+              input,
+            },
+          };
+          toolCallByIndex.delete(event.index);
+        }
       }
     }
 
     const finalMessage = await stream.finalMessage();
 
-    // Yield any tool_use blocks not caught during streaming (fallback)
+    // Fallback: yield any tool_use blocks not caught during streaming
     for (const block of finalMessage.content) {
       if (block.type === "tool_use" && !yieldedToolCallIds.has(block.id)) {
         yield {
