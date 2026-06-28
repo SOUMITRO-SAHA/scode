@@ -12,7 +12,7 @@ export const runRepl = (
   Effect.promise(
     () =>
       new Promise<void>((resolve) => {
-        console.log("scode REPL — type your prompt, or /q to quit");
+        console.log("scode REPL — type your prompt, or /exit to quit");
         const rl = createInterface({
           input: stdin,
           output: stdout,
@@ -25,7 +25,7 @@ export const runRepl = (
             rl.prompt();
             return;
           }
-          if (input === "/q") {
+          if (input === "/exit" || input === "/q") {
             rl.close();
             return;
           }

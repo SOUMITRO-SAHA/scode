@@ -370,10 +370,10 @@ export const COMMANDS: Command[] = [
     },
   },
   {
-    name: "quit",
-    aliases: ["exit", "q"],
-    description: "Quit the application",
-    usage: "/quit",
+    name: "exit",
+    aliases: ["quit", "q"],
+    description: "Exit the application",
+    usage: "/exit",
     category: "general",
     handler: async (_args, _api, ctx) => {
       ctx.onExit?.();
