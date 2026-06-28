@@ -135,12 +135,7 @@ function AppInner({
   onExit?: () => void;
 }) {
   const toast = useToast();
-  const {
-    messages,
-    streaming,
-    setSessionId,
-    submit: chatSubmit,
-  } = useStreamChat(serverUrl);
+  const { messages, streaming, submit: chatSubmit } = useStreamChat(serverUrl);
   const { width, height } = useTerminalDimensions();
   const renderer = useRenderer();
 
@@ -219,10 +214,9 @@ function AppInner({
 
   const handleSetSessionId = useCallback(
     (id: string | undefined) => {
-      setSessionId(id);
       setCurrentSessionId(id);
     },
-    [setSessionId, setCurrentSessionId],
+    [setCurrentSessionId],
   );
 
   const handleSetModel = useCallback(

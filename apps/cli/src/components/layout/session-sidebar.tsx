@@ -6,11 +6,7 @@ import fuzzysort from "fuzzysort";
 import { SessionDeleteConfirm } from "@/components/commands/index";
 import { Spinner } from "@/components/ui/spinner";
 import { useToast } from "@/components/ui/toast";
-import {
-  useCreateSession,
-  useDeleteSession,
-  useSessions,
-} from "@/hooks/useApi";
+import { useDeleteSession, useSessions } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
 import { type InputRenderable, RGBA, TextAttributes } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
@@ -81,7 +77,6 @@ export function SessionSidebar() {
   const serverUrl = useAppStore((s) => s.serverUrl);
   const currentSessionId = useAppStore((s) => s.currentSessionId);
   const streamingSessionId = useAppStore((s) => s.streamingSessionId);
-  const model = useAppStore((s) => s.model);
   const setCurrentSessionId = useAppStore((s) => s.setCurrentSessionId);
   const setModel = useAppStore((s) => s.setModel);
   const sidebarVisible = useAppStore((s) => s.sidebarVisible);
@@ -89,7 +84,6 @@ export function SessionSidebar() {
   const sidebarSelectedIndex = useAppStore((s) => s.sidebarSelectedIndex);
   const setSidebarSelectedIndex = useAppStore((s) => s.setSidebarSelectedIndex);
   const { data, isLoading, isError } = useSessions(serverUrl);
-  const createSession = useCreateSession(serverUrl);
   const deleteSession = useDeleteSession(serverUrl);
   const setMessages = useAppStore((s) => s.setMessages);
   const clearMessages = useAppStore((s) => s.clearMessages);
@@ -109,30 +103,15 @@ export function SessionSidebar() {
     searchQuery,
   });
 
-  const handleCreate = useCallback(async () => {
-    dbg.log("handleCreate called", { model });
-    try {
-      const res = await createSession.mutateAsync({
-        name: "New Session",
-        model: model ?? "",
-        provider: "",
-      });
-      dbg.log("Session created", { id: res.id, name: res.name });
-      setCurrentSessionId(res.id);
-      toast.show({
-        variant: "success",
-        message: `Session created: ${res.id.slice(0, 8)}...`,
-      });
-    } catch (err) {
-      dbg.error("Failed to create session", {
-        error: (err as Error).message,
-      });
-      toast.show({
-        variant: "error",
-        message: `Failed to create session: ${(err as Error).message}`,
-      });
-    }
-  }, [createSession, setCurrentSessionId, model, toast]);
+  const handleCreate = useCallback(() => {
+    dbg.log("handleCreate called — deferring DB creation until first message");
+    setCurrentSessionId(undefined);
+    clearMessages();
+    toast.show({
+      variant: "info",
+      message: "New conversation — send a message to begin",
+    });
+  }, [setCurrentSessionId, clearMessages, toast]);
 
   const handleDeleteRequest = useCallback(
     (id: string, name: string) => {
@@ -196,7 +175,7 @@ export function SessionSidebar() {
     [setCurrentSessionId, setMessages, clearMessages, setModel, serverUrl],
   );
 
-  const sessions = data?.sessions ?? [];
+  const sessions = (data?.sessions ?? []).filter((s) => s.messageCount > 0);
   const sortedSessions = searchQuery
     ? fuzzysort.go(searchQuery, sessions, { keys: ["name"] }).map((r) => r.obj)
     : sessions;

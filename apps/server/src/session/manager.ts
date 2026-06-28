@@ -81,7 +81,7 @@ export class SessionManager {
     const rows = getDb()
       .select()
       .from(sessions)
-      .orderBy(desc(sessions.createdAt))
+      .orderBy(desc(sessions.updatedAt))
       .all();
     return rows.map(rowToSession);
   }

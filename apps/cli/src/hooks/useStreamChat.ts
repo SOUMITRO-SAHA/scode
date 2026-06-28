@@ -141,16 +141,11 @@ function readStreamToStore(
 
 export function useStreamChat(serverUrl: string) {
   const toast = useToast();
-  const sessionIdRef = useRef<string | undefined>(undefined);
   const statusRef = useRef<"idle" | "streaming">("idle");
   const streamRef = useRef<Readable | null>(null);
   const qc = useQueryClient();
   const streaming = useAppStore((s) => s.streaming);
   const messages = useAppStore((s) => s.messages);
-
-  const setSessionId = useCallback((id: string | undefined) => {
-    sessionIdRef.current = id;
-  }, []);
 
   const submit = useCallback(
     async (text: string) => {
@@ -167,7 +162,7 @@ export function useStreamChat(serverUrl: string) {
       useAppStore.getState().setStreaming(true);
       statusRef.current = "streaming";
 
-      let sessionId = sessionIdRef.current;
+      let sessionId = useAppStore.getState().currentSessionId;
 
       const setStreamingSession = (id: string | undefined) => {
         useAppStore.getState().setStreamingSessionId(id);
@@ -206,7 +201,6 @@ export function useStreamChat(serverUrl: string) {
             ),
           );
           sessionId = session.id;
-          sessionIdRef.current = sessionId;
           useAppStore.getState().setCurrentSessionId(sessionId);
           toast.show({ variant: "success", message: "Session created" });
           dbg.log("session created", { sessionId });
@@ -269,8 +263,6 @@ export function useStreamChat(serverUrl: string) {
   return {
     messages,
     streaming,
-    sessionId: sessionIdRef.current,
-    setSessionId,
     submit,
   };
 }

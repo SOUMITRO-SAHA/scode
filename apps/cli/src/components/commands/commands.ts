@@ -103,28 +103,16 @@ export const COMMANDS: Command[] = [
   {
     name: "new",
     aliases: ["n"],
-    description: "Create a new conversation session",
+    description: "Start a new conversation session",
     usage: "/new",
     category: "session",
     suggested: true,
-    handler: async (_args, api, ctx) => {
-      const config = await Effect.runPromise(api.getConfig());
-      const model = ctx.model ?? config.defaultModel;
-      if (!model) {
-        ctx.showToast?.({
-          variant: "error",
-          message:
-            "No model selected. Use Ctrl+M or /models command to select a model first.",
-        });
-        return;
-      }
-      const session = await Effect.runPromise(api.createSession("", model));
-      ctx.setCurrentSessionId?.(session.id);
+    handler: async (_args, _api, ctx) => {
+      ctx.setCurrentSessionId?.(undefined);
       ctx.clearMessages?.();
-      ctx.setModel?.(`${session.provider}/${session.model}`);
       ctx.showToast?.({
-        variant: "success",
-        message: `New session created: ${session.name} (${session.id.slice(0, 8)}...)`,
+        variant: "info",
+        message: "New conversation — send a message to begin",
       });
     },
   },
