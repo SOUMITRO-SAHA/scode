@@ -40,7 +40,7 @@ function buildProviderRegistry(): ProviderRegistry {
       id: "zai",
       name: "Z.ai (Zhipu)",
       defaultModel: "glm-5",
-      baseURL: "https://open.bigmodel.cn/api/paas/v4",
+      baseURL: "https://api.z.ai/api/paas/v4/",
     }),
   );
   reg.register(

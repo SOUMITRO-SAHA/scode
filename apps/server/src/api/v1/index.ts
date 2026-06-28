@@ -188,15 +188,17 @@ export function createV1Router(deps: RouterDeps): Hono {
   router.get("/sessions", (c) => {
     const sessions = runSync(deps.sessionService.list);
     return c.json({
-      sessions: sessions.map((s) => ({
-        id: s.id,
-        name: s.name,
-        createdAt: s.createdAt,
-        updatedAt: s.updatedAt,
-        messageCount: s.messages.length,
-        model: s.model,
-        provider: s.provider,
-      })),
+      sessions: sessions
+        .map((s) => ({
+          id: s.id,
+          name: s.name,
+          createdAt: s.createdAt,
+          updatedAt: s.updatedAt,
+          messageCount: s.messages.length,
+          model: s.model,
+          provider: s.provider,
+        }))
+        .filter((s) => s.messageCount > 0),
     });
   });
 
