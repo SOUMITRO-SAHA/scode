@@ -80,6 +80,16 @@ export interface Stats {
 export interface Message {
   role: "user" | "assistant" | "system";
   content: string;
+  toolCalls?: ToolCallState[];
+}
+
+export interface ToolCallState {
+  id: string;
+  name: string;
+  input: Record<string, unknown>;
+  status: "running" | "completed" | "failed";
+  result?: string;
+  isError?: boolean;
 }
 
 export interface UnifiedMessage {

@@ -1,23 +1,29 @@
 import { useMemo } from "react";
 
+import { ToolCallDisplay } from "./tool-call-display";
+
 import { ThinkingDisplay } from "@/components/feedback/thinking-display";
 import { useAppStore } from "@/store/index";
 import { getMarkdownStyle } from "@/styles/syntaxTheme";
+import type { ToolCallState } from "@scode/shared/types";
 import { theme } from "@scode/theme";
 
 export function AssistantMessage({
   content,
   isStreaming,
+  toolCalls,
 }: {
   content: string;
   isStreaming: boolean;
+  toolCalls?: ToolCallState[];
 }) {
   const style = useMemo(() => getMarkdownStyle(), []);
   const thought = useAppStore((s) => s.thought);
   const thoughtStartTime = useAppStore((s) => s.thoughtStartTime);
   const streaming = useAppStore((s) => s.streaming);
 
-  if (!content && !isStreaming) return null;
+  if (!content && !isStreaming && (!toolCalls || toolCalls.length === 0))
+    return null;
 
   return (
     <box paddingTop={1} paddingBottom={1} paddingLeft={2}>
@@ -29,6 +35,9 @@ export function AssistantMessage({
             streaming={streaming}
           />
         ) : null}
+        {toolCalls && toolCalls.length > 0 && (
+          <ToolCallDisplay toolCalls={toolCalls} isStreaming={isStreaming} />
+        )}
         {content ? (
           content.startsWith("Error: ") ? (
             <text fg={theme.danger}>{content}</text>

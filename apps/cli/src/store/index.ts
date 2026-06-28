@@ -1,7 +1,12 @@
 import { create } from "zustand";
 
 import { EFFORT_LEVELS } from "@scode/shared/constants";
-import type { EffortLevel, Message, UnifiedMessage } from "@scode/shared/types";
+import type {
+  EffortLevel,
+  Message,
+  ToolCallState,
+  UnifiedMessage,
+} from "@scode/shared/types";
 
 export type AgentId = "plan" | "write" | "chat";
 
@@ -53,6 +58,8 @@ interface AppStore {
   clearSelectedSkills: () => void;
   appendThought: (text: string) => void;
   clearThought: () => void;
+  addToolCall: (toolCall: ToolCallState) => void;
+  updateToolCall: (id: string, update: Partial<ToolCallState>) => void;
 }
 
 export const useAppStore = create<AppStore>((set) => ({
@@ -153,4 +160,31 @@ export const useAppStore = create<AppStore>((set) => ({
         s.thoughtStartTime === 0 ? Date.now() : s.thoughtStartTime,
     })),
   clearThought: () => set({ thought: "", thoughtStartTime: 0 }),
+  addToolCall: (toolCall) =>
+    set((s) => {
+      const copy = [...s.messages];
+      const last = copy[copy.length - 1];
+      if (last && last.role === "assistant") {
+        const existing = last.toolCalls ?? [];
+        copy[copy.length - 1] = {
+          ...last,
+          toolCalls: [...existing, toolCall],
+        };
+      }
+      return { messages: copy };
+    }),
+  updateToolCall: (id, update) =>
+    set((s) => {
+      const copy = [...s.messages];
+      const last = copy[copy.length - 1];
+      if (last && last.role === "assistant" && last.toolCalls) {
+        copy[copy.length - 1] = {
+          ...last,
+          toolCalls: last.toolCalls.map((tc) =>
+            tc.id === id ? { ...tc, ...update } : tc,
+          ),
+        };
+      }
+      return { messages: copy };
+    }),
 }));

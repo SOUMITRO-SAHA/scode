@@ -11,6 +11,7 @@ import { useToast } from "@/components/ui/toast";
 import { CHAT_PATH, CONFIG_PATH, SESSIONS_PATH } from "@scode/shared/constants";
 import { DebugLogger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
+import type { ToolCallState } from "@scode/shared/types";
 import { apiFetch, apiFetchStream, errorMessage } from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -59,6 +60,28 @@ function processStreamChunk(chunk: string, buffer: string): string {
       case "error": {
         useAppStore.getState().setLastAssistantError(parsed.message);
         assistantMsgAdded = true;
+        break;
+      }
+      case "tool_use": {
+        if (!assistantMsgAdded) {
+          useAppStore.getState().addAssistantMessage();
+          assistantMsgAdded = true;
+        }
+        const tc: ToolCallState = {
+          id: parsed.toolCall.id,
+          name: parsed.toolCall.name,
+          input: parsed.toolCall.input,
+          status: "running",
+        };
+        useAppStore.getState().addToolCall(tc);
+        break;
+      }
+      case "tool_result": {
+        useAppStore.getState().updateToolCall(parsed.toolUseId, {
+          status: parsed.isError ? "failed" : "completed",
+          result: parsed.result,
+          isError: parsed.isError,
+        });
         break;
       }
     }

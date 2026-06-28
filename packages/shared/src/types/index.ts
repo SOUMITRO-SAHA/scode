@@ -13,6 +13,7 @@ export type {
   HealthStatus,
   Stats,
   Message,
+  ToolCallState,
   ToolDefinition,
   ToolCall,
   ToolHandler,

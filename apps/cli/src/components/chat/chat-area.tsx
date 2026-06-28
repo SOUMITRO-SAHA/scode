@@ -53,6 +53,7 @@ export function ChatArea({
             isStreaming={
               streaming && i === messages.length - 1 && msg.content === ""
             }
+            toolCalls={msg.toolCalls}
           />
         ),
       )}

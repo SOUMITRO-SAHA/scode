@@ -231,6 +231,14 @@ export async function handleChat(
         });
         logger.info(`Tool call: ${event.toolCall.name}`);
 
+        // Forward tool_use to client before executing
+        await streamWriter(
+          encodeStreamChunk({
+            type: "tool_use",
+            toolCall: event.toolCall,
+          }),
+        );
+
         const result = await Effect.runPromise(
           deps.toolService
             .settle(event.toolCall)
@@ -265,14 +273,34 @@ export async function handleChat(
             tool_call_id: event.toolCall.id,
             content: JSON.stringify({ error: errMsg }),
           });
+          // Forward tool_result to client
+          await streamWriter(
+            encodeStreamChunk({
+              type: "tool_result",
+              toolUseId: event.toolCall.id,
+              name: event.toolCall.name,
+              result: errMsg,
+              isError: true,
+            }),
+          );
           saveSync(errMsg);
           hadError = true;
         } else {
+          const resultStr = JSON.stringify(result);
           conversation.push({
             role: "tool",
             tool_call_id: event.toolCall.id,
-            content: JSON.stringify(result),
+            content: resultStr,
           });
+          // Forward tool_result to client
+          await streamWriter(
+            encodeStreamChunk({
+              type: "tool_result",
+              toolUseId: event.toolCall.id,
+              name: event.toolCall.name,
+              result: resultStr,
+            }),
+          );
         }
       } else if (event.type === "done") {
         break;

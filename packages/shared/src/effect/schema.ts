@@ -60,6 +60,21 @@ export const StreamChunk = Schema.Union([
     sessionId: Schema.String,
     model: Schema.optional(Schema.String),
   }),
+  Schema.Struct({
+    type: Schema.Literal("tool_use"),
+    toolCall: Schema.Struct({
+      id: Schema.String,
+      name: Schema.String,
+      input: Schema.Record(Schema.String, Schema.Unknown),
+    }),
+  }),
+  Schema.Struct({
+    type: Schema.Literal("tool_result"),
+    toolUseId: Schema.String,
+    name: Schema.String,
+    result: Schema.String,
+    isError: Schema.optional(Schema.Boolean),
+  }),
 ]);
 
 export const HealthStatus = Schema.Struct({

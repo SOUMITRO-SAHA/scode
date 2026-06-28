@@ -127,6 +127,20 @@ export const chat = {
     text: "#E6EAF0",
   },
   thinking: colors.yellow[400],
+  tool: {
+    border: colors.gray[700],
+    background: colors.gray[950],
+    icon: colors.gray[400],
+    iconRunning: colors.blue[400],
+    iconSuccess: colors.green[400],
+    iconError: colors.red[400],
+    label: colors.gray[300],
+    labelRunning: colors.blue[300],
+    labelMuted: colors.gray[500],
+    input: colors.gray[400],
+    result: colors.gray[200],
+    resultError: colors.red[300],
+  },
 } as const;
 
 export const input = {
