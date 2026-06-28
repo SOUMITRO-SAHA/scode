@@ -50,7 +50,7 @@ export function ThinkingDisplay({
       marginBottom={1}
     >
       <box flexDirection="row" alignItems="center" gap={1}>
-        <Spinner delay={80} />
+        {streaming && <Spinner delay={80} />}
         <text fg={theme.brand.primary}>Thought: {elapsed}</text>
       </box>
       {thought && <text fg={theme.text.muted}>{thought}</text>}
