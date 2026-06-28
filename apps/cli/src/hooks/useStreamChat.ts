@@ -54,6 +54,10 @@ function processStreamChunk(chunk: string, buffer: string): string {
         break;
       }
       case "thought": {
+        if (!assistantMsgAdded) {
+          useAppStore.getState().addAssistantMessage();
+          assistantMsgAdded = true;
+        }
         useAppStore.getState().appendThought(parsed.text);
         break;
       }
