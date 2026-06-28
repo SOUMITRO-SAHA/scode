@@ -26,7 +26,7 @@ export function AssistantMessage({
     return null;
 
   return (
-    <box paddingTop={1} paddingBottom={1} paddingLeft={2}>
+    <box paddingTop={0.5} paddingBottom={0.5} paddingLeft={2}>
       <box flexDirection="column">
         {thought || (isStreaming && !content) ? (
           <ThinkingDisplay

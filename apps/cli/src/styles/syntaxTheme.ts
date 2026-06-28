@@ -2,18 +2,56 @@ import { RGBA, SyntaxStyle } from "@opentui/core";
 import { colors } from "@scode/theme";
 
 const mdConfig = {
-  "markup.heading.1": { fg: RGBA.fromHex(colors.blue[500]), bold: true },
-  "markup.heading.2": { fg: RGBA.fromHex(colors.blue[500]), bold: true },
-  "markup.heading.3": { fg: RGBA.fromHex(colors.blue[500]), bold: true },
-  "markup.bold": { fg: RGBA.fromHex(colors.gray[50]), bold: true },
-  "markup.italic": { fg: RGBA.fromHex(colors.gray[50]), italic: true },
-  "markup.list": { fg: RGBA.fromHex(colors.syntax.function) },
-  "markup.quote": { fg: RGBA.fromHex(colors.gray[300]), italic: true },
-  "markup.raw": { fg: RGBA.fromHex(colors.syntax.variable) },
-  "markup.raw.block": { fg: RGBA.fromHex(colors.syntax.variable) },
-  "markup.link": { fg: RGBA.fromHex(colors.blue[500]), underline: true },
-  "markup.link.url": { fg: RGBA.fromHex(colors.blue[500]), underline: true },
-  default: { fg: RGBA.fromHex(colors.gray[100]) },
+  "markup.heading.1": {
+    fg: RGBA.fromHex(colors.white),
+    bold: true,
+  },
+  "markup.heading.2": {
+    fg: RGBA.fromHex(colors.white),
+    bold: true,
+  },
+  "markup.heading.3": {
+    fg: RGBA.fromHex(colors.gray[100]),
+    bold: true,
+  },
+  "markup.bold": {
+    fg: RGBA.fromHex(colors.white),
+    bold: true,
+  },
+  "markup.italic": {
+    fg: RGBA.fromHex(colors.gray[150]),
+    italic: true,
+  },
+  "markup.list": {
+    fg: RGBA.fromHex(colors.gray[200]),
+  },
+  "markup.list.markup": {
+    fg: RGBA.fromHex(colors.blue[400]),
+  },
+  "markup.quote": {
+    fg: RGBA.fromHex(colors.gray[300]),
+    italic: true,
+  },
+  "markup.raw": {
+    fg: RGBA.fromHex(colors.amber[300]),
+  },
+  "markup.raw.block": {
+    fg: RGBA.fromHex(colors.amber[300]),
+  },
+  "markup.link": {
+    fg: RGBA.fromHex(colors.blue[400]),
+    underline: true,
+  },
+  "markup.link.url": {
+    fg: RGBA.fromHex(colors.blue[400]),
+    underline: true,
+  },
+  "markup.strikethrough": {
+    fg: RGBA.fromHex(colors.gray[500]),
+  },
+  default: {
+    fg: RGBA.fromHex(colors.gray[100]),
+  },
 };
 
 const codeConfig = {
