@@ -340,7 +340,7 @@ export async function handleChat(
     preview: fullResponse.slice(0, 200),
   });
 
-  if (fullResponse || hadError) {
+  if (fullResponse || hadError || thoughtText) {
     session.messages.push({
       role: "assistant",
       content: fullResponse || "",

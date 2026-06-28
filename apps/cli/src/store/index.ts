@@ -58,6 +58,7 @@ interface AppStore {
   clearSelectedSkills: () => void;
   appendThought: (text: string) => void;
   clearThought: () => void;
+  commitThought: () => void;
   addToolCall: (toolCall: ToolCallState) => void;
   updateToolCall: (id: string, update: Partial<ToolCallState>) => void;
 }
@@ -232,6 +233,16 @@ export const useAppStore = create<AppStore>((set) => ({
         s.thoughtStartTime === 0 ? Date.now() : s.thoughtStartTime,
     })),
   clearThought: () => set({ thought: "", thoughtStartTime: 0 }),
+  commitThought: () =>
+    set((s) => {
+      if (!s.thought || s.messages.length === 0) return {};
+      const copy = [...s.messages];
+      const last = copy[copy.length - 1];
+      if (last && last.role === "assistant") {
+        copy[copy.length - 1] = { ...last, thought: s.thought };
+      }
+      return { messages: copy, thought: "", thoughtStartTime: 0 };
+    }),
   addToolCall: (toolCall) =>
     set((s) => {
       const copy = [...s.messages];

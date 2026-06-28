@@ -229,6 +229,12 @@ export function useStreamChat(serverUrl: string) {
 
         yield* readStreamToStore(stream, "");
         dbg.log("stream finished");
+
+        // Commit thought from global store to the last assistant message
+        const afterState = useAppStore.getState();
+        if (afterState.thought) {
+          afterState.commitThought();
+        }
       });
 
       try {
