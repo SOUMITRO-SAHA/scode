@@ -149,7 +149,7 @@ describe("SessionService", () => {
     expect(session!.name).toBe("Updated");
   });
 
-  it("auto-renames session with first user message content", () => {
+  it("auto-renames session on 2nd user message after 1st exchange", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
       const created = yield* svc.create("Session default", "m1", "p1");
@@ -161,24 +161,48 @@ describe("SessionService", () => {
         role: "assistant",
         content: "Here's how...",
       });
-      const userMessages = (yield* svc.getMessages(created.id)).filter(
-        (m) => m.role === "user",
-      );
-      expect(userMessages).toHaveLength(1);
-      const first =
-        typeof userMessages[0].content === "string"
-          ? userMessages[0].content
-          : "";
-      const clean = first.split("\n")[0].trim().slice(0, 60);
-      if (clean && clean !== created.name) {
-        created.name = clean;
-        yield* svc.update(created);
+      yield* svc.addMessage(created.id, {
+        role: "user",
+        content: "Also add tests",
+      });
+      const msgs = yield* svc.getMessages(created.id);
+      const userMessages = msgs.filter((m) => m.role === "user");
+      const assistantMessages = msgs.filter((m) => m.role === "assistant");
+      expect(userMessages).toHaveLength(2);
+      expect(assistantMessages).toHaveLength(1);
+      if (userMessages.length === 2 && assistantMessages.length >= 1) {
+        const first =
+          typeof userMessages[0].content === "string"
+            ? userMessages[0].content
+            : "";
+        const clean = first.split("\n")[0].trim().slice(0, 60);
+        if (clean && clean !== created.name) {
+          created.name = clean;
+          yield* svc.update(created);
+        }
       }
       const updated = yield* svc.get(created.id);
       return updated!;
     });
     const session = runSync(Effect.provide(effect, SessionServiceLive));
     expect(session.name).toBe("Refactor auth module to use strategy pattern");
+  });
+
+  it("does NOT auto-rename on 1st message alone", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* SessionService;
+      const created = yield* svc.create("My scratch session", "m1", "p1");
+      yield* svc.addMessage(created.id, {
+        role: "user",
+        content: "Hello there",
+      });
+      const msgs = yield* svc.getMessages(created.id);
+      const userMessages = msgs.filter((m) => m.role === "user");
+      expect(userMessages).toHaveLength(1);
+      return yield* svc.get(created.id);
+    });
+    const session = runSync(Effect.provide(effect, SessionServiceLive));
+    expect(session!.name).toBe("My scratch session");
   });
 
   it("keeps manual rename after messages added", () => {

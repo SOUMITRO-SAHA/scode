@@ -3,6 +3,7 @@ import { Cause, Effect, Stream } from "effect";
 import type { ConfigService } from "../config/service";
 import { resolveApiKey } from "../llm/config";
 import { LLMError, ToolFailure } from "../llm/error";
+import type { LLMProvider } from "../llm/provider";
 import type { ProviderService } from "../llm/provider-service";
 import { buildPrompt } from "../prompt/builder";
 import type { Session } from "../session/manager";
@@ -138,6 +139,11 @@ export async function handleChat(
 
   session.messages.push({ role: "user", content: prompt });
   Effect.runSync(deps.sessionService.update(session));
+
+  // AI auto-rename on 2nd user message (fire-and-forget, non-blocking)
+  Effect.runPromise(
+    autoRenameSession(deps, session, resolvedModel, apiKey),
+  ).catch(() => dbg.warn("auto-rename: title generation failed"));
 
   const saveSync = (msg: string) =>
     Effect.runSync(persistError(deps, session.id, msg));
@@ -326,28 +332,84 @@ export async function handleChat(
     );
   }
 
-  if (!hadError && fullResponse) {
-    autoRenameSession(deps.sessionService, session);
-  }
-
   return session.id;
 }
 
-function autoRenameSession(
-  sessionService: HandlerDeps["sessionService"],
-  session: Session,
-): void {
-  const userMessages = session.messages.filter((m) => m.role === "user");
-  if (userMessages.length !== 1) return;
+async function generateTitleText(
+  provider: LLMProvider,
+  apiKey: string,
+  model: string,
+  firstUserText: string,
+  assistantText: string,
+): Promise<string | null> {
+  try {
+    const gen = provider.streamResponse({
+      system:
+        "You generate short conversation titles. Respond with ONLY the title, max 60 characters, no quotes, no punctuation, no explanation.",
+      messages: [
+        {
+          role: "user",
+          content: `Generate a title for this conversation:\n\nUser: ${firstUserText.slice(0, 500)}\n\nAssistant: ${assistantText.slice(0, 500)}`,
+        },
+      ],
+      tools: [],
+      model,
+      apiKey,
+    });
 
-  const firstMsg = userMessages[0];
-  const firstText =
-    typeof firstMsg.content === "string" ? firstMsg.content : "";
-  if (!firstText) return;
+    let text = "";
+    for await (const event of gen) {
+      if (event.type === "text") text += event.delta;
+      if (event.type === "error") return null;
+    }
 
-  const clean = firstText.split("\n")[0].trim().slice(0, 60);
-  if (!clean || clean === session.name) return;
+    const cleaned = text
+      .replace(/<think>[\s\S]*?<\/think>\s*/g, "")
+      .split("\n")
+      .map((l) => l.trim())
+      .find((l) => l.length > 0);
 
-  session.name = clean;
-  Effect.runSync(sessionService.update(session));
+    if (!cleaned) return null;
+    return cleaned.length > 100 ? cleaned.substring(0, 97) + "..." : cleaned;
+  } catch {
+    return null;
+  }
 }
+
+const autoRenameSession = Effect.fnUntraced(function* (
+  deps: HandlerDeps,
+  session: Session,
+  resolvedModel: string,
+  apiKey: string,
+) {
+  const userMessages = session.messages.filter((m) => m.role === "user");
+  const assistantMessages = session.messages.filter(
+    (m) => m.role === "assistant",
+  );
+
+  if (userMessages.length !== 2) return;
+  if (assistantMessages.length < 1) return;
+
+  const firstText =
+    typeof userMessages[0].content === "string" ? userMessages[0].content : "";
+  const assistantText =
+    typeof assistantMessages[0].content === "string"
+      ? assistantMessages[0].content
+      : "";
+  if (!firstText || !assistantText) return;
+
+  const { provider, model } = deps.providerService.resolve(resolvedModel);
+
+  const title = yield* Effect.promise(() =>
+    generateTitleText(provider, apiKey, model, firstText, assistantText),
+  );
+  if (!title || title === session.name) return;
+
+  session.name = title;
+  yield* deps.sessionService.update(session);
+
+  dbg.log("auto-rename: session title updated", {
+    id: session.id.slice(0, 8),
+    title,
+  });
+});
