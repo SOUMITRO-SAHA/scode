@@ -221,6 +221,30 @@ import { useAppStore } from "../../store/index";
 - `apiFetchStream` lacks abort signal / timeout support (unlike `apiFetch<T>` which accepts `RequestInit` with `signal`).
 - Server sends raw text chunks (not SSE/JSON). Both CLI callers decode raw `Uint8Array` via `TextDecoder` with `{ stream: true }` for multi-byte UTF-8 safety.
 
+## tsc vs tsx duality
+
+- `tsc --noEmit` is used **only** for type-checking. `tsx` is used for both dev and production runtime.
+- The old `build` + `node dist/index.js` workflow is dead. `start` scripts point at `tsx src/index.tsx`, never at compiled output.
+- Effect v4 beta APIs frequently produce `tsc --noEmit` errors (e.g., `Cause.isFailType`, context type mismatches) that are **false positives** — code works fine at runtime via `tsx`. When in doubt, test with `pnpm cli`/`pnpm server`, not just `pnpm check-types`.
+
+## Native TS migration checklist
+
+When switching a package from compiled (`tsc` + `node dist/`) to native TS (`tsx` + `src/`):
+
+1. **tsconfig**: set `noEmit: true`, drop `outDir`/`rootDir`/`declaration`
+2. **package.json**: `start` → `tsx src/index.tsx`, remove `build` script
+3. **turbo.json**: remove `build` task, remove stale `outputs` (e.g. `.next/**`)
+4. **Imports**: strip all `.js` extensions — not needed with tsx bundler resolution
+5. **`dist/`**: already gitignored, leave as-is
+
+## Bulk import refactoring
+
+To strip `.js` from all imports project-wide:
+
+```
+find apps packages -type f \( -name '*.ts' -o -name '*.tsx' \) | xargs sed -i '' -E "s/(from ['\"](\.\.?\/|@\/)[^'\"]*)\.js(['\"])/\1\3/g"
+```
+
 ## Provider ID consistency (two sources of truth)
 
 - Provider adapter IDs are defined in `apps/server/src/llm/provider-service.ts` (`"claude"`, `"gemini"`, `"deepseek"`, `"zai"`, `"minimax"`, `"commandcode"`).
