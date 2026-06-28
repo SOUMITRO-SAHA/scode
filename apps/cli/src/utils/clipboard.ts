@@ -15,7 +15,23 @@ export function readClipboard(): string {
   }
 }
 
-export function writeClipboard(text: string): void {
+export function writeOsc52(text: string): boolean {
+  try {
+    const base64 = Buffer.from(text, "utf-8").toString("base64");
+    let seq = `\x1b]52;c;${base64}\x07`;
+    if (process.env.TMUX) {
+      seq = `\x1bPtmux;\x1b${seq}\x1b\\`;
+    } else if (process.env.STY) {
+      seq = `\x1bP${seq}\x1b\\`;
+    }
+    process.stdout.write(seq);
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export function writeNative(text: string): void {
   try {
     if (isMac()) {
       execSync("pbcopy", { input: text });
@@ -23,6 +39,6 @@ export function writeClipboard(text: string): void {
       execSync("xclip -selection clipboard", { input: text });
     }
   } catch {
-    // Silent fail if clipboard tool not available
+    // best effort
   }
 }

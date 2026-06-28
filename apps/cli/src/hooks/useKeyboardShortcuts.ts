@@ -1,7 +1,7 @@
-import { useEffect, useRef } from "react";
+import { useCallback, useRef } from "react";
 
 import type { ToastInput } from "@/components/ui/toast";
-import { readClipboard, writeClipboard } from "@/utils/clipboard";
+import { readClipboard, writeNative, writeOsc52 } from "@/utils/clipboard";
 import type { KeyEvent, TextareaRenderable } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
 import { DebugLogger } from "@scode/shared/logger";
@@ -47,61 +47,46 @@ export function useKeyboardShortcuts({
   const showToastRef = useRef(showToast);
   showToastRef.current = showToast;
 
-  const handleCopyRef = useRef<(() => void) | null>(null);
-  const handlePasteRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    dbg.log("textareaRef changed", {
-      hasRef: !!textareaRef,
-      refCurrent: !!textareaRef?.current,
-      isDestroyed: textareaRef?.current?.isDestroyed,
+  const handleCopy = useCallback(() => {
+    const ta = textareaRef?.current;
+    dbg.log("copy triggered", {
+      taExists: !!ta,
+      isDestroyed: ta?.isDestroyed,
+      hasSelection: ta?.hasSelection?.(),
     });
+    if (!ta || !ta.hasSelection()) return;
+    const selectedText = ta.getSelectedText();
+    dbg.log("selected text", {
+      length: selectedText?.length,
+      text: selectedText,
+    });
+    if (!selectedText) return;
+    writeOsc52(selectedText);
+    writeNative(selectedText);
+    dbg.log("clipboard write done (osc52 + native)");
+    showToastRef.current?.({
+      variant: "success",
+      message: "Copied ✓",
+    });
+  }, [textareaRef]);
 
-    handleCopyRef.current = textareaRef
-      ? () => {
-          const ta = textareaRef.current;
-          dbg.log("copy triggered", {
-            taExists: !!ta,
-            isDestroyed: ta?.isDestroyed,
-            hasSelection: ta?.hasSelection?.(),
-          });
-          if (!ta || !ta.hasSelection()) return;
-          const selectedText = ta.getSelectedText();
-          dbg.log("selected text", {
-            length: selectedText?.length,
-            text: selectedText,
-          });
-          if (selectedText) {
-            writeClipboard(selectedText);
-            dbg.log("clipboard write done");
-            showToastRef.current?.({
-              variant: "success",
-              message: "Copied ✓",
-            });
-          }
-        }
-      : null;
-
-    handlePasteRef.current = textareaRef
-      ? () => {
-          const ta = textareaRef.current;
-          dbg.log("paste triggered", {
-            taExists: !!ta,
-            isDestroyed: ta?.isDestroyed,
-          });
-          if (!ta) return;
-          const text = readClipboard();
-          dbg.log("clipboard read result", {
-            textExists: !!text,
-            textLength: text?.length,
-            text,
-          });
-          if (text) {
-            ta.insertText(text);
-            dbg.log("insertText done");
-          }
-        }
-      : null;
+  const handlePaste = useCallback(() => {
+    const ta = textareaRef?.current;
+    dbg.log("paste triggered", {
+      taExists: !!ta,
+      isDestroyed: ta?.isDestroyed,
+    });
+    if (!ta) return;
+    const text = readClipboard();
+    dbg.log("clipboard read result", {
+      textExists: !!text,
+      textLength: text?.length,
+      text,
+    });
+    if (text) {
+      ta.insertText(text);
+      dbg.log("insertText done");
+    }
   }, [textareaRef]);
 
   useKeyboard((key: KeyEvent) => {
@@ -144,13 +129,13 @@ export function useKeyboardShortcuts({
       setProviderPickerOpen((v) => !v);
     } else if ((key.meta || key.super) && key.name === "c") {
       // Mac: Cmd+C copies selected text (super on Kitty, meta on ANSI)
-      handleCopyRef.current?.();
+      handleCopy();
     } else if ((key.meta || key.super) && key.name === "v") {
       // Mac: Cmd+V pastes from clipboard (super on Kitty, meta on ANSI)
-      handlePasteRef.current?.();
+      handlePaste();
     } else if (key.ctrl && key.name === "v") {
       // Non-Mac: Ctrl+V pastes from clipboard
-      handlePasteRef.current?.();
+      handlePaste();
     } else if (key.ctrl && (key.name === "c" || key.name === "q")) {
       onExitRef.current?.();
     }
