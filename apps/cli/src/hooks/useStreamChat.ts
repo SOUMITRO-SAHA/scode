@@ -152,7 +152,12 @@ export function useStreamChat(serverUrl: string) {
       const current = useAppStore.getState();
       if (!text.trim() || current.streaming) return;
 
-      dbg.log("submit", { text: text.slice(0, 120), model: current.model });
+      dbg.log("submit", {
+        text: text.slice(0, 120),
+        model: current.model,
+        currentSessionId: current.currentSessionId,
+        continuing: !!current.currentSessionId,
+      });
 
       assistantMsgAdded = false;
       streamRef.current = null;

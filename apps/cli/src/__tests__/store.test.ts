@@ -284,4 +284,59 @@ describe("AppStore", () => {
       expect(useAppStore.getState().messages).toHaveLength(2);
     });
   });
+
+  describe("session continuation", () => {
+    it("preserves loaded messages and currentSessionId when adding a new message", () => {
+      useAppStore.getState().setCurrentSessionId("old-session-123");
+      useAppStore.getState().setMessages([
+        { role: "user", content: "old question" },
+        { role: "assistant", content: "old answer" },
+      ]);
+
+      expect(useAppStore.getState().currentSessionId).toBe("old-session-123");
+      expect(useAppStore.getState().messages).toHaveLength(2);
+
+      useAppStore.getState().addUserMessage("follow up question");
+
+      const state = useAppStore.getState();
+      expect(state.currentSessionId).toBe("old-session-123");
+      expect(state.messages).toHaveLength(3);
+      expect(state.messages[0]).toEqual({
+        role: "user",
+        content: "old question",
+      });
+      expect(state.messages[1]).toEqual({
+        role: "assistant",
+        content: "old answer",
+      });
+      expect(state.messages[2]).toEqual({
+        role: "user",
+        content: "follow up question",
+      });
+    });
+
+    it("preserves currentSessionId through a full streaming cycle", () => {
+      useAppStore.getState().setCurrentSessionId("continue-me");
+      useAppStore.getState().setMessages([
+        { role: "user", content: "previous" },
+        { role: "assistant", content: "reply" },
+      ]);
+
+      useAppStore.getState().clearThought();
+      useAppStore.getState().addUserMessage("new");
+      useAppStore.getState().setStreaming(true);
+      useAppStore.getState().addAssistantMessage();
+      useAppStore.getState().appendAssistantChunk("response");
+      useAppStore.getState().setStreaming(false);
+
+      const state = useAppStore.getState();
+      expect(state.currentSessionId).toBe("continue-me");
+      expect(state.messages).toHaveLength(4);
+      expect(state.messages[2]).toEqual({ role: "user", content: "new" });
+      expect(state.messages[3]).toEqual({
+        role: "assistant",
+        content: "response",
+      });
+    });
+  });
 });
