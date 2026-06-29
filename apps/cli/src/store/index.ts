@@ -51,6 +51,7 @@ interface AppStore {
   clearMessages: () => void;
   setStreaming: (s: boolean) => void;
   cycleAgent: () => void;
+  setCurrentAgent: (agent: AgentId) => void;
   setSidebarSelectedIndex: (i: number) => void;
   setMessages: (messages: UnifiedMessage[]) => void;
   addSelectedSkill: (name: string) => void;
@@ -128,6 +129,7 @@ export const useAppStore = create<AppStore>((set) => ({
       const idx = AGENTS.indexOf(s.currentAgent);
       return { currentAgent: AGENTS[(idx + 1) % AGENTS.length] };
     }),
+  setCurrentAgent: (agent) => set({ currentAgent: agent }),
   setSidebarSelectedIndex: (i) => set({ sidebarSelectedIndex: i }),
   setMessages: (unifiedMessages) =>
     set(() => {

@@ -2,21 +2,14 @@ import * as Effect from "effect/Effect";
 
 import type { ToastInput } from "@/components/ui/toast";
 import type { ApiClient } from "@/services/api";
-import type { AppConfig, Message } from "@scode/shared/types";
+import type { Message } from "@scode/shared/types";
 
 export interface Command {
   name: string;
   aliases: string[];
   description: string;
   usage: string;
-  category:
-    | "general"
-    | "provider"
-    | "model"
-    | "session"
-    | "skill"
-    | "config"
-    | "debug";
+  category: "general" | "provider" | "model" | "session" | "skill" | "debug";
   suggested?: boolean;
   handler: (
     args: string[],
@@ -276,33 +269,6 @@ export const COMMANDS: Command[] = [
     },
   },
   {
-    name: "config",
-    aliases: ["cfg"],
-    description: "View or set configuration",
-    usage: "/config [set <key> <value>]",
-    category: "config",
-    handler: async (args, api) => {
-      if (args[0] === "set" && args.length >= 2) {
-        const key = args[1] as keyof AppConfig;
-        const value = args.slice(2).join(" ");
-        const num = Number(value);
-        await Effect.runPromise(
-          api.updateConfig({ [key]: isNaN(num) ? value : num }),
-        );
-        return {
-          type: "message",
-          text: `Config updated: ${key} = ${isNaN(num) ? value : num}`,
-        };
-      }
-      const config = await Effect.runPromise(api.getConfig());
-      const lines = Object.entries(config).map(([k, v]) => `  ${k}: ${v}`);
-      return {
-        type: "message",
-        text: `\nConfiguration:\n${lines.join("\n")}\n`,
-      };
-    },
-  },
-  {
     name: "debug",
     aliases: ["dbg"],
     description: "Toggle debug panel",
@@ -369,21 +335,6 @@ export const COMMANDS: Command[] = [
       return {
         type: "message",
         text: `\nAgent: scode\n  Model: ${modelStr || "No model selected"}\n  Provider: ${config.defaultProvider || "None"}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n`,
-      };
-    },
-  },
-  {
-    name: "context",
-    aliases: ["ctx"],
-    description: "Show current context information",
-    usage: "/context",
-    category: "general",
-    handler: async (_args, api, ctx) => {
-      const config = await Effect.runPromise(api.getConfig());
-      const modelStr = ctx.model ?? config.defaultModel;
-      return {
-        type: "message",
-        text: `\nContext:\n  Model: ${modelStr || "No model selected"}\n  Provider: ${config.defaultProvider || "None"}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n  Debug: ${ctx.debugEnabled ? "on" : "off"}\n`,
       };
     },
   },
