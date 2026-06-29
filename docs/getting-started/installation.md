@@ -4,10 +4,12 @@
 
 | Requirement | Minimum                      |
 | ----------- | ---------------------------- |
+| bun         | >= 1.3.14 (required for TUI) |
 | Node.js     | >= 18                        |
 | pnpm        | >= 9.0                       |
-| bun         | >= 1.3.14 (required for TUI) |
 | OS          | macOS, Linux, Windows        |
+
+> **bun is required for TUI mode** — OpenTUI's native FFI bindings only work under bun. Use `pnpm dev:headless` for bun-free headless mode.
 
 ## Setup Steps
 
@@ -17,7 +19,7 @@
 pnpm install
 ```
 
-This installs all workspace dependencies including:
+Installs all workspace packages:
 
 - `@scode/cli` — the terminal client
 - `@scode/server` — the backend server
@@ -26,7 +28,7 @@ This installs all workspace dependencies including:
 
 ### 2. Build Native Binaries
 
-OpenTUI requires platform-specific native binaries. These are installed automatically for the following platforms:
+OpenTUI requires platform-specific native binaries. These are installed automatically:
 
 - `@opentui/core-darwin-arm64` — Apple Silicon
 - `@opentui/core-darwin-x64` — Intel macOS
@@ -39,6 +41,11 @@ OpenTUI requires platform-specific native binaries. These are installed automati
 pnpm check-types
 pnpm test
 ```
+
+## Next Steps
+
+- [Quick Start](quick-start.md) — choose TUI or headless flow
+- [Configuration Guide](configuration.md) — API keys, auth file
 
 ## Project Structure
 

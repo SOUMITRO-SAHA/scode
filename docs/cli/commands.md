@@ -1,5 +1,10 @@
 # Commands & Flags
 
+## API Key Setup
+
+- **TUI mode**: No upfront setup needed — use `/connect <provider>` inside the TUI
+- **Headless mode**: Set `ANTHROPIC_API_KEY` (or other provider) env var before running
+
 ## CLI Flags
 
 | Flag             | Description                                                                      |

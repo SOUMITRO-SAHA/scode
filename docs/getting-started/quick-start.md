@@ -2,81 +2,65 @@
 
 ## Prerequisites
 
-- **Node.js** >= 18
-- **pnpm** 9.x (`pnpm@9.5.0` recommended)
-- **bun** >= 1.3.14 — required for TUI mode (OpenTUI's native FFI only works under bun)
+| Tool    | Version   | Needed For                                  |
+| ------- | --------- | ------------------------------------------- |
+| **bun** | >= 1.3.14 | TUI mode (OpenTUI FFI only works under bun) |
+| Node.js | >= 18     | All modes                                   |
+| pnpm    | >= 9.0    | All modes                                   |
 
 ## Installation
 
 ```bash
-# Clone the repository
 git clone <repo-url>
 cd scode
-
-# Install dependencies
 pnpm install
-```
-
-## Set Up an API Key
-
-You need at least one LLM provider API key. Set it as an environment variable:
-
-```bash
-export ANTHROPIC_API_KEY=sk-ant-...
-```
-
-Or store it in the auth file (`~/.scode/auth.json`):
-
-```json
-{
-  "claude": { "apiKey": "sk-ant-..." }
-}
 ```
 
 ## Run scode
 
-### Interactive Terminal UI (Development)
+Choose the flow that matches your use case.
+
+### Recommended: TUI Flow (bun required)
+
+No API key setup needed upfront — configure everything inside the terminal UI.
 
 ```bash
 pnpm dev
 ```
 
-Launches the TUI in debug mode via bun. If the server isn't running, it spawns one automatically.
+Inside the TUI:
 
-### Interactive Terminal UI (Production)
+1. Open the provider switcher (via command palette `/` or keybinding)
+2. Add a provider with your API key
+3. Start chatting
+
+The TUI also supports these commands:
+
+- `/connect <provider>` — add a provider
+- `/disconnect <provider>` — remove a provider
+- `/model` — switch models
+- `/help` — list all commands
+
+### Alternative: Headless Mode (no bun)
+
+API key must be set upfront (no TUI to configure it).
 
 ```bash
-pnpm cli
-```
+# Set your API key first
+export ANTHROPIC_API_KEY=sk-ant-...
 
-Tries bun first (faster startup), falls back to tsx.
-
-### REPL Mode (No TUI)
-
-```bash
+# Interactive REPL
 pnpm dev:headless
-```
 
-Opens an interactive REPL without TUI rendering — useful if bun is unavailable or you prefer a minimal terminal session. Output is clean (no debug/info/warn logs shown by default).
+# Single-shot
+pnpm dev:headless --prompt "What does this project do?"
 
-### Single-Shot Mode
-
-```bash
+# Or via the CLI entry
 pnpm cli --prompt "What does this project do?"
 ```
 
-Sends a single prompt, prints the response to stdout, and exits.
-
-### Quick Demo
-
-```bash
-pnpm demo
-```
-
-Spawns the server and sends a test prompt: "Hello, what can you do?" This is `dev:headless --prompt` under the hood.
-
 ## What's Next?
 
+- [Configuration Guide](configuration.md) — API keys, auth file, env vars
 - [CLI Commands & Flags](../cli/commands.md)
-- [Configuration Guide](configuration.md)
 - [TUI Mode Guide](../cli/tui-mode.md)

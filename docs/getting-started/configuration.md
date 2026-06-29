@@ -2,9 +2,13 @@
 
 ## API Keys
 
-scode supports multiple LLM providers. API keys can be configured in two ways:
+scode supports multiple LLM providers. API keys can be configured in two ways, depending on your mode:
 
-### 1. Environment Variables
+### TUI Mode (No Manual Setup)
+
+In the TUI, use the provider switcher or `/connect <provider>` command to add API keys interactively — no env vars or config files needed.
+
+### Headless Mode: Environment Variables
 
 | Provider           | Environment Variable  | Required           |
 | ------------------ | --------------------- | ------------------ |
@@ -31,6 +35,8 @@ scode supports multiple LLM providers. API keys can be configured in two ways:
 ```
 
 Environment variables take precedence over the auth file.
+
+> **Note:** In TUI mode, use `/connect <provider>` to add API keys to the auth file without manual editing.
 
 ## Server Configuration (`~/.scode/config.json`)
 

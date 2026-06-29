@@ -4,54 +4,59 @@
 
 Developed by [SOUMITRA SAHA](mailto:soumitrosahaofficial@gmail.com).
 
-## System Requirements (READ THIS FIRST)
+## Requirements
 
-| Tool    | Version   | Required?                                                                   |
-| ------- | --------- | --------------------------------------------------------------------------- |
-| **bun** | >= 1.3.14 | **YES** — TUI mode requires OpenTUI's native FFI which only works under bun |
-| Node.js | >= 18     | Yes                                                                         |
-| pnpm    | >= 9.0    | Yes                                                                         |
+| Tool    | Version   | Needed For                                  |
+| ------- | --------- | ------------------------------------------- |
+| **bun** | >= 1.3.14 | TUI mode (OpenTUI FFI only works under bun) |
+| Node.js | >= 18     | All modes                                   |
+| pnpm    | >= 9.0    | All modes                                   |
 
-> **bun is not optional.** The TUI (Terminal UI) relies on OpenTUI, whose native FFI bindings only work under bun. Without bun, `pnpm dev` and `pnpm cli` (for TUI) will fail. Use `pnpm dev:headless` as a fallback if bun is unavailable.
-
-## Quick Start (Developer Setup)
+## Quick Start (Recommended: TUI)
 
 ```bash
 # 1. Install dependencies
 pnpm install
 
-# 2. Set your API key (Anthropic, Gemini, etc.)
-export ANTHROPIC_API_KEY=sk-ant-...
-
-# 3. Interactive TUI mode (development, bun required)
+# 2. Launch the terminal UI
 pnpm dev
-
-# 4. Or: REPL mode without TUI (no bun needed)
-pnpm dev:headless
-
-# 5. Single-shot mode (no bun needed)
-pnpm dev:headless --prompt "Generate documentation for this project"
 ```
 
-## Available Commands
+Inside the TUI, use the `/connect` command or provider switcher to add your API key — no upfront env var setup needed.
 
-| Command             | Description                                    | Runtime |
-| ------------------- | ---------------------------------------------- | ------- |
-| `pnpm dev`          | Interactive TUI with debug logs                | bun     |
-| `pnpm cli`          | Interactive TUI (tries bun, falls back to tsx) | bun/tsx |
-| `pnpm dev:headless` | REPL mode (no TUI, clean output)               | tsx     |
-| `pnpm demo`         | Headless single-shot demo                      | tsx     |
-| `pnpm cli --prompt` | Single-shot headless mode (outputs to stdout)  | tsx     |
-| `pnpm server`       | Start server standalone on port 4100           | tsx     |
-| `pnpm dev:cli`      | CLI dev with file watching                     | bun     |
-| `pnpm dev:server`   | Server dev with `tsx watch`                    | tsx     |
-| `pnpm test`         | Run all workspace tests                        | vitest  |
-| `pnpm check-types`  | Type-check all packages                        | tsc     |
-| `pnpm format`       | Format code with Prettier                      | —       |
+## Alternative: Headless Mode (No bun)
+
+```bash
+# 1. Install dependencies
+pnpm install
+
+# 2. Set an API key (required — no TUI to configure it)
+export ANTHROPIC_API_KEY=sk-ant-...
+
+# 3. REPL or single-shot
+pnpm dev:headless
+pnpm dev:headless --prompt "Generate documentation"
+```
+
+## Commands
+
+| Command             | Mode                        | Runtime |
+| ------------------- | --------------------------- | ------- |
+| `pnpm dev`          | TUI (debug, recommended)    | bun     |
+| `pnpm cli`          | TUI (bun → tsx fallback)    | bun/tsx |
+| `pnpm dev:headless` | REPL (no TUI, clean output) | tsx     |
+| `pnpm demo`         | Single-shot demo            | tsx     |
+| `pnpm cli --prompt` | Single-shot                 | tsx     |
+| `pnpm server`       | Standalone server           | tsx     |
+| `pnpm dev:cli`      | CLI dev with file watching  | bun     |
+| `pnpm dev:server`   | Server dev with tsx watch   | tsx     |
+| `pnpm test`         | Run all tests               | vitest  |
+| `pnpm check-types`  | Type-check all packages     | tsc     |
+| `pnpm format`       | Format with Prettier        | —       |
 
 ## Documentation
 
-Full documentation in [`docs/`](docs/index.md):
+Full docs in [`docs/`](docs/index.md):
 
 | Section                                                | Description                                    |
 | ------------------------------------------------------ | ---------------------------------------------- |

@@ -4,12 +4,11 @@
 
 - Node.js >= 18
 - pnpm >= 9.0
-- bun >= 1.3.14 (required for TUI development — OpenTUI native FFI only works under bun)
+- bun >= 1.3.14 (required for TUI — OpenTUI FFI only works under bun)
 
 ## Getting Started
 
 ```bash
-# Clone and install
 git clone <repo-url>
 cd scode
 pnpm install
@@ -22,34 +21,31 @@ pnpm test
 ## Development Commands
 
 ```bash
-# Interactive TUI mode (debug logs enabled, uses bun)
+# TUI mode (debug logs, bun required)
 pnpm dev
 
 # REPL mode (no TUI, clean output, uses tsx)
 pnpm dev:headless
 
-# CLI development (with file watching)
-pnpm dev:cli
-# Uses `bun scripts/dev-cli.ts` — custom file watcher
-# tsx watch crashes OpenTUI native FFI
+# CLI dev with file watching
+pnpm dev:cli           # Uses bun (tsx watch crashes OpenTUI FFI)
 
-# Server development (with file watching)
-pnpm dev:server
-# Uses `tsx watch src/index.ts`
+# Server dev with file watching
+pnpm dev:server        # Uses tsx watch
 
 # Quick demo (headless single-shot)
 pnpm demo
 
-# Web development
+# Web dev
 pnpm dev:web
 ```
 
 ## Debug Mode
 
+`pnpm dev` runs with `SCODE_DEBUG=1` automatically. To debug the production CLI:
+
 ```bash
 SCODE_DEBUG=1 pnpm cli
-# or
-pnpm dev
 ```
 
 ## Monorepo Structure
