@@ -357,7 +357,7 @@ export function SessionSidebar() {
           </box>
         </box>
 
-        <scrollbox flexGrow={1}>
+        <scrollbox flexGrow={1} scrollbarOptions={{ visible: false }}>
           {isLoading && <text fg={theme.text.muted}>Loading...</text>}
           {isError && <text fg={theme.danger}>Failed to load</text>}
           {!isLoading && !isError && sessionCount === 0 && (
