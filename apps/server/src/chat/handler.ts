@@ -367,7 +367,7 @@ async function generateTitleText(
   try {
     const gen = provider.streamResponse({
       system:
-        "You generate short conversation titles. Respond with ONLY the title, max 60 characters, no quotes, no punctuation, no explanation.",
+        "You are a title generator. Your ONLY output must be a single line title.\n\nRULES:\n- Output exactly ONE line of text\n- Maximum 60 characters\n- No quotes, no punctuation at start/end\n- No explanation, no thinking, no markdown\n- Just the title text, nothing else",
       messages: [
         {
           role: "user",
@@ -392,7 +392,7 @@ async function generateTitleText(
       .find((l) => l.length > 0);
 
     if (!cleaned) return null;
-    return cleaned.length > 100 ? cleaned.substring(0, 97) + "..." : cleaned;
+    return cleaned.length > 60 ? cleaned.substring(0, 57) + "..." : cleaned;
   } catch {
     return null;
   }
