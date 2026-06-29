@@ -54,6 +54,19 @@ interface RouterDeps {
   startTime: number;
 }
 
+function getCwdFromHeader(c: Context): string | null {
+  const cwd = c.req.header("X-CWD");
+  return cwd ?? null;
+}
+
+function requireCwd(c: Context): string | null {
+  const cwd = getCwdFromHeader(c);
+  if (!cwd) {
+    logger.error("[requireCwd] X-CWD header missing");
+  }
+  return cwd;
+}
+
 export function createV1Router(deps: RouterDeps): Hono {
   const router = new Hono();
 
@@ -205,9 +218,9 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/sessions", (c) => {
-    const cwd = c.req.query("cwd");
+    const cwd = requireCwd(c);
     if (!cwd) {
-      return c.json({ error: "cwd query parameter required" }, 400);
+      return c.json({ error: "X-CWD header required" }, 400);
     }
     const sessions = runSync(deps.sessionService.list(cwd));
     return c.json({
@@ -226,17 +239,18 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.post("/sessions", async (c) => {
-    const body = await c.req.json().catch(() => ({}));
-    if (!body.cwd) {
-      return c.json({ error: "cwd required" }, 400);
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
     }
+    const body = await c.req.json().catch(() => ({}));
     const cfg = runSync(deps.configService.get);
     const session = runSync(
       deps.sessionService.create(
         body.name ?? "",
         body.model ?? cfg.defaultModel,
         body.provider ?? cfg.defaultProvider,
-        body.cwd,
+        cwd,
       ),
     );
     return c.json(session, 201);
@@ -296,10 +310,9 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/skills", (c) => {
-    const cwd = c.req.query("cwd");
+    const cwd = requireCwd(c);
     if (!cwd) {
-      logger.error("[/skills] cwd query parameter missing");
-      return c.json({ error: "cwd query parameter required" }, 400);
+      return c.json({ error: "X-CWD header required" }, 400);
     }
     logger.info(`[/skills] Discovering skills for cwd: ${cwd}`);
     const dirs = Effect.runSync(discover(cwd));
@@ -316,9 +329,9 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/skills/:name", (c) => {
-    const cwd = c.req.query("cwd");
+    const cwd = requireCwd(c);
     if (!cwd) {
-      return c.json({ error: "cwd query parameter required" }, 400);
+      return c.json({ error: "X-CWD header required" }, 400);
     }
     const dirs = Effect.runSync(discover(cwd));
     for (const dir of dirs) {
@@ -334,12 +347,12 @@ export function createV1Router(deps: RouterDeps): Hono {
     return c.json({ ok: true, message: "Skills cache cleared" });
   });
 
-  router.post("/skills/validate", async (c) => {
-    const body = await c.req.json().catch(() => ({}));
-    if (!body.cwd) {
-      return c.json({ error: "cwd required" }, 400);
+  router.post("/skills/validate", (c) => {
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
     }
-    const dirs = Effect.runSync(discover(body.cwd));
+    const dirs = Effect.runSync(discover(cwd));
     const results = dirs.map((dir) => {
       const skill = Effect.runSync(loadSkill(dir));
       return {
@@ -384,16 +397,15 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   async function chatStream(c: Context) {
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
     const body = await c.req.json().catch(() => ({}));
     const message = body.message ?? body.prompt;
     if (!message) {
       return c.json({ error: "message or prompt required" }, 400);
     }
-    if (!body.cwd) {
-      logger.error("[chatStream] cwd missing from request body");
-      return c.json({ error: "cwd required" }, 400);
-    }
-    const cwd = body.cwd;
     logger.info(`[chatStream] Received cwd: ${cwd}`);
     return stream(c, async (s) => {
       try {
@@ -457,9 +469,13 @@ export function createV1Router(deps: RouterDeps): Hono {
       });
     })
     .post("/active-clients", async (c) => {
+      const cwd = requireCwd(c);
+      if (!cwd) {
+        return c.json({ error: "X-CWD header required" }, 400);
+      }
       const body = await c.req.json().catch(() => ({}));
       const clientId = runSync(
-        deps.activeClientService.registerWithCwd(body.clientId, body.cwd),
+        deps.activeClientService.registerWithCwd(body.clientId, cwd),
       );
       return c.json({ clientId }, 201);
     })
@@ -471,9 +487,9 @@ export function createV1Router(deps: RouterDeps): Hono {
     });
 
   router.get("/stats", (c) => {
-    const cwd = c.req.query("cwd");
+    const cwd = requireCwd(c);
     if (!cwd) {
-      return c.json({ error: "cwd query parameter required" }, 400);
+      return c.json({ error: "X-CWD header required" }, 400);
     }
     const sessions = runSync(deps.sessionService.list(cwd));
     const totalMessages = sessions.reduce(

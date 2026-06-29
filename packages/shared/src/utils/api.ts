@@ -1,13 +1,25 @@
-import axios, { type AxiosRequestConfig } from "axios";
+import axios, { type AxiosInstance, type AxiosRequestConfig } from "axios";
 import { Effect } from "effect";
 import { Readable } from "node:stream";
 
 import { apiV1Base } from "../constants/endpoints";
 import { ApiFetchError, ApiStreamError } from "../effect/errors";
+import { getCwd } from "./cwd";
 
 export function apiUrl(path: string, base?: string): string {
   return `${apiV1Base(base)}${path}`;
 }
+
+const apiConfig: AxiosInstance = axios.create({
+  headers: {
+    "Content-Type": "application/json",
+  },
+});
+
+apiConfig.interceptors.request.use((config) => {
+  config.headers.set("X-CWD", getCwd());
+  return config;
+});
 
 export const apiFetch = Effect.fnUntraced(function* <T>(
   path: string,
@@ -18,15 +30,12 @@ export const apiFetch = Effect.fnUntraced(function* <T>(
   const method = (opts?.method as string)?.toLowerCase() ?? "get";
   const config: AxiosRequestConfig = {
     method: method as "get" | "post" | "put" | "patch" | "delete",
-    headers: {
-      "Content-Type": "application/json",
-      ...(opts?.headers as Record<string, string>),
-    },
+    headers: opts?.headers as Record<string, string>,
     data: opts?.body,
     signal: opts?.signal as AbortSignal,
   };
   const res = yield* Effect.tryPromise({
-    try: () => axios(url, config),
+    try: () => apiConfig(url, config),
     catch: (err) =>
       new ApiFetchError({
         url,
@@ -48,13 +57,12 @@ export const apiFetchStream = Effect.fnUntraced(function* (
   const url = apiUrl(path, base);
   const config: AxiosRequestConfig = {
     method: "post",
-    headers: { "Content-Type": "application/json" },
     data: body,
     responseType: "stream",
     validateStatus: () => true,
   };
   const res = yield* Effect.tryPromise({
-    try: () => axios(url, config),
+    try: () => apiConfig(url, config),
     catch: (err) =>
       new ApiStreamError({
         url,

@@ -34,7 +34,6 @@ export const runPrompt = (
         },
         model,
         undefined,
-        cwd,
       ),
       (e: StreamError): e is StreamError => true,
       (cause) => Effect.fail(new PromptRunError({ message: cause.message })),

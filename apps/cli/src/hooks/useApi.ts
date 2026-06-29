@@ -82,13 +82,7 @@ export function useStats(serverUrl?: string) {
   return useQuery({
     queryKey: ["stats", serverUrl, cwd],
     queryFn: () =>
-      Effect.runPromise(
-        apiFetch<Stats>(
-          `${STATS_PATH}?cwd=${encodeURIComponent(cwd)}`,
-          {},
-          serverUrl,
-        ),
-      ),
+      Effect.runPromise(apiFetch<Stats>(STATS_PATH, {}, serverUrl)),
   });
 }
 
@@ -209,11 +203,7 @@ export function useSessions(serverUrl?: string) {
     queryKey: ["sessions", serverUrl, cwd],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<{ sessions: SessionInfo[] }>(
-          `${SESSIONS_PATH}?cwd=${encodeURIComponent(cwd)}`,
-          {},
-          serverUrl,
-        ),
+        apiFetch<{ sessions: SessionInfo[] }>(SESSIONS_PATH, {}, serverUrl),
       ),
   });
 }
@@ -227,7 +217,7 @@ export function useCreateSession(serverUrl?: string) {
       Effect.runPromise(
         apiFetch<SessionResponse>(
           SESSIONS_PATH,
-          { method: "POST", body: JSON.stringify({ ...body, cwd }) },
+          { method: "POST", body: JSON.stringify(body) },
           serverUrl,
         ),
       ),
@@ -312,11 +302,7 @@ export function useSkills(serverUrl?: string) {
     queryKey: ["skills", serverUrl, cwd],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<{ skills: SkillInfo[] }>(
-          `${SKILLS_PATH}?cwd=${encodeURIComponent(cwd)}`,
-          {},
-          serverUrl,
-        ),
+        apiFetch<{ skills: SkillInfo[] }>(SKILLS_PATH, {}, serverUrl),
       ),
   });
 }
@@ -341,7 +327,7 @@ export function useReloadSkills(serverUrl?: string) {
       Effect.runPromise(
         apiFetch<{ ok: boolean; message: string }>(
           SKILLS_RELOAD_PATH,
-          { method: "POST", body: JSON.stringify({ cwd }) },
+          { method: "POST" },
           serverUrl,
         ),
       ),
@@ -359,11 +345,7 @@ export function useValidateSkills(serverUrl?: string) {
       Effect.runPromise(
         apiFetch<{
           results: { name: string; valid: boolean; error: string | null }[];
-        }>(
-          SKILLS_VALIDATE_PATH,
-          { method: "POST", body: JSON.stringify({ cwd }) },
-          serverUrl,
-        ),
+        }>(SKILLS_VALIDATE_PATH, { method: "POST" }, serverUrl),
       ),
   });
 }

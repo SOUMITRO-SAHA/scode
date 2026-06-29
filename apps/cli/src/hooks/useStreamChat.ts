@@ -199,7 +199,6 @@ export function useStreamChat(serverUrl: string) {
               body: JSON.stringify({
                 name: text.slice(0, 60),
                 model: m,
-                cwd: getCwd(),
               }),
             },
             serverUrl,
@@ -228,7 +227,6 @@ export function useStreamChat(serverUrl: string) {
             model,
             sessionId,
             effortLevel,
-            cwd,
             clientId: getClientId() ?? undefined,
           },
           serverUrl,

@@ -18,14 +18,12 @@ export const sendPrompt = (
   onToken: (token: string) => void,
   model?: string,
   effortLevel?: EffortLevel,
-  cwd?: string,
 ): Effect.Effect<string, StreamError> =>
   Effect.gen(function* () {
     const startTime = Date.now();
 
     const body: Record<string, unknown> = {
       prompt,
-      cwd: cwd || process.cwd(),
       clientId: getClientId() ?? undefined,
     };
     if (model) body.model = model;
