@@ -62,7 +62,9 @@ export function ThinkingDisplay({
           onMouseDown={toggle}
         >
           {streaming && <Spinner delay={80} />}
-          <text fg={theme.brand.primary}>Thought: {elapsed}</text>
+          <text fg={theme.brand.primary}>
+            {streaming ? "Thinking" : "Thought"}: {elapsed}
+          </text>
           <box flexGrow={1} />
           <text fg={theme.icon.secondary}>{arrow}</text>
         </box>

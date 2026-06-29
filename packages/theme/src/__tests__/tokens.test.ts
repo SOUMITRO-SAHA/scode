@@ -59,6 +59,30 @@ describe("markdown", () => {
     expect(markdown.codeBackground).toBeDefined();
     expect(markdown.link).toBeDefined();
   });
+
+  it("has task list tokens", () => {
+    expect(markdown.task).toBeDefined();
+    expect(markdown.task.checked).toBeDefined();
+    expect(markdown.task.unchecked).toBeDefined();
+    expect(markdown.task.checkedText).toBeDefined();
+  });
+
+  it("has callout tokens", () => {
+    expect(markdown.callout).toBeDefined();
+    expect(markdown.callout.note).toBeDefined();
+    expect(markdown.callout.tip).toBeDefined();
+    expect(markdown.callout.important).toBeDefined();
+    expect(markdown.callout.warning).toBeDefined();
+    expect(markdown.callout.caution).toBeDefined();
+  });
+
+  it("has diff tokens", () => {
+    expect(markdown.diff).toBeDefined();
+    expect(markdown.diff.add).toBeDefined();
+    expect(markdown.diff.delete).toBeDefined();
+    expect(markdown.diff.context).toBeDefined();
+    expect(markdown.diff.header).toBeDefined();
+  });
 });
 
 describe("chat", () => {
