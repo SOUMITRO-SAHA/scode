@@ -9,8 +9,11 @@ import { ChatArea } from "@/components/chat/index";
 import type { Command } from "@/components/commands/commands";
 import { CommandPalette } from "@/components/commands/index";
 import { ConnectProvider } from "@/components/commands/index";
+import { HelpDialog } from "@/components/commands/index";
+import { LogsDialog } from "@/components/commands/index";
 import { ModelSwitcher } from "@/components/commands/index";
 import { SessionDeleteConfirm } from "@/components/commands/index";
+import { SessionHistory } from "@/components/commands/index";
 import { SessionRename } from "@/components/commands/index";
 import { SkillBrowser } from "@/components/commands/index";
 import { Composer } from "@/components/composer/index";
@@ -48,6 +51,12 @@ interface MainContentProps {
   setRenameDialogOpen: (open: boolean) => void;
   deleteDialogOpen: boolean;
   setDeleteDialogOpen: (open: boolean) => void;
+  historyDialogOpen: boolean;
+  setHistoryDialogOpen: (open: boolean) => void;
+  helpDialogOpen: boolean;
+  setHelpDialogOpen: (open: boolean) => void;
+  logsDialogOpen: boolean;
+  setLogsDialogOpen: (open: boolean) => void;
   api: ApiClient;
   currentSessionId?: string;
   clearMessages: () => void;
@@ -84,6 +93,12 @@ export function MainContent({
   setRenameDialogOpen,
   deleteDialogOpen,
   setDeleteDialogOpen,
+  historyDialogOpen,
+  setHistoryDialogOpen,
+  helpDialogOpen,
+  setHelpDialogOpen,
+  logsDialogOpen,
+  setLogsDialogOpen,
   api,
   currentSessionId,
   clearMessages,
@@ -182,6 +197,15 @@ export function MainContent({
             onRefresh={onRefreshSessions}
           />
         )}
+        {historyDialogOpen && (
+          <SessionHistory
+            messages={messages}
+            onClose={() => {
+              setHistoryDialogOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
         {deleteDialogOpen && currentSessionId && (
           <SessionDeleteConfirm
             name={sessionName ?? currentSessionId}
@@ -202,6 +226,23 @@ export function MainContent({
             }}
             onCancel={() => {
               setDeleteDialogOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+        {helpDialogOpen && (
+          <HelpDialog
+            onClose={() => {
+              setHelpDialogOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+        {logsDialogOpen && (
+          <LogsDialog
+            api={api}
+            onClose={() => {
+              setLogsDialogOpen(false);
               bumpFocus();
             }}
           />

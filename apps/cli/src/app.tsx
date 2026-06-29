@@ -192,6 +192,9 @@ function AppInner({
   const [skillsBrowserOpen, setSkillsBrowserOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
+  const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
+  const [helpDialogOpen, setHelpDialogOpen] = useState(false);
+  const [logsDialogOpen, setLogsDialogOpen] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>(undefined);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const bumpFocus = useCallback(() => setFocusTrigger((n) => n + 1), []);
@@ -260,6 +263,9 @@ function AppInner({
           refreshSessions: handleRefreshSessions,
           openRenameDialog: () => setRenameDialogOpen(true),
           openDeleteDialog: () => setDeleteDialogOpen(true),
+          openHistoryDialog: () => setHistoryDialogOpen(true),
+          openHelpDialog: () => setHelpDialogOpen(true),
+          openLogsDialog: () => setLogsDialogOpen(true),
         };
         const result = await executeCommand(value, apiRef.current, ctx);
         if (result) {
@@ -316,6 +322,9 @@ function AppInner({
         refreshSessions: handleRefreshSessions,
         openRenameDialog: () => setRenameDialogOpen(true),
         openDeleteDialog: () => setDeleteDialogOpen(true),
+        openHistoryDialog: () => setHistoryDialogOpen(true),
+        openHelpDialog: () => setHelpDialogOpen(true),
+        openLogsDialog: () => setLogsDialogOpen(true),
       };
       const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
       if (result) {
@@ -407,6 +416,12 @@ function AppInner({
         setRenameDialogOpen={setRenameDialogOpen}
         deleteDialogOpen={deleteDialogOpen}
         setDeleteDialogOpen={setDeleteDialogOpen}
+        historyDialogOpen={historyDialogOpen}
+        setHistoryDialogOpen={setHistoryDialogOpen}
+        helpDialogOpen={helpDialogOpen}
+        setHelpDialogOpen={setHelpDialogOpen}
+        logsDialogOpen={logsDialogOpen}
+        setLogsDialogOpen={setLogsDialogOpen}
         api={apiRef.current}
         currentSessionId={currentSessionId}
         clearMessages={clearMessages}

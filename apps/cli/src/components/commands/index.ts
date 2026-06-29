@@ -1,6 +1,9 @@
 export { CommandPalette } from "./command-palette";
 export { ConnectProvider } from "./connect-provider";
+export { HelpDialog } from "./help-dialog";
+export { LogsDialog } from "./logs-dialog";
 export { ModelSwitcher } from "./model-switcher";
 export { SessionDeleteConfirm } from "./session-delete-confirm";
+export { SessionHistory } from "./session-history";
 export { SessionRename } from "./session-rename";
 export { SkillBrowser } from "./skill-browser";

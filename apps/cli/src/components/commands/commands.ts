@@ -42,6 +42,9 @@ export interface CommandContext {
   addSystemMessage?: (text: string) => void;
   showToast?: (options: ToastInput) => void;
   openDeleteDialog?: () => void;
+  openHelpDialog?: () => void;
+  openHistoryDialog?: () => void;
+  openLogsDialog?: () => void;
   openRenameDialog?: () => void;
   onExit?: () => void;
   refreshSessions?: () => void;
@@ -70,16 +73,7 @@ export const COMMANDS: Command[] = [
     category: "general",
     suggested: true,
     handler: async (_args, _api, ctx) => {
-      const lines = COMMANDS.map((c) => {
-        const aliases = c.aliases.length
-          ? ` (${c.aliases.map((a) => `/${a}`).join(", ")})`
-          : "";
-        return `  ${c.usage}${aliases}  ${c.description}`;
-      });
-      return {
-        type: "message",
-        text: `\nAvailable Commands:\n${lines.join("\n")}\n`,
-      };
+      ctx.openHelpDialog?.();
     },
   },
   {
@@ -153,20 +147,11 @@ export const COMMANDS: Command[] = [
     description: "Show previous prompts in the current conversation",
     usage: "/history",
     category: "session",
-    handler: async (_args, api, ctx) => {
+    suggested: true,
+    handler: async (_args, _api, ctx) => {
       if (!ctx.currentSessionId)
         return { type: "error", text: "No active session" };
-      const { messages } = await Effect.runPromise(
-        api.getMessages(ctx.currentSessionId),
-      );
-      const lines = messages.map(
-        (m, i) =>
-          `  ${i + 1}. [${m.role}] ${typeof m.content === "string" ? m.content.slice(0, 100) : "(structured)"}`,
-      );
-      return {
-        type: "message",
-        text: `\nSession Messages (${messages.length}):\n${lines.join("\n")}\n`,
-      };
+      ctx.openHistoryDialog?.();
     },
   },
   {
@@ -337,14 +322,8 @@ export const COMMANDS: Command[] = [
     description: "View recent server logs",
     usage: "/logs",
     category: "debug",
-    handler: async (_args, api) => {
-      const { logs } = await Effect.runPromise(api.getLogs());
-      if (logs.length === 0) return { type: "message", text: "No logs found" };
-      const lines = logs.flatMap((l) => [
-        `--- ${l.file} (${l.size} bytes) ---`,
-        l.content,
-      ]);
-      return { type: "message", text: `\n${lines.join("\n")}\n` };
+    handler: async (_args, _api, ctx) => {
+      ctx.openLogsDialog?.();
     },
   },
   {

@@ -19,7 +19,7 @@ import {
   ScrollBoxRenderable,
   TextAttributes,
 } from "@opentui/core";
-import { useTerminalDimensions } from "@opentui/react";
+import { useKeyboard, useTerminalDimensions } from "@opentui/react";
 import { theme } from "@scode/theme";
 
 export interface DialogSelectProps<T> {
@@ -744,6 +744,98 @@ function Option(props: {
         </box>
       )}
     </>
+  );
+}
+
+export interface DialogProps {
+  title: string;
+  open: boolean;
+  children?: ReactNode;
+  footer?: ReactNode;
+  onClose?: () => void;
+}
+
+export function Dialog({
+  title,
+  open,
+  children,
+  footer,
+  onClose,
+}: DialogProps) {
+  const { width: termWidth, height: termHeight } = useTerminalDimensions();
+
+  useKeyboard((event: { name: string }) => {
+    if (!open) return;
+    if (event.name === "escape") {
+      onClose?.();
+    }
+  });
+
+  if (!open) return null;
+
+  const paletteWidth = Math.min(Math.floor(termWidth * 0.7), 72);
+
+  return (
+    <box
+      position="absolute"
+      left={0}
+      top={0}
+      width={termWidth}
+      height={termHeight}
+      alignItems="center"
+      paddingTop={Math.floor(termHeight / 4)}
+      zIndex={3000}
+      flexDirection="column"
+    >
+      <box
+        width={paletteWidth}
+        maxWidth={termWidth - 2}
+        backgroundColor={theme.background.surface}
+        borderStyle="rounded"
+        borderColor={theme.border.focus}
+        paddingTop={1}
+        flexDirection="column"
+      >
+        <box paddingLeft={4} paddingRight={4} paddingBottom={1}>
+          <box flexDirection="row" justifyContent="space-between">
+            <text fg={theme.text.secondary} attributes={TextAttributes.BOLD}>
+              {title}
+            </text>
+            <text fg={theme.text.muted} onMouseUp={() => onClose?.()}>
+              esc
+            </text>
+          </box>
+        </box>
+        <box
+          flexGrow={1}
+          flexShrink={1}
+          maxHeight={Math.floor(termHeight / 2) - 4}
+        >
+          <scrollbox
+            paddingLeft={1}
+            paddingRight={2}
+            scrollbarOptions={{ visible: false }}
+            maxHeight={Math.floor(termHeight / 2) - 4}
+          >
+            {children}
+          </scrollbox>
+        </box>
+        {(footer || onClose) && (
+          <box
+            paddingRight={2}
+            paddingLeft={4}
+            paddingBottom={1}
+            flexDirection="row"
+            justifyContent="space-between"
+            flexShrink={0}
+          >
+            <box flexDirection="row" gap={2}>
+              {footer}
+            </box>
+          </box>
+        )}
+      </box>
+    </box>
   );
 }
 
