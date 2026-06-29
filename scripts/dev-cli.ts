@@ -14,6 +14,11 @@ function startCli() {
     env: process.env,
   });
 
+  child.on("error", (err) => {
+    console.error(`\x1b[31m[dev] Failed to start CLI: ${err.message}\x1b[0m`);
+    if (!restarting) process.exit(1);
+  });
+
   child.on("exit", (code) => {
     if (!restarting) {
       process.exit(code ?? 0);
@@ -30,6 +35,20 @@ function restartCli() {
   restarting = false;
   startCli();
 }
+
+function cleanup() {
+  if (child && !child.killed) child.kill();
+}
+
+process.on("SIGINT", () => {
+  cleanup();
+  process.exit(0);
+});
+
+process.on("SIGTERM", () => {
+  cleanup();
+  process.exit(0);
+});
 
 startCli();
 

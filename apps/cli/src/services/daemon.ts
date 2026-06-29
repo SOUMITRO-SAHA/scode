@@ -20,7 +20,6 @@ import { apiFetch } from "@scode/shared/utils";
 const logger = new Logger({ stderr: true });
 const serverProcessRef = MutableRef.make<ChildProcess | null>(null);
 const baseUrl = serverBase();
-const healthCheckUrl = `${baseUrl}/health`;
 
 function isSeaBinary(): boolean {
   return !process.argv[1];
@@ -35,13 +34,23 @@ function resolveServerEntry(): string {
   return resolve(cliDir, "../../../server/src/index.ts");
 }
 
+function resolveTsxEntry(): string | null {
+  const cliDir = dirname(fileURLToPath(import.meta.url));
+  const candidate = resolve(
+    cliDir,
+    "../../../../node_modules/tsx/dist/cli.mjs",
+  );
+  if (existsSync(candidate)) return candidate;
+  return null;
+}
+
 const healthCheck = Effect.isSuccess(apiFetch<unknown>("/health", {}, baseUrl));
 
 export const findServer: Effect.Effect<string | null> = Effect.gen(
   function* () {
     const ok = yield* healthCheck;
     if (ok) {
-      logger.debug(`Found existing server at ${healthCheckUrl}`);
+      logger.debug(`Found existing server at ${baseUrl}/health`);
       return baseUrl;
     }
     return null;
@@ -65,8 +74,15 @@ export function spawnServerProcess(): ChildProcess {
       command = "node";
       args = [entry, `--port=${DEFAULT_PORT}`];
     } else {
-      command = "npx";
-      args = ["tsx", entry, `--port=${DEFAULT_PORT}`];
+      const tsxEntry = resolveTsxEntry();
+      if (tsxEntry) {
+        command = "node";
+        args = [tsxEntry, entry, `--port=${DEFAULT_PORT}`];
+      } else {
+        command = "npx";
+        args = ["tsx", entry, `--port=${DEFAULT_PORT}`];
+        logger.debug("tsx not found in node_modules, falling back to npx");
+      }
     }
   }
 
@@ -92,8 +108,15 @@ export function spawnServerProcess(): ChildProcess {
     if (msg && !quietServer) console.error("[server]", msg);
   });
 
+  proc.on("error", (err) => {
+    logger.error(`Server process failed to start: ${err.message}`);
+    MutableRef.set(serverProcessRef, null);
+  });
+
   proc.on("exit", (code) => {
-    if (code !== 0) logger.warn(`Server exited with code ${code}`);
+    if (code !== 0 && code !== null) {
+      logger.warn(`Server exited with code ${code}`);
+    }
     MutableRef.set(serverProcessRef, null);
   });
 
@@ -102,7 +125,7 @@ export function spawnServerProcess(): ChildProcess {
 }
 
 export const waitForServer: Effect.Effect<boolean> = Effect.gen(function* () {
-  logger.debug(`Polling server health at ${healthCheckUrl}`);
+  logger.debug(`Polling server health at ${baseUrl}/health`);
   for (let i = 0; i < MAX_POLLS; i++) {
     const ok = yield* healthCheck;
     if (ok) return true;
