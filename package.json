@@ -24,6 +24,7 @@
   },
   "devDependencies": {
     "@effect/language-service": "catalog:",
+    "@types/node": "^20.19.43",
     "@trivago/prettier-plugin-sort-imports": "^6.0.2",
     "husky": "^9.1.7",
     "lint-staged": "^17.0.8",
