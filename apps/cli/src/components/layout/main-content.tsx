@@ -1,5 +1,7 @@
 import React, { useState } from "react";
 
+import * as Effect from "effect/Effect";
+
 import { Header } from "./header";
 import { Landing } from "./landing";
 
@@ -8,9 +10,11 @@ import type { Command } from "@/components/commands/commands";
 import { CommandPalette } from "@/components/commands/index";
 import { ConnectProvider } from "@/components/commands/index";
 import { ModelSwitcher } from "@/components/commands/index";
+import { SessionDeleteConfirm } from "@/components/commands/index";
 import { SessionRename } from "@/components/commands/index";
 import { SkillBrowser } from "@/components/commands/index";
 import { Composer } from "@/components/composer/index";
+import { useToast } from "@/components/ui/toast";
 import type { ApiClient } from "@/services/api";
 import type { TextareaRenderable } from "@opentui/core";
 import type { Message } from "@scode/shared/types";
@@ -42,8 +46,12 @@ interface MainContentProps {
   textareaRef?: React.RefObject<TextareaRenderable | null>;
   renameDialogOpen: boolean;
   setRenameDialogOpen: (open: boolean) => void;
+  deleteDialogOpen: boolean;
+  setDeleteDialogOpen: (open: boolean) => void;
   api: ApiClient;
   currentSessionId?: string;
+  clearMessages: () => void;
+  setCurrentSessionId: (id: string | undefined) => void;
   onRefreshSessions: () => void;
 }
 
@@ -74,10 +82,15 @@ export function MainContent({
   textareaRef,
   renameDialogOpen,
   setRenameDialogOpen,
+  deleteDialogOpen,
+  setDeleteDialogOpen,
   api,
   currentSessionId,
+  clearMessages,
+  setCurrentSessionId,
   onRefreshSessions,
 }: MainContentProps) {
+  const toast = useToast();
   const [composerClearTrigger, setComposerClearTrigger] = useState(0);
 
   const handlePaletteSelectWrap = (cmd: Command) => {
@@ -167,6 +180,30 @@ export function MainContent({
               bumpFocus();
             }}
             onRefresh={onRefreshSessions}
+          />
+        )}
+        {deleteDialogOpen && currentSessionId && (
+          <SessionDeleteConfirm
+            name={sessionName ?? currentSessionId}
+            onConfirm={() => {
+              Effect.runPromise(api.deleteSession(currentSessionId)).then(
+                () => {
+                  setCurrentSessionId(undefined);
+                  clearMessages();
+                  onRefreshSessions();
+                  toast.show({
+                    variant: "success",
+                    message: "Session deleted",
+                  });
+                  setDeleteDialogOpen(false);
+                  bumpFocus();
+                },
+              );
+            }}
+            onCancel={() => {
+              setDeleteDialogOpen(false);
+              bumpFocus();
+            }}
           />
         )}
       </box>

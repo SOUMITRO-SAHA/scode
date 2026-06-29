@@ -191,6 +191,7 @@ function AppInner({
   const [providerPickerOpen, setProviderPickerOpen] = useState(false);
   const [skillsBrowserOpen, setSkillsBrowserOpen] = useState(false);
   const [renameDialogOpen, setRenameDialogOpen] = useState(false);
+  const [deleteDialogOpen, setDeleteDialogOpen] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>(undefined);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const bumpFocus = useCallback(() => setFocusTrigger((n) => n + 1), []);
@@ -258,6 +259,7 @@ function AppInner({
           onExit,
           refreshSessions: handleRefreshSessions,
           openRenameDialog: () => setRenameDialogOpen(true),
+          openDeleteDialog: () => setDeleteDialogOpen(true),
         };
         const result = await executeCommand(value, apiRef.current, ctx);
         if (result) {
@@ -313,6 +315,7 @@ function AppInner({
         onExit,
         refreshSessions: handleRefreshSessions,
         openRenameDialog: () => setRenameDialogOpen(true),
+        openDeleteDialog: () => setDeleteDialogOpen(true),
       };
       const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
       if (result) {
@@ -402,8 +405,12 @@ function AppInner({
         textareaRef={textareaRef}
         renameDialogOpen={renameDialogOpen}
         setRenameDialogOpen={setRenameDialogOpen}
+        deleteDialogOpen={deleteDialogOpen}
+        setDeleteDialogOpen={setDeleteDialogOpen}
         api={apiRef.current}
         currentSessionId={currentSessionId}
+        clearMessages={clearMessages}
+        setCurrentSessionId={handleSetSessionId}
         onRefreshSessions={handleRefreshSessions}
       />
     </box>

@@ -41,6 +41,7 @@ export interface CommandContext {
   toggleSidebar?: () => void;
   addSystemMessage?: (text: string) => void;
   showToast?: (options: ToastInput) => void;
+  openDeleteDialog?: () => void;
   openRenameDialog?: () => void;
   onExit?: () => void;
   refreshSessions?: () => void;
@@ -139,13 +140,11 @@ export const COMMANDS: Command[] = [
     description: "Delete the current conversation",
     usage: "/delete",
     category: "session",
-    handler: async (_args, api, ctx) => {
+    suggested: true,
+    handler: async (_args, _api, ctx) => {
       if (!ctx.currentSessionId)
         return { type: "error", text: "No active session" };
-      await Effect.runPromise(api.deleteSession(ctx.currentSessionId));
-      ctx.setCurrentSessionId?.(undefined);
-      ctx.clearMessages?.();
-      ctx.showToast?.({ variant: "success", message: "Session deleted" });
+      ctx.openDeleteDialog?.();
     },
   },
   {
