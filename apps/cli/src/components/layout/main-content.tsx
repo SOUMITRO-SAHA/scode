@@ -1,26 +1,10 @@
-import React, { useState } from "react";
-
-import * as Effect from "effect/Effect";
+import React from "react";
 
 import { Header } from "./header";
 import { Landing } from "./landing";
 
 import { ChatArea } from "@/components/chat/index";
-import type { Command } from "@/components/commands/commands";
-import { AgentSwitcher } from "@/components/commands/index";
-import { CommandPalette } from "@/components/commands/index";
-import { ConnectProvider } from "@/components/commands/index";
-import { HelpDialog } from "@/components/commands/index";
-import { HealthDialog } from "@/components/commands/index";
-import { LogsDialog } from "@/components/commands/index";
-import { ModelSwitcher } from "@/components/commands/index";
-import { SessionDeleteConfirm } from "@/components/commands/index";
-import { SessionHistory } from "@/components/commands/index";
-import { SessionRename } from "@/components/commands/index";
-import { SkillBrowser } from "@/components/commands/index";
 import { Composer } from "@/components/composer/index";
-import { useToast } from "@/components/ui/toast";
-import type { ApiClient } from "@/services/api";
 import type { TextareaRenderable } from "@opentui/core";
 import type { Message } from "@scode/shared/types";
 
@@ -35,39 +19,10 @@ interface MainContentProps {
   height: number;
   focusTrigger: number;
   prefill?: string;
-  paletteVisible: boolean;
-  setPaletteVisible: (visible: boolean) => void;
-  bumpFocus: () => void;
-  handlePaletteSelect: (cmd: Command) => void;
-  modelPickerOpen: boolean;
-  setModelPickerOpen: (open: boolean) => void;
-  providerPickerOpen: boolean;
-  setProviderPickerOpen: (open: boolean) => void;
-  skillsBrowserOpen: boolean;
-  setSkillsBrowserOpen: (open: boolean) => void;
-  onSkillSelect: (skillName: string) => void;
   sessionName?: string;
   mainContentWidth: number;
   textareaRef?: React.RefObject<TextareaRenderable | null>;
-  renameDialogOpen: boolean;
-  setRenameDialogOpen: (open: boolean) => void;
-  deleteDialogOpen: boolean;
-  setDeleteDialogOpen: (open: boolean) => void;
-  historyDialogOpen: boolean;
-  setHistoryDialogOpen: (open: boolean) => void;
-  helpDialogOpen: boolean;
-  setHelpDialogOpen: (open: boolean) => void;
-  logsDialogOpen: boolean;
-  setLogsDialogOpen: (open: boolean) => void;
-  agentDialogOpen: boolean;
-  setAgentDialogOpen: (open: boolean) => void;
-  healthDialogOpen: boolean;
-  setHealthDialogOpen: (open: boolean) => void;
-  api: ApiClient;
-  currentSessionId?: string;
-  clearMessages: () => void;
-  setCurrentSessionId: (id: string | undefined) => void;
-  onRefreshSessions: () => void;
+  composerClearTrigger: number;
 }
 
 export function MainContent({
@@ -81,48 +36,11 @@ export function MainContent({
   height,
   focusTrigger,
   prefill,
-  paletteVisible,
-  setPaletteVisible,
-  bumpFocus,
-  handlePaletteSelect,
-  modelPickerOpen,
-  setModelPickerOpen,
-  providerPickerOpen,
-  setProviderPickerOpen,
-  skillsBrowserOpen,
-  setSkillsBrowserOpen,
-  onSkillSelect,
   sessionName,
   mainContentWidth,
   textareaRef,
-  renameDialogOpen,
-  setRenameDialogOpen,
-  deleteDialogOpen,
-  setDeleteDialogOpen,
-  historyDialogOpen,
-  setHistoryDialogOpen,
-  helpDialogOpen,
-  setHelpDialogOpen,
-  logsDialogOpen,
-  setLogsDialogOpen,
-  agentDialogOpen,
-  setAgentDialogOpen,
-  healthDialogOpen,
-  setHealthDialogOpen,
-  api,
-  currentSessionId,
-  clearMessages,
-  setCurrentSessionId,
-  onRefreshSessions,
+  composerClearTrigger,
 }: MainContentProps) {
-  const toast = useToast();
-  const [composerClearTrigger, setComposerClearTrigger] = useState(0);
-
-  const handlePaletteSelectWrap = (cmd: Command) => {
-    setComposerClearTrigger((c) => c + 1);
-    handlePaletteSelect(cmd);
-  };
-
   return (
     <box flexDirection="column" flexGrow={1}>
       {hasConversation && <Header sessionName={sessionName} />}
@@ -160,118 +78,6 @@ export function MainContent({
             prefill={prefill}
             containerWidth={mainContentWidth}
             textareaRef={textareaRef}
-          />
-        )}
-        <CommandPalette
-          visible={paletteVisible}
-          onClose={() => {
-            setPaletteVisible(false);
-            bumpFocus();
-          }}
-          onSelect={handlePaletteSelectWrap}
-        />
-        {modelPickerOpen && (
-          <ModelSwitcher
-            onClose={() => {
-              setModelPickerOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {providerPickerOpen && (
-          <ConnectProvider
-            onClose={() => {
-              setProviderPickerOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {skillsBrowserOpen && (
-          <SkillBrowser
-            onSelect={onSkillSelect}
-            onClose={() => {
-              setSkillsBrowserOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {renameDialogOpen && currentSessionId && (
-          <SessionRename
-            name={sessionName}
-            sessionId={currentSessionId}
-            api={api}
-            onClose={() => {
-              setRenameDialogOpen(false);
-              bumpFocus();
-            }}
-            onRefresh={onRefreshSessions}
-          />
-        )}
-        {historyDialogOpen && (
-          <SessionHistory
-            messages={messages}
-            onClose={() => {
-              setHistoryDialogOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {deleteDialogOpen && currentSessionId && (
-          <SessionDeleteConfirm
-            name={sessionName ?? currentSessionId}
-            onConfirm={() => {
-              Effect.runPromise(api.deleteSession(currentSessionId)).then(
-                () => {
-                  setCurrentSessionId(undefined);
-                  clearMessages();
-                  onRefreshSessions();
-                  toast.show({
-                    variant: "success",
-                    message: "Session deleted",
-                  });
-                  setDeleteDialogOpen(false);
-                  bumpFocus();
-                },
-              );
-            }}
-            onCancel={() => {
-              setDeleteDialogOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {helpDialogOpen && (
-          <HelpDialog
-            onClose={() => {
-              setHelpDialogOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {logsDialogOpen && (
-          <LogsDialog
-            api={api}
-            onClose={() => {
-              setLogsDialogOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {agentDialogOpen && (
-          <AgentSwitcher
-            onClose={() => {
-              setAgentDialogOpen(false);
-              bumpFocus();
-            }}
-          />
-        )}
-        {healthDialogOpen && (
-          <HealthDialog
-            api={api}
-            onClose={() => {
-              setHealthDialogOpen(false);
-              bumpFocus();
-            }}
           />
         )}
       </box>
