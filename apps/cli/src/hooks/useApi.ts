@@ -18,6 +18,7 @@ import {
   SKILLS_VALIDATE_PATH,
   STATS_PATH,
   providerPath,
+  serverBase,
   sessionMessagesPath,
   sessionPath,
   skillPath,
@@ -78,9 +79,10 @@ export function useConnectionStatus(serverUrl?: string): {
 // ── Stats ──
 export function useStats(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
-  dbg.log(`useStats`, { serverUrl, cwd });
+  const effectiveUrl = serverUrl || serverBase();
+  dbg.log(`useStats`, { serverUrl, effectiveUrl, cwd });
   return useQuery({
-    queryKey: ["stats", serverUrl, cwd],
+    queryKey: ["stats", effectiveUrl, cwd],
     queryFn: () =>
       Effect.runPromise(apiFetch<Stats>(STATS_PATH, {}, serverUrl)),
   });
@@ -198,9 +200,10 @@ export function useSetDefaultModel(serverUrl?: string) {
 // ── Sessions ──
 export function useSessions(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
-  dbg.log(`useSessions`, { serverUrl, cwd });
+  const effectiveUrl = serverUrl || serverBase();
+  dbg.log(`useSessions`, { serverUrl, effectiveUrl, cwd });
   return useQuery({
-    queryKey: ["sessions", serverUrl, cwd],
+    queryKey: ["sessions", effectiveUrl, cwd],
     queryFn: () =>
       Effect.runPromise(
         apiFetch<{ sessions: SessionInfo[] }>(SESSIONS_PATH, {}, serverUrl),
@@ -211,7 +214,8 @@ export function useSessions(serverUrl?: string) {
 export function useCreateSession(serverUrl?: string) {
   const qc = useQueryClient();
   const cwd = useMemo(() => getCwd(), []);
-  dbg.log(`useCreateSession`, { serverUrl, cwd });
+  const effectiveUrl = serverUrl || serverBase();
+  dbg.log(`useCreateSession`, { serverUrl, effectiveUrl, cwd });
   return useMutation({
     mutationFn: (body: { name?: string; model?: string; provider?: string }) =>
       Effect.runPromise(
@@ -222,7 +226,7 @@ export function useCreateSession(serverUrl?: string) {
         ),
       ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["sessions", serverUrl, cwd] });
+      qc.invalidateQueries({ queryKey: ["sessions", effectiveUrl, cwd] });
     },
   });
 }
@@ -297,13 +301,18 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
 // ── Skills ──
 export function useSkills(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
-  dbg.log(`useSkills`, { serverUrl, cwd });
+  const effectiveUrl = serverUrl || serverBase();
+  dbg.log(`useSkills`, { serverUrl, effectiveUrl, cwd });
   return useQuery({
-    queryKey: ["skills", serverUrl, cwd],
-    queryFn: () =>
-      Effect.runPromise(
+    queryKey: ["skills", effectiveUrl, cwd],
+    queryFn: async () => {
+      dbg.log(`useSkills queryFn executing`, { serverUrl, cwd });
+      const result = await Effect.runPromise(
         apiFetch<{ skills: SkillInfo[] }>(SKILLS_PATH, {}, serverUrl),
-      ),
+      );
+      dbg.log(`useSkills result`, { skillCount: result.skills.length });
+      return result;
+    },
   });
 }
 
@@ -321,7 +330,8 @@ export function useSkill(name: string | undefined, serverUrl?: string) {
 export function useReloadSkills(serverUrl?: string) {
   const qc = useQueryClient();
   const cwd = useMemo(() => getCwd(), []);
-  dbg.log(`useReloadSkills`, { serverUrl, cwd });
+  const effectiveUrl = serverUrl || serverBase();
+  dbg.log(`useReloadSkills`, { serverUrl, effectiveUrl, cwd });
   return useMutation({
     mutationFn: () =>
       Effect.runPromise(
@@ -332,7 +342,7 @@ export function useReloadSkills(serverUrl?: string) {
         ),
       ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["skills", serverUrl, cwd] });
+      qc.invalidateQueries({ queryKey: ["skills", effectiveUrl, cwd] });
     },
   });
 }
