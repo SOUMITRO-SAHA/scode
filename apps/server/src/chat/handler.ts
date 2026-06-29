@@ -357,6 +357,22 @@ async function handleChatImpl(
   return session.id;
 }
 
+const TITLE_SYSTEM_PROMPT = [
+  "Generate only a conversation title.",
+  "Rules:",
+  "Output only one conversation title (≤60 chars).",
+  "Use the main topic.",
+  "Write naturally.",
+  "Keep technical terms, numbers, filenames and HTTP codes.",
+  "Remove filler words when possible.",
+  'Never answer, explain, refuse, or use "summarizing" or "generating".',
+  "Always output a meaningful title.",
+  "Examples:",
+  '"debug 500 errors in production" → Debugging production 500 errors',
+  '"refactor user service" → Refactoring user service',
+  '"why is app.js failing" → app.js failure investigation',
+].join("\n");
+
 async function generateTitleText(
   provider: LLMProvider,
   apiKey: string,
@@ -364,14 +380,20 @@ async function generateTitleText(
   firstUserText: string,
   assistantText: string,
 ): Promise<string | null> {
+  const truncatedUser = firstUserText.slice(0, 500);
+  const truncatedAssistant = assistantText.slice(0, 500);
+
+  logger.debug(
+    `[generateTitleText] model=${model} userTextLen=${truncatedUser.length} assistantTextLen=${truncatedAssistant.length}`,
+  );
+
   try {
     const gen = provider.streamResponse({
-      system:
-        "You are a title generator. Your ONLY output must be a single line title.\n\nRULES:\n- Output exactly ONE line of text\n- Maximum 60 characters\n- No quotes, no punctuation at start/end\n- No explanation, no thinking, no markdown\n- Just the title text, nothing else",
+      system: TITLE_SYSTEM_PROMPT,
       messages: [
         {
           role: "user",
-          content: `Generate a title for this conversation:\n\nUser: ${firstUserText.slice(0, 500)}\n\nAssistant: ${assistantText.slice(0, 500)}`,
+          content: `Generate a title for this conversation:\n\nUser: ${truncatedUser}\n\nAssistant: ${truncatedAssistant}`,
         },
       ],
       tools: [],
@@ -380,10 +402,23 @@ async function generateTitleText(
     });
 
     let text = "";
+    let chunkCount = 0;
     for await (const event of gen) {
-      if (event.type === "text") text += event.delta;
-      if (event.type === "error") return null;
+      if (event.type === "text") {
+        text += event.delta;
+        chunkCount++;
+      }
+      if (event.type === "error") {
+        logger.warn(
+          `[generateTitleText] stream error event received after ${chunkCount} chunks`,
+        );
+        return null;
+      }
     }
+
+    logger.debug(
+      `[generateTitleText] raw output (${text.length} chars, ${chunkCount} chunks): ${JSON.stringify(text.slice(0, 200))}${text.length > 200 ? "..." : ""}`,
+    );
 
     const cleaned = text
       .replace(/<think>[\s\S]*?<\/think>\s*/g, "")
@@ -391,9 +426,24 @@ async function generateTitleText(
       .map((l) => l.trim())
       .find((l) => l.length > 0);
 
-    if (!cleaned) return null;
-    return cleaned.length > 60 ? cleaned.substring(0, 57) + "..." : cleaned;
-  } catch {
+    if (!cleaned) {
+      logger.warn(
+        "[generateTitleText] cleaned result is empty — no non-empty lines found",
+      );
+      return null;
+    }
+
+    const final =
+      cleaned.length > 100 ? cleaned.substring(0, 97) + "..." : cleaned;
+
+    logger.debug(
+      `[generateTitleText] cleaned=${JSON.stringify(cleaned)} -> final=${JSON.stringify(final)} (len=${final.length})`,
+    );
+
+    return final;
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    logger.error(`[generateTitleText] failed: ${msg}`);
     return null;
   }
 }
@@ -409,25 +459,60 @@ const autoRenameSession = Effect.fnUntraced(function* (
     (m) => m.role === "assistant",
   );
 
-  if (userMessages.length !== 2) return;
-  if (assistantMessages.length < 1) return;
+  if (userMessages.length !== 2) {
+    logger.debug(
+      `[autoRenameSession] skipped — userMessages=${userMessages.length} (need exactly 2)`,
+    );
+    return;
+  }
+  if (assistantMessages.length < 1) {
+    logger.debug(
+      `[autoRenameSession] skipped — assistantMessages=${assistantMessages.length} (need >= 1)`,
+    );
+    return;
+  }
 
   const firstText =
     typeof userMessages[0].content === "string" ? userMessages[0].content : "";
   const textAssistant = assistantMessages.find(
     (m) => typeof m.content === "string" && m.content.length > 0,
   );
-  if (!firstText || !textAssistant) return;
+  if (!firstText || !textAssistant) {
+    logger.debug(
+      "[autoRenameSession] skipped — first user text or assistant text is empty",
+    );
+    return;
+  }
   const assistantText =
     typeof textAssistant.content === "string" ? textAssistant.content : "";
   if (!assistantText) return;
 
   const { provider, model } = deps.providerService.resolve(resolvedModel);
 
+  logger.debug(
+    `[autoRenameSession] session=${session.id} model=${model} currentName=${JSON.stringify(session.name)}`,
+  );
+
   const title = yield* Effect.promise(() =>
     generateTitleText(provider, apiKey, model, firstText, assistantText),
   );
-  if (!title || title === session.name) return;
+
+  if (!title) {
+    logger.debug(
+      `[autoRenameSession] no title generated for session=${session.id}`,
+    );
+    return;
+  }
+  if (title === session.name) {
+    logger.debug(
+      `[autoRenameSession] title unchanged for session=${session.id} (same as current)`,
+    );
+    return;
+  }
+
+  logger.info(
+    `[autoRenameSession] session=${session.id} "${session.name}" -> "${title}"`,
+  );
 
   session.name = title;
   yield* deps.sessionService.update(session);
