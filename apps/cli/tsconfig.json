@@ -11,8 +11,10 @@
     "types": ["node"],
     "lib": ["ESNext"],
     "noEmit": true,
+    "ignoreDeprecations": "6.0",
+    "baseUrl": ".",
     "paths": {
-      "@/*": ["${configDir}/src/*"]
+      "@/*": ["./src/*"]
     }
   },
   "include": ["src"],

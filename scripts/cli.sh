@@ -2,12 +2,12 @@
 set -euo pipefail
 
 SCOPE="apps/cli"
-ENTRY="$SCOPE/src/index.tsx"
+ENTRY="src/index.tsx"
 
 for arg in "$@"; do
   if [ "$arg" = "--prompt" ]; then
-    exec pnpm exec tsx --tsconfig "$SCOPE/tsconfig.json" "$ENTRY" "$@"
+    exec pnpm exec tsx --tsconfig "$SCOPE/tsconfig.json" "$SCOPE/$ENTRY" "$@"
   fi
 done
 
-bun "$ENTRY" "$@" 2>/dev/null || exec pnpm exec tsx --tsconfig "$SCOPE/tsconfig.json" "$ENTRY" "$@"
+bun run --cwd "$SCOPE" "$ENTRY" "$@" 2>/dev/null || exec pnpm exec tsx --tsconfig "$SCOPE/tsconfig.json" "$SCOPE/$ENTRY" "$@"

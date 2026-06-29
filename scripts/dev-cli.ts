@@ -1,15 +1,18 @@
 import { type ChildProcess, spawn } from "node:child_process";
 
-const cliEntry = "apps/cli/src/index.tsx";
 const extraArgs = process.argv.slice(2);
 
 let child: ChildProcess | null = null;
 
 function startCli() {
-  child = spawn("bun", [cliEntry, ...extraArgs], {
-    stdio: "inherit",
-    env: process.env,
-  });
+  child = spawn(
+    "bun",
+    ["run", "--cwd", "apps/cli", "src/index.tsx", ...extraArgs],
+    {
+      stdio: "inherit",
+      env: process.env,
+    },
+  );
 
   child.on("error", (err) => {
     console.error(`\x1b[31m[dev] Failed to start CLI: ${err.message}\x1b[0m`);
