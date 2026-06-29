@@ -24,7 +24,7 @@ pnpm dev
 
 Inside the TUI, use the `/connect` command or provider switcher to add your API key — no upfront env var setup needed.
 
-## Alternative: Headless Mode (No bun)
+## Alternative: Headless Mode (No bun required)
 
 ```bash
 # 1. Install dependencies
@@ -35,7 +35,6 @@ export ANTHROPIC_API_KEY=sk-ant-...
 
 # 3. REPL or single-shot
 pnpm dev:headless
-pnpm dev:headless --prompt "Generate documentation"
 ```
 
 ## Commands
@@ -65,7 +64,9 @@ Full docs in [`docs/`](docs/index.md):
 | [Server Guide](docs/server/overview.md)                | Architecture, API reference, providers         |
 | [Architecture](docs/architecture/overview.md)          | System design, client-server model, data flow  |
 | [Skills](docs/skills/overview.md)                      | Skill system, creating skills, built-in skills |
-| [Development](docs/development/setup.md)               | Dev setup, testing, contributing               |
+| [Development Setup](docs/development/setup.md)         | Local dev environment, commands                |
+| [Contributing Guide](docs/development/contributing.md) | Workflow, conventions, PR guidelines           |
+| [Testing](docs/development/testing.md)                 | TDD, coverage, mocking patterns                |
 
 ## Architecture
 
@@ -75,7 +76,7 @@ Full docs in [`docs/`](docs/index.md):
 │  Thin client   │ ←── stream ───────── │  • Skill discovery & matching                             │
 └────────────────┘                      │  • Prompt building                                        │
                                         │  • LLM (Claude/Gemini/DeepSeek/Z.ai/MiniMax/CommandCode)  │
-                                        │  • Tool execution (read, write, bash, ...)                 │
+                                        │  • Tool execution (read, write, bash, ...)                │
                                         │  • SQLite via Drizzle ORM                                 │
                                         └───────────────────────────────────────────────────────────┘
 ```
@@ -131,7 +132,11 @@ Skills are stored in `.agents/skills/<name>/SKILL.md` with YAML frontmatter. See
 
 ## Contributing
 
-We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, or check the [Development docs](docs/development/setup.md) for detailed setup and [Testing docs](docs/development/testing.md) for test conventions.
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, or check the development docs:
+
+- [Development Setup](docs/development/setup.md) — local dev environment
+- [Contributing Guide](docs/development/contributing.md) — workflow, conventions, PRs
+- [Testing](docs/development/testing.md) — TDD, coverage, mocking
 
 Key points:
 
