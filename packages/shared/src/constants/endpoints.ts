@@ -6,16 +6,16 @@ export function serverBase(port: number = DEFAULT_PORT): string {
 }
 
 export function apiV1Base(base?: string): string {
-  return `${base ?? serverBase()}/api/v1`;
+  return `${base || serverBase()}/api/v1`;
 }
 
 // Legacy endpoint helpers
 export function healthUrl(base?: string): string {
-  return `${base ?? serverBase()}/health`;
+  return `${base || serverBase()}/health`;
 }
 
 export function processUrl(base?: string): string {
-  return `${base ?? serverBase()}/process`;
+  return `${base || serverBase()}/process`;
 }
 
 // API v1 endpoint helpers

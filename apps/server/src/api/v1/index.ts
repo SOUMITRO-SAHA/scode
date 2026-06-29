@@ -56,6 +56,7 @@ interface RouterDeps {
 
 function getCwdFromHeader(c: Context): string | null {
   const cwd = c.req.header("X-CWD");
+  logger.debug(`[getCwdFromHeader] X-CWD header: ${cwd}`);
   return cwd ?? null;
 }
 

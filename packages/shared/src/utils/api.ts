@@ -4,7 +4,10 @@ import { Readable } from "node:stream";
 
 import { apiV1Base } from "../constants/endpoints";
 import { ApiFetchError, ApiStreamError } from "../effect/errors";
+import { DebugLogger } from "../logger";
 import { getCwd } from "./cwd";
+
+const dbg = new DebugLogger("api");
 
 export function apiUrl(path: string, base?: string): string {
   return `${apiV1Base(base)}${path}`;
@@ -17,7 +20,9 @@ const apiConfig: AxiosInstance = axios.create({
 });
 
 apiConfig.interceptors.request.use((config) => {
-  config.headers.set("X-CWD", getCwd());
+  const cwd = getCwd();
+  dbg.log(`Interceptor setting X-CWD header`, { cwd, url: config.url });
+  config.headers.set("X-CWD", cwd);
   return config;
 });
 
