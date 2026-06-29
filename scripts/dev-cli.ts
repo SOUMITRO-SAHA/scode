@@ -10,7 +10,10 @@ function startCli() {
     ["run", "--cwd", "apps/cli", "src/index.tsx", ...extraArgs],
     {
       stdio: "inherit",
-      env: process.env,
+      env: {
+        ...process.env,
+        SCODE_ORIGINAL_CWD: process.cwd(),
+      },
     },
   );
 

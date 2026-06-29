@@ -5,13 +5,11 @@ import { DebugLogger } from "@scode/shared/logger";
 
 const dbg = new DebugLogger("cwd");
 
-let lastCwd: string | null = null;
+const ORIGINAL_CWD = realpathSync(
+  process.env.SCODE_ORIGINAL_CWD || processCwd(),
+);
 
 export function getCwd(): string {
-  const resolved = realpathSync(processCwd());
-  if (resolved !== lastCwd) {
-    dbg.log(`Resolved cwd: ${resolved}`);
-    lastCwd = resolved;
-  }
-  return resolved;
+  dbg.log(`Returning original cwd: ${ORIGINAL_CWD}`);
+  return ORIGINAL_CWD;
 }
