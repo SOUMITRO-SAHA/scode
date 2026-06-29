@@ -5,7 +5,7 @@ We welcome contributions! This document outlines the development workflow, conve
 ## Quick Start
 
 ```bash
-# Prerequisites: Node.js >= 18, pnpm >= 9, bun >= 1.3.14 (optional)
+# Prerequisites: Node.js >= 18, pnpm >= 9, bun >= 1.3.14 (required — OpenTUI FFI only works under bun)
 
 # Fork and clone
 git clone https://github.com/YOUR_USERNAME/scode.git

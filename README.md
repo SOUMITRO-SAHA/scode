@@ -4,25 +4,54 @@
 
 Developed by [SOUMITRA SAHA](mailto:soumitrosahaofficial@gmail.com).
 
-## Quick Start
+## System Requirements (READ THIS FIRST)
+
+| Tool    | Version   | Required?                                                                   |
+| ------- | --------- | --------------------------------------------------------------------------- |
+| **bun** | >= 1.3.14 | **YES** — TUI mode requires OpenTUI's native FFI which only works under bun |
+| Node.js | >= 18     | Yes                                                                         |
+| pnpm    | >= 9.0    | Yes                                                                         |
+
+> **bun is not optional.** The TUI (Terminal UI) relies on OpenTUI, whose native FFI bindings only work under bun. Without bun, `pnpm dev` and `pnpm cli` (for TUI) will fail. Use `pnpm dev:headless` as a fallback if bun is unavailable.
+
+## Quick Start (Developer Setup)
 
 ```bash
-# Set your API key (Anthropic, Gemini, etc.)
+# 1. Install dependencies
+pnpm install
+
+# 2. Set your API key (Anthropic, Gemini, etc.)
 export ANTHROPIC_API_KEY=sk-ant-...
 
-# Interactive TUI mode
-pnpm cli
+# 3. Interactive TUI mode (development, bun required)
+pnpm dev
 
-# Single-shot mode (headless)
-pnpm cli --prompt "Generate documentation for this project"
+# 4. Or: REPL mode without TUI (no bun needed)
+pnpm dev:headless
 
-# Quick demo
-pnpm demo
+# 5. Single-shot mode (no bun needed)
+pnpm dev:headless --prompt "Generate documentation for this project"
 ```
+
+## Available Commands
+
+| Command             | Description                                    | Runtime |
+| ------------------- | ---------------------------------------------- | ------- |
+| `pnpm dev`          | Interactive TUI with debug logs                | bun     |
+| `pnpm cli`          | Interactive TUI (tries bun, falls back to tsx) | bun/tsx |
+| `pnpm dev:headless` | REPL mode (no TUI, clean output)               | tsx     |
+| `pnpm demo`         | Headless single-shot demo                      | tsx     |
+| `pnpm cli --prompt` | Single-shot headless mode (outputs to stdout)  | tsx     |
+| `pnpm server`       | Start server standalone on port 4100           | tsx     |
+| `pnpm dev:cli`      | CLI dev with file watching                     | bun     |
+| `pnpm dev:server`   | Server dev with `tsx watch`                    | tsx     |
+| `pnpm test`         | Run all workspace tests                        | vitest  |
+| `pnpm check-types`  | Type-check all packages                        | tsc     |
+| `pnpm format`       | Format code with Prettier                      | —       |
 
 ## Documentation
 
-Full documentation is available in the [`docs/`](docs/index.md) directory:
+Full documentation in [`docs/`](docs/index.md):
 
 | Section                                                | Description                                    |
 | ------------------------------------------------------ | ---------------------------------------------- |
@@ -58,27 +87,11 @@ scode/
 │   ├── shared/       # Shared types, utils, logger, constants
 │   └── theme/        # Design tokens, colors, typography, layout tokens
 ├── .agents/skills/   # Runtime skills (welcome-me, changelog, documentation)
+├── scripts/
+│   └── cli.sh        # CLI wrapper — routes --prompt to tsx, else tries bun
 ├── docs/             # Full documentation
-├── .env.example      # API key configuration reference
-└── tasks/            # TODO and architecture plans
+└── .env.example      # API key configuration reference
 ```
-
-## Scripts
-
-| Command                                                   | Description                                      |
-| --------------------------------------------------------- | ------------------------------------------------ |
-| `pnpm cli`                                                | Interactive TUI mode                             |
-| `pnpm cli --prompt "..."`                                 | Single-shot headless mode (outputs to stdout)    |
-| `pnpm cli --prompt "..." --model "gemini/gemini-2.5-pro"` | Headless with specific model                     |
-| `pnpm server`                                             | Start server standalone on port 4100             |
-| `pnpm web`                                                | Start web dev server                             |
-| `pnpm demo`                                               | Quick demo: spawns server + sends test prompt    |
-| `pnpm dev`                                                | Run CLI in debug mode (`SCODE_DEBUG=1 pnpm cli`) |
-| `pnpm dev:cli`                                            | Dev mode for CLI with file watching              |
-| `pnpm dev:server`                                         | Dev mode for server with `tsx watch`             |
-| `pnpm test`                                               | Run all workspace tests                          |
-| `pnpm check-types`                                        | Type-check all packages                          |
-| `pnpm format`                                             | Format code with Prettier                        |
 
 ## How It Works
 
@@ -110,13 +123,6 @@ Skills are stored in `.agents/skills/<name>/SKILL.md` with YAML frontmatter. See
 - **welcome-me** — Greet new users and orient them
 - **changelog** — Generate changelogs from git history
 - **documentation** — Generate/update project docs
-
-## Requirements
-
-- Node.js >= 18
-- pnpm 9
-- **bun >= 1.3.14** (dev only — used by `pnpm dev:cli` for fast startup; for TUI-only sessions run `bun apps/cli/src/index.tsx` directly; not required in production)
-- At least one API key configured (Anthropic, Gemini, DeepSeek, Z.ai, MiniMax, OpenAI, or CommandCode)
 
 ## Contributing
 

@@ -4,7 +4,7 @@
 
 - Node.js >= 18
 - pnpm >= 9.0
-- bun >= 1.3.14 (optional, for faster CLI startup)
+- bun >= 1.3.14 (required for TUI development — OpenTUI native FFI only works under bun)
 
 ## Getting Started
 
@@ -22,14 +22,23 @@ pnpm test
 ## Development Commands
 
 ```bash
+# Interactive TUI mode (debug logs enabled, uses bun)
+pnpm dev
+
+# REPL mode (no TUI, clean output, uses tsx)
+pnpm dev:headless
+
 # CLI development (with file watching)
 pnpm dev:cli
 # Uses `bun scripts/dev-cli.ts` — custom file watcher
-# (OpenTUI native FFI crashes under tsx watch)
+# tsx watch crashes OpenTUI native FFI
 
 # Server development (with file watching)
 pnpm dev:server
 # Uses `tsx watch src/index.ts`
+
+# Quick demo (headless single-shot)
+pnpm demo
 
 # Web development
 pnpm dev:web

@@ -2,12 +2,12 @@
 
 ## System Requirements
 
-| Requirement | Minimum                        |
-| ----------- | ------------------------------ |
-| Node.js     | >= 18                          |
-| pnpm        | >= 9.0                         |
-| bun         | >= 1.3.14 (optional, dev only) |
-| OS          | macOS, Linux, Windows          |
+| Requirement | Minimum                      |
+| ----------- | ---------------------------- |
+| Node.js     | >= 18                        |
+| pnpm        | >= 9.0                       |
+| bun         | >= 1.3.14 (required for TUI) |
+| OS          | macOS, Linux, Windows        |
 
 ## Setup Steps
 
