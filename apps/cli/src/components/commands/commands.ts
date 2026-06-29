@@ -39,6 +39,8 @@ export interface CommandContext {
   openHistoryDialog?: () => void;
   openLogsDialog?: () => void;
   openRenameDialog?: () => void;
+  openAgentDialog?: () => void;
+  openHealthDialog?: () => void;
   onExit?: () => void;
   refreshSessions?: () => void;
 }
@@ -298,19 +300,8 @@ export const COMMANDS: Command[] = [
     description: "Check server status",
     usage: "/health",
     category: "debug",
-    handler: async (_args, api) => {
-      const health = await Effect.runPromise(api.health());
-      const lines = [
-        `  Status: ${health.healthy ? "OK Healthy" : "FAIL Unhealthy"}`,
-        `  Uptime: ${health.uptime}s`,
-        `  Providers: ${health.providers}`,
-        `  Sessions: ${health.sessions}`,
-        `  Default: ${health.defaultProvider || "None"}/${health.defaultModel || "No model selected"}`,
-      ];
-      return {
-        type: "message",
-        text: `\nServer Status:\n${lines.join("\n")}\n`,
-      };
+    handler: async (_args, _api, ctx) => {
+      ctx.openHealthDialog?.();
     },
   },
   {
@@ -324,18 +315,14 @@ export const COMMANDS: Command[] = [
     },
   },
   {
-    name: "agent",
-    aliases: [],
-    description: "Show current agent information",
-    usage: "/agent",
+    name: "agents",
+    aliases: ["a"],
+    description: "Switch active agent (Plan / Write / Chat)",
+    usage: "/agents",
     category: "general",
-    handler: async (_args, api, ctx) => {
-      const config = await Effect.runPromise(api.getConfig());
-      const modelStr = ctx.model ?? config.defaultModel;
-      return {
-        type: "message",
-        text: `\nAgent: scode\n  Model: ${modelStr || "No model selected"}\n  Provider: ${config.defaultProvider || "None"}\n  Session: ${ctx.currentSessionId?.slice(0, 8) ?? "none"}\n`,
-      };
+    suggested: true,
+    handler: async (_args, _api, ctx) => {
+      ctx.openAgentDialog?.();
     },
   },
 ];

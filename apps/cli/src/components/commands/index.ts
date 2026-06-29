@@ -1,5 +1,7 @@
+export { AgentSwitcher } from "./agent-switcher";
 export { CommandPalette } from "./command-palette";
 export { ConnectProvider } from "./connect-provider";
+export { HealthDialog } from "./health-dialog";
 export { HelpDialog } from "./help-dialog";
 export { LogsDialog } from "./logs-dialog";
 export { ModelSwitcher } from "./model-switcher";

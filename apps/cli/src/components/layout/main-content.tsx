@@ -7,9 +7,11 @@ import { Landing } from "./landing";
 
 import { ChatArea } from "@/components/chat/index";
 import type { Command } from "@/components/commands/commands";
+import { AgentSwitcher } from "@/components/commands/index";
 import { CommandPalette } from "@/components/commands/index";
 import { ConnectProvider } from "@/components/commands/index";
 import { HelpDialog } from "@/components/commands/index";
+import { HealthDialog } from "@/components/commands/index";
 import { LogsDialog } from "@/components/commands/index";
 import { ModelSwitcher } from "@/components/commands/index";
 import { SessionDeleteConfirm } from "@/components/commands/index";
@@ -57,6 +59,10 @@ interface MainContentProps {
   setHelpDialogOpen: (open: boolean) => void;
   logsDialogOpen: boolean;
   setLogsDialogOpen: (open: boolean) => void;
+  agentDialogOpen: boolean;
+  setAgentDialogOpen: (open: boolean) => void;
+  healthDialogOpen: boolean;
+  setHealthDialogOpen: (open: boolean) => void;
   api: ApiClient;
   currentSessionId?: string;
   clearMessages: () => void;
@@ -99,6 +105,10 @@ export function MainContent({
   setHelpDialogOpen,
   logsDialogOpen,
   setLogsDialogOpen,
+  agentDialogOpen,
+  setAgentDialogOpen,
+  healthDialogOpen,
+  setHealthDialogOpen,
   api,
   currentSessionId,
   clearMessages,
@@ -243,6 +253,23 @@ export function MainContent({
             api={api}
             onClose={() => {
               setLogsDialogOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+        {agentDialogOpen && (
+          <AgentSwitcher
+            onClose={() => {
+              setAgentDialogOpen(false);
+              bumpFocus();
+            }}
+          />
+        )}
+        {healthDialogOpen && (
+          <HealthDialog
+            api={api}
+            onClose={() => {
+              setHealthDialogOpen(false);
               bumpFocus();
             }}
           />

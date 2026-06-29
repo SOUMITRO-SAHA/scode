@@ -81,7 +81,9 @@ export const HealthStatus = Schema.Struct({
   healthy: Schema.Boolean,
   uptime: Schema.Number,
   providers: Schema.Number,
+  connectedProviders: Schema.Number,
   sessions: Schema.Number,
+  activeClients: Schema.Number,
   defaultProvider: Schema.String,
   defaultModel: Schema.String,
 });

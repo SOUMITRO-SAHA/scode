@@ -63,7 +63,9 @@ export interface HealthStatus {
   healthy: boolean;
   uptime: number;
   providers: number;
+  connectedProviders: number;
   sessions: number;
+  activeClients: number;
   defaultProvider: string;
   defaultModel: string;
 }

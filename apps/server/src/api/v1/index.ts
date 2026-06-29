@@ -57,13 +57,24 @@ export function createV1Router(deps: RouterDeps): Hono {
 
   router.get("/health", (c) => {
     const cfg = runSync(deps.configService.get);
+    let auth: Record<string, unknown> = {};
+    try {
+      if (existsSync(SCODE_AUTH_PATH))
+        auth = JSON.parse(readFileSync(SCODE_AUTH_PATH, "utf-8"));
+    } catch {}
+    const connectedProviders = Object.keys(auth).length;
+    const defaultConnected = cfg.defaultProvider
+      ? !!auth[cfg.defaultProvider]
+      : false;
     return c.json({
       healthy: true,
       uptime: runSync(calcUptime(deps.startTime)),
       providers: deps.providerService.listProviders().length,
+      connectedProviders,
       sessions: runSync(deps.sessionService.list).length,
-      defaultProvider: cfg.defaultProvider,
-      defaultModel: cfg.defaultModel,
+      activeClients: deps.activeClientService.getCount(),
+      defaultProvider: defaultConnected ? cfg.defaultProvider : "",
+      defaultModel: defaultConnected ? cfg.defaultModel : "",
     });
   });
 

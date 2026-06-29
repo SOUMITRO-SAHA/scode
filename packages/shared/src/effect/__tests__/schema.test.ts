@@ -52,8 +52,10 @@ describe("HealthStatus", () => {
     const result = parse(HealthStatus, {
       healthy: true,
       uptime: 3600,
-      providers: 2,
+      providers: 6,
+      connectedProviders: 2,
       sessions: 5,
+      activeClients: 1,
       defaultProvider: "claude",
       defaultModel: "claude-sonnet-4-20250515",
     });

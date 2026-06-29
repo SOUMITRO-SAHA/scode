@@ -195,6 +195,8 @@ function AppInner({
   const [historyDialogOpen, setHistoryDialogOpen] = useState(false);
   const [helpDialogOpen, setHelpDialogOpen] = useState(false);
   const [logsDialogOpen, setLogsDialogOpen] = useState(false);
+  const [agentDialogOpen, setAgentDialogOpen] = useState(false);
+  const [healthDialogOpen, setHealthDialogOpen] = useState(false);
   const [prefill, setPrefill] = useState<string | undefined>(undefined);
   const [focusTrigger, setFocusTrigger] = useState(0);
   const bumpFocus = useCallback(() => setFocusTrigger((n) => n + 1), []);
@@ -205,6 +207,11 @@ function AppInner({
   );
   const handleOpenSkillsBrowser = useCallback(
     () => setSkillsBrowserOpen(true),
+    [],
+  );
+  const handleOpenAgentDialog = useCallback(() => setAgentDialogOpen(true), []);
+  const handleOpenHealthDialog = useCallback(
+    () => setHealthDialogOpen(true),
     [],
   );
   const handleSkillSelect = useCallback((skillName: string) => {
@@ -266,6 +273,8 @@ function AppInner({
           openHistoryDialog: () => setHistoryDialogOpen(true),
           openHelpDialog: () => setHelpDialogOpen(true),
           openLogsDialog: () => setLogsDialogOpen(true),
+          openAgentDialog: handleOpenAgentDialog,
+          openHealthDialog: handleOpenHealthDialog,
         };
         const result = await executeCommand(value, apiRef.current, ctx);
         if (result) {
@@ -325,6 +334,8 @@ function AppInner({
         openHistoryDialog: () => setHistoryDialogOpen(true),
         openHelpDialog: () => setHelpDialogOpen(true),
         openLogsDialog: () => setLogsDialogOpen(true),
+        openAgentDialog: handleOpenAgentDialog,
+        openHealthDialog: handleOpenHealthDialog,
       };
       const result = await executeCommand(`/${cmd.name}`, apiRef.current, ctx);
       if (result) {
@@ -422,6 +433,10 @@ function AppInner({
         setHelpDialogOpen={setHelpDialogOpen}
         logsDialogOpen={logsDialogOpen}
         setLogsDialogOpen={setLogsDialogOpen}
+        agentDialogOpen={agentDialogOpen}
+        setAgentDialogOpen={setAgentDialogOpen}
+        healthDialogOpen={healthDialogOpen}
+        setHealthDialogOpen={setHealthDialogOpen}
         api={apiRef.current}
         currentSessionId={currentSessionId}
         clearMessages={clearMessages}
