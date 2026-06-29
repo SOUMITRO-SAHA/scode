@@ -68,11 +68,23 @@ scode has full documentation in the `docs/` directory. Refer users to:
 
 Suggest they try:
 
+### General
+
+- "new to this project what should i do"
 - "What does this project do?"
 - "Generate documentation for this project"
 - "Create a changelog for the last release"
 - "What skills are available?"
-- "Refactor this component"
+
+### Testing & Rendering
+
+- "Run all tests and show me the results"
+- "Write edge-case tests for the autocomplete filter"
+
+### UI / Markdown
+
+- "Preview how the current markdown renderer handles nested code blocks"
+- "Test the chat streaming UI — does it handle partial code blocks gracefully?"
 
 ## Available Commands (from project root)
 
