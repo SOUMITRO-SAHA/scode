@@ -68,9 +68,9 @@
 - **Avoid prop drilling width/height** — use `useTerminalDimensions()` directly in the consuming component where needed.
 - **Conditional rendering** — hide components entirely when not needed (e.g. sidebar, modals) rather than using opacity/visibility.
 
-### Web vs CLI context
+### Layout context
 
-- `@scode/theme` (root export, `import { layout } from "@scode/theme"`) exports platform-agnostic layout tokens. There is no `@scode/theme/layout` subpath export. In CLI they drive Yoga flexbox props; in the future web app they could drive CSS container queries or Tailwind breakpoints.
+- `@scode/theme` (root export, `import { layout } from "@scode/theme"`) exports layout tokens. There is no `@scode/theme/layout` subpath export. In CLI they drive Yoga flexbox props.
 - When adding a new layout-sensitive component, prefer deriving its dimensions from `theme.layout` rather than hardcoding numbers.
 
 ## Testing (TDD)

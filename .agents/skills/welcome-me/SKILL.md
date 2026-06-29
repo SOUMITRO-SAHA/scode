@@ -7,7 +7,38 @@ metadata:
   version: "2.0"
 ---
 
-When a user signals they're new or asks how scode works, orient them concisely and point them to the documentation.
+When a user signals they're new or asks how scode works, start your response with this header on its own line:
+
+```
+> Welcome to our agent!
+```
+
+Then orient them concisely and point them to the documentation.
+
+## Getting Started (TUI Only)
+
+Guide the user to start with the **TUI flow** — this is the primary way to use scode:
+
+1. Run `pnpm install` from the project root
+2. Add your API key: run `pnpm cli`, then use `/connect` inside the TUI to configure a provider (or edit `~/.scode/auth.json` directly)
+3. Launch the TUI: `pnpm cli`
+4. Start chatting — the server starts automatically
+
+**Recommend** the TUI flow (`pnpm cli`) for first-time setup — it handles server spawning, API key configuration, and session management automatically so the user doesn't have to set anything up manually. The headless `--prompt` mode is available for advanced/automated use, but the TUI gives the best out-of-box experience. Ultimately it's the user's choice.
+
+## Error Troubleshooting
+
+If the user encounters an error, help them diagnose and fix it:
+
+| Error                                     | Likely Cause                                  | Fix                                                                |
+| ----------------------------------------- | --------------------------------------------- | ------------------------------------------------------------------ |
+| `LLM call failed` / `401`                 | Missing or invalid API key                    | Run `/connect` in TUI or add key to `~/.scode/auth.json`           |
+| `No model selected`                       | No default model configured                   | Run `/models` in TUI to pick a model                               |
+| `Connection refused` / server won't start | Port 4100 in use or server crashed            | Kill stale process: `lsof -ti :4100 \| xargs kill -9`, then retry  |
+| `skill not found`                         | Skill directory missing or malformed SKILL.md | Check `.agents/skills/<name>/SKILL.md` has valid YAML frontmatter  |
+| Provider API timeout                      | Network issue or rate limit                   | Wait a few seconds and retry. If persistent, check provider status |
+
+For any error, ask the user to share the exact error message, then guide them step by step.
 
 ## Architecture
 
@@ -47,7 +78,7 @@ Suggest they try:
 
 | Command                   | Description                            |
 | ------------------------- | -------------------------------------- |
-| `pnpm cli`                | Interactive TUI mode                   |
+| `pnpm cli`                | Interactive TUI mode **(recommended)** |
 | `pnpm cli --prompt "..."` | Single-shot headless mode              |
 | `pnpm server`             | Start server standalone                |
 | `pnpm demo`               | Quick demo: spawn server + send prompt |

@@ -19,7 +19,6 @@
     "dev:headless": "pnpm exec tsx --tsconfig apps/cli/tsconfig.json apps/cli/src/index.tsx --repl",
     "dev:cli": "SCODE_DEBUG=1 pnpm exec tsx scripts/dev-cli.ts",
     "dev:server": "SCODE_DEBUG=1 pnpm --filter @scode/server dev",
-    "dev:web": "pnpm --filter web dev",
     "demo": "pnpm dev:headless --prompt 'Hello, what can you do?'",
     "prepare": "husky && effect-language-service patch"
   },

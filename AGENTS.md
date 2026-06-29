@@ -263,10 +263,6 @@ import { useAppStore } from "../../store/index";
 - `.opencode/skills/` = development skills for the AI coding agent building scode (opencode, opentui, effect, toon, t3code).
 - Server only reads `.agents/skills/`. The `.opencode/` skills are never loaded at runtime.
 
-## Disconnected web app
-
-- `apps/web/` is a standalone Vite+React scaffold with zero internal monorepo dependencies. NOT integrated with the scode server. Uses React Compiler for auto-memoization.
-
 ## Three routes, one handler
 
 - Server has 3 routes that all call the same `chatStream` handler: `POST /process` (legacy, mounted in `apps/server/src/index.ts`), `POST /api/v1/chat`, and `POST /api/v1/process` (both in the v1 router). They are identical.

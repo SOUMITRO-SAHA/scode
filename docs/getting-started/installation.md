@@ -54,7 +54,7 @@ scode/
 ├── apps/
 │   ├── cli/          # Terminal UI client
 │   ├── server/       # Backend server
-│   └── web/          # Standalone web app (experimental)
+
 ├── packages/
 │   ├── shared/       # Shared types, utils, constants
 │   └── theme/        # Design tokens

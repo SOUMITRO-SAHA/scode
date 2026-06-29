@@ -66,7 +66,6 @@ vitest.workspace.ts    # Vitest workspace (4 packages)
 | `@scode/server` | `apps/server/`     | Backend server             |
 | `@scode/shared` | `packages/shared/` | Shared types and utilities |
 | `@scode/theme`  | `packages/theme/`  | Design tokens              |
-| `web`           | `apps/web/`        | Experimental web app       |
 
 ## Code Style
 
