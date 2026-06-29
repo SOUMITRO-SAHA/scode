@@ -14,6 +14,7 @@ const mockSession: Session = {
   messages: [],
   model: "claude-sonnet-4",
   provider: "claude",
+  cwd: "/test/cwd",
 };
 
 let sessions = new Map<string, Session>();
@@ -22,20 +23,23 @@ let nextId = 0;
 
 vi.mock("../session/manager", () => ({
   SessionManager: class {
-    create = vi.fn((name: string, model: string, provider: string) => {
-      nextId++;
-      const s: Session = {
-        id: `test-session-${nextId}`,
-        name,
-        createdAt: mockSession.createdAt,
-        updatedAt: mockSession.updatedAt,
-        messages: [],
-        model,
-        provider,
-      };
-      sessions.set(s.id, s);
-      return s;
-    });
+    create = vi.fn(
+      (name: string, model: string, provider: string, cwd: string) => {
+        nextId++;
+        const s: Session = {
+          id: `test-session-${nextId}`,
+          name,
+          createdAt: mockSession.createdAt,
+          updatedAt: mockSession.updatedAt,
+          messages: [],
+          model,
+          provider,
+          cwd,
+        };
+        sessions.set(s.id, s);
+        return s;
+      },
+    );
     get = vi.fn((id: string) => sessions.get(id) ?? null);
     update = vi.fn((s: Session) => {
       s.updatedAt = new Date().toISOString();
@@ -52,7 +56,7 @@ vi.mock("../session/manager", () => ({
       }
       return count;
     });
-    list = vi.fn(() => Array.from(sessions.values()));
+    list = vi.fn((_cwd?: string) => Array.from(sessions.values()));
     addMessage = vi.fn((id: string, msg: UnifiedMessage) => {
       const s = sessions.get(id);
       if (!s) return null;
@@ -80,7 +84,7 @@ describe("SessionService", () => {
   it("creates a session via layer", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      return yield* svc.create("My Chat", "gpt-4", "openai");
+      return yield* svc.create("My Chat", "gpt-4", "openai", "/test/cwd");
     });
     const session = runSync(Effect.provide(effect, SessionServiceLive));
     expect(session.name).toBe("My Chat");
@@ -91,7 +95,7 @@ describe("SessionService", () => {
   it("retrieves a session by id", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("Test", "m1", "p1");
+      const created = yield* svc.create("Test", "m1", "p1", "/test/cwd");
       return yield* svc.get(created.id);
     });
     const session = runSync(Effect.provide(effect, SessionServiceLive));
@@ -111,9 +115,9 @@ describe("SessionService", () => {
   it("lists all sessions", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      yield* svc.create("S1", "m1", "p1");
-      yield* svc.create("S2", "m2", "p2");
-      return yield* svc.list;
+      yield* svc.create("S1", "m1", "p1", "/test/cwd");
+      yield* svc.create("S2", "m2", "p2", "/test/cwd");
+      return yield* svc.list("/test/cwd");
     });
     const list = runSync(Effect.provide(effect, SessionServiceLive));
     expect(list).toHaveLength(2);
@@ -122,7 +126,7 @@ describe("SessionService", () => {
   it("deletes a session", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("Delete Me", "m1", "p1");
+      const created = yield* svc.create("Delete Me", "m1", "p1", "/test/cwd");
       const deleted = yield* svc.delete(created.id);
       const after = yield* svc.get(created.id);
       return { deleted, after };
@@ -135,12 +139,12 @@ describe("SessionService", () => {
   it("cleans up empty sessions but keeps ones with messages", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const empty = yield* svc.create("Empty", "m1", "p1");
-      yield* svc.create("Also empty", "m2", "p2");
-      const full = yield* svc.create("Full", "m1", "p1");
+      const empty = yield* svc.create("Empty", "m1", "p1", "/test/cwd");
+      yield* svc.create("Also empty", "m2", "p2", "/test/cwd");
+      const full = yield* svc.create("Full", "m1", "p1", "/test/cwd");
       yield* svc.addMessage(full.id, { role: "user", content: "hi" });
       const removed = yield* svc.cleanupEmpty;
-      const list = yield* svc.list;
+      const list = yield* svc.list("/test/cwd");
       const emptyGone = (yield* svc.get(empty.id)) === null;
       return {
         removed,
@@ -159,7 +163,7 @@ describe("SessionService", () => {
   it("adds a message to a session", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("Msg Test", "m1", "p1");
+      const created = yield* svc.create("Msg Test", "m1", "p1", "/test/cwd");
       yield* svc.addMessage(created.id, {
         role: "user",
         content: "Hello",
@@ -174,7 +178,7 @@ describe("SessionService", () => {
   it("updates a session", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("Original", "m1", "p1");
+      const created = yield* svc.create("Original", "m1", "p1", "/test/cwd");
       created.name = "Updated";
       yield* svc.update(created);
       return yield* svc.get(created.id);
@@ -186,7 +190,12 @@ describe("SessionService", () => {
   it("auto-renames session on 2nd user message after 1st exchange", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("Session default", "m1", "p1");
+      const created = yield* svc.create(
+        "Session default",
+        "m1",
+        "p1",
+        "/test/cwd",
+      );
       yield* svc.addMessage(created.id, {
         role: "user",
         content: "Refactor auth module to use strategy pattern",
@@ -225,7 +234,12 @@ describe("SessionService", () => {
   it("does NOT auto-rename on 1st message alone", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("My scratch session", "m1", "p1");
+      const created = yield* svc.create(
+        "My scratch session",
+        "m1",
+        "p1",
+        "/test/cwd",
+      );
       yield* svc.addMessage(created.id, {
         role: "user",
         content: "Hello there",
@@ -242,7 +256,7 @@ describe("SessionService", () => {
   it("keeps manual rename after messages added", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SessionService;
-      const created = yield* svc.create("Manual name", "m1", "p1");
+      const created = yield* svc.create("Manual name", "m1", "p1", "/test/cwd");
       yield* svc.addMessage(created.id, {
         role: "user",
         content: "Hello world",

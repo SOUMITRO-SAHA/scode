@@ -23,6 +23,7 @@ import {
   sessionPath,
   skillPath,
 } from "@scode/shared/constants";
+import { Logger } from "@scode/shared/logger";
 import type {
   ActiveClientsResponse,
   HealthStatus,
@@ -40,20 +41,32 @@ import type {
 } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
 
+const logger = new Logger({ stderr: true });
+
 export class ApiClient {
-  constructor(private baseUrl: string) {}
+  constructor(private baseUrl: string) {
+    logger.info(`[ApiClient] Created with baseUrl: ${baseUrl}`);
+  }
 
   health(): Effect.Effect<HealthStatus, ServerConnectionError> {
+    logger.info(
+      `[ApiClient.health] Calling health endpoint with baseUrl: ${this.baseUrl}`,
+    );
     return apiFetch<HealthStatus>(HEALTH_PATH, {}, this.baseUrl).pipe(
-      Effect.catch((cause) =>
-        Effect.fail(
+      Effect.tap((result) => {
+        logger.info(`[ApiClient.health] Success: ${JSON.stringify(result)}`);
+        return Effect.void;
+      }),
+      Effect.catch((cause) => {
+        logger.error(`[ApiClient.health] Failed: ${String(cause)}`);
+        return Effect.fail(
           new ServerConnectionError({
-            url: `${this.baseUrl}/health`,
+            url: `${this.baseUrl}/api/v1/health`,
             attempt: 1,
             cause,
           }),
-        ),
-      ),
+        );
+      }),
     );
   }
 

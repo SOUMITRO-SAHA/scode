@@ -1,3 +1,5 @@
+import { useMemo } from "react";
+
 import { Effect } from "effect";
 
 import {
@@ -20,6 +22,7 @@ import {
   sessionPath,
   skillPath,
 } from "@scode/shared/constants";
+import { Logger } from "@scode/shared/logger";
 import type {
   HealthStatus,
   LogEntry,
@@ -34,7 +37,10 @@ import type {
   Stats,
 } from "@scode/shared/types";
 import { apiFetch } from "@scode/shared/utils";
+import { getCwd } from "@scode/shared/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+
+const logger = new Logger({ stderr: true });
 
 export function useApiBase(serverUrl?: string) {
   return serverUrl;
@@ -42,10 +48,15 @@ export function useApiBase(serverUrl?: string) {
 
 // ── Health ──
 export function useHealth(serverUrl?: string) {
+  logger.debug(`[useHealth] Called with serverUrl: ${serverUrl}`);
   return useQuery({
     queryKey: ["health", serverUrl],
-    queryFn: () =>
-      Effect.runPromise(apiFetch<HealthStatus>(HEALTH_PATH, {}, serverUrl)),
+    queryFn: () => {
+      logger.debug(`[useHealth] Fetching health with serverUrl: ${serverUrl}`);
+      return Effect.runPromise(
+        apiFetch<HealthStatus>(HEALTH_PATH, {}, serverUrl),
+      );
+    },
     refetchInterval: HEALTH_REFETCH_MS,
   });
 }
@@ -65,10 +76,18 @@ export function useConnectionStatus(serverUrl?: string): {
 
 // ── Stats ──
 export function useStats(serverUrl?: string) {
+  const cwd = useMemo(() => getCwd(), []);
+  logger.debug(`[useStats] Called with serverUrl: ${serverUrl}, cwd: ${cwd}`);
   return useQuery({
-    queryKey: ["stats", serverUrl],
+    queryKey: ["stats", serverUrl, cwd],
     queryFn: () =>
-      Effect.runPromise(apiFetch<Stats>(STATS_PATH, {}, serverUrl)),
+      Effect.runPromise(
+        apiFetch<Stats>(
+          `${STATS_PATH}?cwd=${encodeURIComponent(cwd)}`,
+          {},
+          serverUrl,
+        ),
+      ),
   });
 }
 
@@ -183,28 +202,34 @@ export function useSetDefaultModel(serverUrl?: string) {
 
 // ── Sessions ──
 export function useSessions(serverUrl?: string) {
+  const cwd = useMemo(() => getCwd(), []);
   return useQuery({
-    queryKey: ["sessions", serverUrl],
+    queryKey: ["sessions", serverUrl, cwd],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<{ sessions: SessionInfo[] }>(SESSIONS_PATH, {}, serverUrl),
+        apiFetch<{ sessions: SessionInfo[] }>(
+          `${SESSIONS_PATH}?cwd=${encodeURIComponent(cwd)}`,
+          {},
+          serverUrl,
+        ),
       ),
   });
 }
 
 export function useCreateSession(serverUrl?: string) {
   const qc = useQueryClient();
+  const cwd = useMemo(() => getCwd(), []);
   return useMutation({
     mutationFn: (body: { name?: string; model?: string; provider?: string }) =>
       Effect.runPromise(
         apiFetch<SessionResponse>(
           SESSIONS_PATH,
-          { method: "POST", body: JSON.stringify(body) },
+          { method: "POST", body: JSON.stringify({ ...body, cwd }) },
           serverUrl,
         ),
       ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["sessions", serverUrl] });
+      qc.invalidateQueries({ queryKey: ["sessions", serverUrl, cwd] });
     },
   });
 }
@@ -278,11 +303,16 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
 
 // ── Skills ──
 export function useSkills(serverUrl?: string) {
+  const cwd = useMemo(() => getCwd(), []);
   return useQuery({
-    queryKey: ["skills", serverUrl],
+    queryKey: ["skills", serverUrl, cwd],
     queryFn: () =>
       Effect.runPromise(
-        apiFetch<{ skills: SkillInfo[] }>(SKILLS_PATH, {}, serverUrl),
+        apiFetch<{ skills: SkillInfo[] }>(
+          `${SKILLS_PATH}?cwd=${encodeURIComponent(cwd)}`,
+          {},
+          serverUrl,
+        ),
       ),
   });
 }
@@ -300,28 +330,34 @@ export function useSkill(name: string | undefined, serverUrl?: string) {
 
 export function useReloadSkills(serverUrl?: string) {
   const qc = useQueryClient();
+  const cwd = useMemo(() => getCwd(), []);
   return useMutation({
     mutationFn: () =>
       Effect.runPromise(
         apiFetch<{ ok: boolean; message: string }>(
           SKILLS_RELOAD_PATH,
-          { method: "POST" },
+          { method: "POST", body: JSON.stringify({ cwd }) },
           serverUrl,
         ),
       ),
     onSuccess: () => {
-      qc.invalidateQueries({ queryKey: ["skills", serverUrl] });
+      qc.invalidateQueries({ queryKey: ["skills", serverUrl, cwd] });
     },
   });
 }
 
 export function useValidateSkills(serverUrl?: string) {
+  const cwd = useMemo(() => getCwd(), []);
   return useMutation({
     mutationFn: () =>
       Effect.runPromise(
         apiFetch<{
           results: { name: string; valid: boolean; error: string | null }[];
-        }>(SKILLS_VALIDATE_PATH, { method: "POST" }, serverUrl),
+        }>(
+          SKILLS_VALIDATE_PATH,
+          { method: "POST", body: JSON.stringify({ cwd }) },
+          serverUrl,
+        ),
       ),
   });
 }

@@ -40,8 +40,7 @@ describe("AppLayer composition", () => {
           hasProvider: typeof prov.listProviders === "function",
           hasTool: typeof tool.definitions === "function",
           hasAc: typeof ac.register === "function",
-          hasSkill:
-            typeof sk.loadAllSkills === "object" && sk.loadAllSkills !== null,
+          hasSkill: typeof sk.loadAllSkills === "function",
           hasSkillMatch: typeof sk.matchSkills === "function",
         };
       }),

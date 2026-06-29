@@ -11,12 +11,13 @@ export class SessionService extends Context.Service<
       name: string,
       model: string,
       provider: string,
+      cwd: string,
     ) => Effect.Effect<Session>;
     readonly get: (id: string) => Effect.Effect<Session | null>;
     readonly update: (session: Session) => Effect.Effect<void>;
     readonly delete: (id: string) => Effect.Effect<boolean>;
     readonly cleanupEmpty: Effect.Effect<number>;
-    readonly list: Effect.Effect<Session[]>;
+    readonly list: (cwd?: string) => Effect.Effect<Session[]>;
     readonly addMessage: (
       id: string,
       message: UnifiedMessage,
@@ -30,13 +31,13 @@ const sessionManager = new SessionManager();
 export const SessionServiceLive = Layer.succeed(
   SessionService,
   SessionService.of({
-    create: (name, model, provider) =>
-      Effect.sync(() => sessionManager.create(name, model, provider)),
+    create: (name, model, provider, cwd) =>
+      Effect.sync(() => sessionManager.create(name, model, provider, cwd)),
     get: (id) => Effect.sync(() => sessionManager.get(id)),
     update: (session) => Effect.sync(() => sessionManager.update(session)),
     delete: (id) => Effect.sync(() => sessionManager.delete(id)),
     cleanupEmpty: Effect.sync(() => sessionManager.cleanupEmpty()),
-    list: Effect.sync(() => sessionManager.list()),
+    list: (cwd) => Effect.sync(() => sessionManager.list(cwd)),
     addMessage: (id, message) =>
       Effect.sync(() => sessionManager.addMessage(id, message)),
     getMessages: (id) => Effect.sync(() => sessionManager.getMessages(id)),

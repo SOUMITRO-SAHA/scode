@@ -8,4 +8,5 @@ export const sessions = sqliteTable("sessions", {
   model: text("model").notNull(),
   provider: text("provider").notNull(),
   messages: text("messages").notNull().default("[]"),
+  cwd: text("cwd").notNull().default(""),
 });

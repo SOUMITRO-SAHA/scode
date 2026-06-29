@@ -6,6 +6,7 @@ import { discover } from "../skill/discover";
 import { loadSkill } from "../skill/loader";
 import type { ToolDefinition } from "../types";
 import { Tool } from "./core";
+import { getWorkspace } from "./workspace";
 
 import { ToolFailure } from "@scode/shared/effect";
 
@@ -30,8 +31,9 @@ export const tool = Tool.make({
     }
 
     return Effect.gen(function* () {
+      const cwd = getWorkspace();
       const dirs = yield* Effect.tryPromise({
-        try: () => Effect.runPromise(discover()),
+        try: () => Effect.runPromise(discover(cwd)),
         catch: (e) =>
           new ToolFailure({ error: `Skill discovery failed: ${String(e)}` }),
       });

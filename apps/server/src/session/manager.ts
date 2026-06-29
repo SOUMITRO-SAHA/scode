@@ -15,6 +15,7 @@ export interface Session {
   messages: UnifiedMessage[];
   model: string;
   provider: string;
+  cwd: string;
 }
 
 function rowToSession(row: typeof sessions.$inferSelect): Session {
@@ -26,11 +27,12 @@ function rowToSession(row: typeof sessions.$inferSelect): Session {
     model: row.model,
     provider: row.provider,
     messages: JSON.parse(row.messages) as UnifiedMessage[],
+    cwd: row.cwd ?? "",
   };
 }
 
 export class SessionManager {
-  create(name: string, model: string, provider: string): Session {
+  create(name: string, model: string, provider: string, cwd: string): Session {
     const id = Effect.runSync(generateId);
     const now = Effect.runSync(nowISO);
     const row = {
@@ -41,6 +43,7 @@ export class SessionManager {
       model,
       provider,
       messages: "[]",
+      cwd,
     };
     getDb().insert(sessions).values(row).run();
     return rowToSession(row);
@@ -66,6 +69,7 @@ export class SessionManager {
         model: session.model,
         provider: session.provider,
         messages: JSON.stringify(session.messages),
+        cwd: session.cwd,
       })
       .where(eq(sessions.id, session.id))
       .run();
@@ -85,12 +89,17 @@ export class SessionManager {
     return result.changes;
   }
 
-  list(): Session[] {
-    const rows = getDb()
+  list(cwd?: string): Session[] {
+    let query = getDb()
       .select()
       .from(sessions)
-      .orderBy(desc(sessions.updatedAt))
-      .all();
+      .orderBy(desc(sessions.updatedAt));
+
+    if (cwd) {
+      query = query.where(eq(sessions.cwd, cwd)) as typeof query;
+    }
+
+    const rows = query.all();
     return rows.map(rowToSession);
   }
 

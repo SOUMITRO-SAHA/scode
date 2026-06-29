@@ -13,7 +13,6 @@ import {
   SessionService,
   SkillService,
   ToolService,
-  WorkspaceService,
 } from "./services/index";
 import { logger } from "./services/logger";
 
@@ -41,7 +40,6 @@ const deps = await runtime.runPromise(
       toolService: yield* ToolService,
       activeClientService: yield* ActiveClientService,
       skillService: yield* SkillService,
-      workspaceService: yield* WorkspaceService,
     };
   }),
 );
@@ -66,11 +64,13 @@ app.post("/process", (c) =>
         message,
         model: modelString,
         sessionId,
+        cwd,
       } = await c.req.json<{
         prompt?: string;
         message?: string;
         model?: string;
         sessionId?: string;
+        cwd?: string;
       }>();
       const text = message ?? prompt;
       if (!text) {
@@ -79,6 +79,16 @@ app.post("/process", (c) =>
           encodeStreamChunk({
             type: "error",
             message: "message or prompt required",
+          }),
+        );
+        return;
+      }
+      if (!cwd) {
+        c.status(400);
+        await s.write(
+          encodeStreamChunk({
+            type: "error",
+            message: "cwd required",
           }),
         );
         return;
@@ -99,6 +109,7 @@ app.post("/process", (c) =>
         text,
         modelStr,
         sessionId,
+        cwd,
         {
           configService: deps.configService,
           providerService: deps.providerService,

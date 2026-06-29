@@ -15,12 +15,19 @@ import {
   SESSIONS_PATH,
   sessionMessagesPath,
 } from "@scode/shared/constants";
+import { Logger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
 import type { ToolCallState } from "@scode/shared/types";
-import { apiFetch, apiFetchStream, errorMessage } from "@scode/shared/utils";
+import {
+  apiFetch,
+  apiFetchStream,
+  errorMessage,
+  getCwd,
+} from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
 const decoder = new TextDecoder();
+const logger = new Logger({ stderr: true });
 
 let assistantMsgAdded = false;
 
@@ -189,7 +196,11 @@ export function useStreamChat(serverUrl: string) {
             SESSIONS_PATH,
             {
               method: "POST",
-              body: JSON.stringify({ name: text.slice(0, 60), model: m }),
+              body: JSON.stringify({
+                name: text.slice(0, 60),
+                model: m,
+                cwd: getCwd(),
+              }),
             },
             serverUrl,
           ).pipe(
@@ -206,6 +217,9 @@ export function useStreamChat(serverUrl: string) {
 
         const model = useAppStore.getState().model;
         const effortLevel = useAppStore.getState().effortLevel;
+        const cwd = getCwd();
+
+        logger.info(`[useStreamChat] Sending chat request with cwd: ${cwd}`);
 
         const stream = yield* apiFetchStream(
           CHAT_PATH,
@@ -214,7 +228,7 @@ export function useStreamChat(serverUrl: string) {
             model,
             sessionId,
             effortLevel,
-            cwd: process.cwd(),
+            cwd,
             clientId: getClientId() ?? undefined,
           },
           serverUrl,
