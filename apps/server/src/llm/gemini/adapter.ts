@@ -94,11 +94,12 @@ export class GeminiAdapter implements LLMProvider {
         }
       }
       if (chunk.functionCalls) {
-        for (const fc of chunk.functionCalls) {
+        for (let i = 0; i < chunk.functionCalls.length; i++) {
+          const fc = chunk.functionCalls[i];
           yield {
             type: "tool_use",
             toolCall: {
-              id: fc.name ?? "",
+              id: `${fc.name ?? ""}-${Date.now()}-${i}`,
               name: fc.name ?? "",
               input: (fc.args ?? {}) as Record<string, unknown>,
             },
@@ -121,12 +122,27 @@ function toGeminiTools(
   }));
 }
 
+function buildFunctionNameMap(messages: UnifiedMessage[]): Map<string, string> {
+  const map = new Map<string, string>();
+  for (const msg of messages) {
+    if (msg.role === "assistant" && Array.isArray(msg.content)) {
+      for (const block of msg.content) {
+        if (block.type === "tool_use") {
+          map.set(block.id, block.name);
+        }
+      }
+    }
+  }
+  return map;
+}
+
 function toGeminiContents(messages: UnifiedMessage[]): {
   systemInstruction: string | undefined;
   contents: Content[];
 } {
   let systemInstruction: string | undefined;
   const contents: Content[] = [];
+  const fnNameMap = buildFunctionNameMap(messages);
 
   for (const msg of messages) {
     if (msg.role === "system") {
@@ -148,7 +164,7 @@ function toGeminiContents(messages: UnifiedMessage[]): {
         parts: [
           {
             functionResponse: {
-              name: toolCallId,
+              name: fnNameMap.get(toolCallId) ?? toolCallId,
               response: { result: content },
             },
           },

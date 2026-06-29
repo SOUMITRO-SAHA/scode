@@ -2,6 +2,7 @@ import * as Effect from "effect/Effect";
 import { Readable } from "node:stream";
 
 import { StreamError } from "./errors";
+import { getClientId } from "./shutdown";
 
 import { PROCESS_PATH } from "@scode/shared/constants";
 import { Logger } from "@scode/shared/logger";
@@ -21,7 +22,11 @@ export const sendPrompt = (
   Effect.gen(function* () {
     const startTime = Date.now();
 
-    const body: Record<string, unknown> = { prompt };
+    const body: Record<string, unknown> = {
+      prompt,
+      cwd: process.cwd(),
+      clientId: getClientId() ?? undefined,
+    };
     if (model) body.model = model;
     if (effortLevel) body.effortLevel = effortLevel;
 

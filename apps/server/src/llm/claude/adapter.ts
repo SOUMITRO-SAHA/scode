@@ -51,7 +51,9 @@ export class ClaudeAdapter implements LLMProvider {
     const effortLevel = supportsThinking ? params.effortLevel : undefined;
     const budgetTokens = EFFORT_THINKING_BUDGET[effortLevel ?? "none"];
 
-    const maxTokens = budgetTokens ? budgetTokens + 1024 : 8192;
+    const maxTokens = budgetTokens
+      ? Math.min(budgetTokens + 4096, 64000)
+      : 8192;
 
     const stream = client.messages.stream({
       model,

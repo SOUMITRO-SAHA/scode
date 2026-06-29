@@ -1,11 +1,10 @@
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
+import { getWorkspace } from "./workspace";
 
 import { MAX_BUFFER } from "@scode/shared/constants";
-
-const WORKSPACE = process.cwd();
 
 export const definition: ToolDefinition = {
   name: "grep",
@@ -29,17 +28,18 @@ export const definition: ToolDefinition = {
 
 export const handler: ToolHandler = async (input: Record<string, unknown>) => {
   const pattern = input.pattern as string;
+  const workspace = getWorkspace();
   const searchPath = input.path
-    ? resolve(WORKSPACE, input.path as string)
-    : WORKSPACE;
+    ? resolve(workspace, input.path as string)
+    : workspace;
 
-  let cmd = `grep -rn --binary-files=without-match "${pattern}" "${searchPath}"`;
+  const args = ["-rn", "--binary-files=without-match", pattern, searchPath];
   if (input.include) {
-    cmd = `grep -rn --binary-files=without-match --include="${input.include}" "${pattern}" "${searchPath}"`;
+    args.splice(2, 0, "--include", input.include as string);
   }
 
   try {
-    const stdout = execSync(cmd, {
+    const stdout = execFileSync("grep", args, {
       encoding: "utf-8",
       maxBuffer: MAX_BUFFER,
     });

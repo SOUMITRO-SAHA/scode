@@ -1,13 +1,12 @@
 import { Effect } from "effect";
-import { execSync } from "node:child_process";
+import { execFileSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
+import { getWorkspace } from "./workspace";
 
 import { MAX_BUFFER } from "@scode/shared/constants";
 import { splitLines } from "@scode/shared/utils";
-
-const WORKSPACE = process.cwd();
 
 export const definition: ToolDefinition = {
   name: "glob",
@@ -30,13 +29,24 @@ export const definition: ToolDefinition = {
 
 export const handler: ToolHandler = async (input: Record<string, unknown>) => {
   const pattern = input.pattern as string;
+  const workspace = getWorkspace();
   const searchPath = input.path
-    ? resolve(WORKSPACE, input.path as string)
-    : WORKSPACE;
+    ? resolve(workspace, input.path as string)
+    : workspace;
 
   try {
-    const stdout = execSync(
-      `find "${searchPath}" -path '*/node_modules' -prune -o -path "${pattern}" -print`,
+    const stdout = execFileSync(
+      "find",
+      [
+        searchPath,
+        "-path",
+        "*/node_modules",
+        "-prune",
+        "-o",
+        "-path",
+        pattern,
+        "-print",
+      ],
       { encoding: "utf-8", maxBuffer: MAX_BUFFER },
     );
     const files = Effect.runSync(splitLines(stdout.trim()));

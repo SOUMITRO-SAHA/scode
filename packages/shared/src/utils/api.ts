@@ -51,6 +51,7 @@ export const apiFetchStream = Effect.fnUntraced(function* (
     headers: { "Content-Type": "application/json" },
     data: body,
     responseType: "stream",
+    validateStatus: () => true,
   };
   const res = yield* Effect.tryPromise({
     try: () => axios(url, config),
@@ -63,5 +64,34 @@ export const apiFetchStream = Effect.fnUntraced(function* (
             : undefined,
       }),
   });
+  if (res.status >= 400) {
+    const body = yield* Effect.tryPromise({
+      try: () => {
+        const stream = res.data as Readable;
+        return new Promise<string>((resolve) => {
+          if (typeof stream?.on !== "function") {
+            resolve("");
+            return;
+          }
+          const chunks: Buffer[] = [];
+          let settled = false;
+          const finish = () => {
+            if (settled) return;
+            settled = true;
+            resolve(Buffer.concat(chunks).toString("utf-8"));
+          };
+          stream.on("data", (chunk: Buffer) => chunks.push(Buffer.from(chunk)));
+          stream.on("end", finish);
+          stream.on("error", () => resolve(""));
+          stream.resume?.();
+          setTimeout(() => {
+            if (!settled) resolve("");
+          }, 2000);
+        });
+      },
+      catch: () => new ApiStreamError({ url, status: res.status }),
+    });
+    yield* Effect.fail(new ApiStreamError({ url, status: res.status, body }));
+  }
   return res.data as Readable;
 });

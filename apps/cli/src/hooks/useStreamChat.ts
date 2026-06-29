@@ -5,6 +5,7 @@ import * as Stream from "effect/Stream";
 import { Readable } from "node:stream";
 
 import type { StreamError } from "../services/errors";
+import { getClientId } from "../services/shutdown";
 import { useAppStore } from "../store/index";
 
 import { useToast } from "@/components/ui/toast";
@@ -208,7 +209,14 @@ export function useStreamChat(serverUrl: string) {
 
         const stream = yield* apiFetchStream(
           CHAT_PATH,
-          { message: text, model, sessionId, effortLevel },
+          {
+            message: text,
+            model,
+            sessionId,
+            effortLevel,
+            cwd: process.cwd(),
+            clientId: getClientId() ?? undefined,
+          },
           serverUrl,
         ).pipe(
           Effect.catch((cause) =>
@@ -251,6 +259,7 @@ export function useStreamChat(serverUrl: string) {
           ).catch(() => {});
         }
       } finally {
+        assistantMsgAdded = false;
         const stream = streamRef.current;
         if (stream !== null) {
           try {

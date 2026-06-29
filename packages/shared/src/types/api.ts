@@ -22,6 +22,8 @@ export interface ChatRequest {
   provider?: string;
   sessionId?: string;
   effortLevel?: EffortLevel;
+  cwd?: string;
+  clientId?: string;
 }
 
 export interface CreateSessionRequest {
@@ -144,6 +146,7 @@ export interface DeleteSessionResponse {
 
 export interface RegisterClientRequest {
   clientId?: string;
+  cwd?: string;
 }
 
 export interface RegisterClientResponse {
@@ -158,5 +161,5 @@ export interface UnregisterClientResponse {
 
 export interface ActiveClientsResponse {
   count: number;
-  clients: Array<{ id: string; connectedAt: number }>;
+  clients: Array<{ id: string; connectedAt: number; cwd?: string }>;
 }

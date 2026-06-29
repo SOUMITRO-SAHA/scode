@@ -21,6 +21,7 @@ import { discover } from "../../skill/discover";
 import { loadSkill } from "../../skill/loader";
 import type { SkillService } from "../../skill/service";
 import type { ToolService } from "../../tool/service";
+import type { WorkspaceService } from "../../tool/workspace";
 
 import {
   LOG_MAX_FILES,
@@ -41,6 +42,7 @@ type DepsSession = SessionService["Service"];
 type DepsTool = ToolService["Service"];
 type DepsActiveClient = ActiveClientService["Service"];
 type DepsSkill = SkillService["Service"];
+type DepsWorkspace = WorkspaceService["Service"];
 
 interface RouterDeps {
   configService: DepsConfig;
@@ -49,6 +51,7 @@ interface RouterDeps {
   toolService: DepsTool;
   activeClientService: DepsActiveClient;
   skillService: DepsSkill;
+  workspaceService: DepsWorkspace;
   startTime: number;
 }
 
@@ -194,10 +197,10 @@ export function createV1Router(deps: RouterDeps): Hono {
     const { model } = await c.req.json<{ model: string }>();
     if (!model) return c.json({ error: "model required" }, 400);
     try {
-      const { providerId } = deps.providerService.parseModelString(model);
+      const { provider } = deps.providerService.resolve(model);
       runSync(deps.configService.set("defaultModel", model));
-      runSync(deps.configService.set("defaultProvider", providerId));
-      return c.json({ ok: true, model, provider: providerId });
+      runSync(deps.configService.set("defaultProvider", provider.id));
+      return c.json({ ok: true, model, provider: provider.id });
     } catch (e) {
       return c.json({ error: (e as Error).message }, 400);
     }
@@ -365,6 +368,7 @@ export function createV1Router(deps: RouterDeps): Hono {
     if (!message) {
       return c.json({ error: "message or prompt required" }, 400);
     }
+    const cwd = body.cwd || runSync(deps.workspaceService.getWorkspace);
     return stream(c, async (s) => {
       try {
         const model = body.model;
@@ -385,19 +389,23 @@ export function createV1Router(deps: RouterDeps): Hono {
           );
           return;
         }
-        await handleChat(
-          message,
-          modelStr,
-          sessionId,
-          {
-            configService: deps.configService,
-            providerService: deps.providerService,
-            sessionService: deps.sessionService,
-            toolService: deps.toolService,
-            skillService: deps.skillService,
-          },
-          (chunk: string) => s.write(chunk),
-          effortLevel,
+        await Effect.runPromise(
+          deps.workspaceService.runWithWorkspace(cwd, () =>
+            handleChat(
+              message,
+              modelStr,
+              sessionId,
+              {
+                configService: deps.configService,
+                providerService: deps.providerService,
+                sessionService: deps.sessionService,
+                toolService: deps.toolService,
+                skillService: deps.skillService,
+              },
+              (chunk: string) => s.write(chunk),
+              effortLevel,
+            ),
+          ),
         );
       } catch (err: unknown) {
         s.write(
@@ -427,7 +435,9 @@ export function createV1Router(deps: RouterDeps): Hono {
     })
     .post("/active-clients", async (c) => {
       const body = await c.req.json().catch(() => ({}));
-      const clientId = deps.activeClientService.register(body.clientId);
+      const clientId = runSync(
+        deps.activeClientService.registerWithCwd(body.clientId, body.cwd),
+      );
       return c.json({ clientId }, 201);
     })
     .delete("/active-clients/:clientId", (c) => {

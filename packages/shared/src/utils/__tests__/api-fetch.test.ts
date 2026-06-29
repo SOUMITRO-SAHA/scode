@@ -84,7 +84,7 @@ describe("apiFetchStream", () => {
 
   it("performs POST with stream response", async () => {
     const fakeStream = { pipe: vi.fn() };
-    (axios as Mock).mockResolvedValue({ data: fakeStream });
+    (axios as Mock).mockResolvedValue({ status: 200, data: fakeStream });
 
     const result = await Effect.runPromise(
       apiFetchStream("/chat", { message: "hi" }),
@@ -102,7 +102,7 @@ describe("apiFetchStream", () => {
 
   it("uses custom base URL", async () => {
     const fakeStream = { pipe: vi.fn() };
-    (axios as Mock).mockResolvedValue({ data: fakeStream });
+    (axios as Mock).mockResolvedValue({ status: 200, data: fakeStream });
     await Effect.runPromise(
       apiFetchStream("/chat", {}, "http://localhost:5000"),
     );
@@ -110,5 +110,30 @@ describe("apiFetchStream", () => {
       "http://localhost:5000/api/v1/chat",
       expect.anything(),
     );
+  });
+
+  it("fails with ApiStreamError on 4xx status", async () => {
+    (axios as Mock).mockResolvedValue({
+      status: 400,
+      data: { on: vi.fn() },
+    });
+    const result = await Effect.runPromise(
+      Effect.flip(apiFetchStream("/chat", { message: "bad" })),
+    );
+    expect(result._tag).toBe("ApiStreamError");
+    expect(result.status).toBe(400);
+    expect(result.url).toContain("/chat");
+  });
+
+  it("fails with ApiStreamError on 5xx status", async () => {
+    (axios as Mock).mockResolvedValue({
+      status: 500,
+      data: { on: vi.fn() },
+    });
+    const result = await Effect.runPromise(
+      Effect.flip(apiFetchStream("/chat", { message: "fail" })),
+    );
+    expect(result._tag).toBe("ApiStreamError");
+    expect(result.status).toBe(500);
   });
 });

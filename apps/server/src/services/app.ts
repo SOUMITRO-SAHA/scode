@@ -6,6 +6,7 @@ import { ActiveClientServiceLive } from "../session/active-clients-service";
 import { SessionServiceLive } from "../session/service";
 import { SkillServiceLive } from "../skill/service";
 import { ToolServiceLive } from "../tool/service";
+import { WorkspaceServiceLive } from "../tool/workspace";
 import { LoggerServiceLive } from "./logger";
 
 export const AppLayer = Layer.mergeAll(
@@ -15,6 +16,7 @@ export const AppLayer = Layer.mergeAll(
   ToolServiceLive,
   SkillServiceLive,
   ActiveClientServiceLive,
+  WorkspaceServiceLive,
   LoggerServiceLive,
 );
 

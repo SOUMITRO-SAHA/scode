@@ -1,17 +1,7 @@
 import { readFileSync, writeFileSync } from "node:fs";
-import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
-
-const WORKSPACE = process.cwd();
-
-function safeResolve(inputPath: string): string {
-  const resolved = resolve(WORKSPACE, inputPath);
-  if (!resolved.startsWith(WORKSPACE)) {
-    throw new Error("Path escapes workspace");
-  }
-  return resolved;
-}
+import { safeResolve } from "./workspace";
 
 export const definition: ToolDefinition = {
   name: "edit",

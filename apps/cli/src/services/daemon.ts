@@ -166,7 +166,10 @@ export const ensureServer: Effect.Effect<string, ServerNotFoundError> =
 export const registerActiveClient: Effect.Effect<string | null> =
   apiFetch<RegisterClientResponse>(
     "/active-clients",
-    { method: "POST" },
+    {
+      method: "POST",
+      body: JSON.stringify({ cwd: process.cwd() }),
+    },
     baseUrl,
   ).pipe(
     Effect.map((r) => r.clientId),

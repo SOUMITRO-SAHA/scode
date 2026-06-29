@@ -2,10 +2,9 @@ import { execSync } from "node:child_process";
 import { resolve } from "node:path";
 
 import type { ToolDefinition, ToolHandler } from "../types";
+import { getWorkspace } from "./workspace";
 
 import { MAX_BUFFER } from "@scode/shared/constants";
-
-const WORKSPACE = process.cwd();
 
 export const definition: ToolDefinition = {
   name: "bash",
@@ -30,9 +29,10 @@ export const definition: ToolDefinition = {
 
 export const handler: ToolHandler = async (input: Record<string, unknown>) => {
   const command = input.command as string;
+  const workspace = getWorkspace();
   const workdir = input.workdir
-    ? resolve(WORKSPACE, input.workdir as string)
-    : WORKSPACE;
+    ? resolve(workspace, input.workdir as string)
+    : workspace;
   const timeout = (input.timeout as number) ?? 120_000;
 
   try {

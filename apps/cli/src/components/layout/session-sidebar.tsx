@@ -152,6 +152,9 @@ export function SessionSidebar() {
               ),
             ),
           ]);
+          if (useAppStore.getState().currentSessionId !== id) {
+            return;
+          }
           dbg.log("Session data loaded", {
             id,
             messagesCount: messagesResponse.messages?.length ?? 0,

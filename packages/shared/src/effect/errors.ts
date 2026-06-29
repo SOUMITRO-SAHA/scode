@@ -15,10 +15,12 @@ export class ApiFetchError extends Data.TaggedError("ApiFetchError")<{
 export class ApiStreamError extends Data.TaggedError("ApiStreamError")<{
   readonly url: string;
   readonly status?: number;
+  readonly body?: string;
 }> {
   override get message(): string {
     let msg = `Stream to ${this.url} failed`;
     if (this.status !== undefined) msg += ` (${this.status})`;
+    if (this.body) msg += `: ${this.body.slice(0, 200)}`;
     return msg;
   }
 }

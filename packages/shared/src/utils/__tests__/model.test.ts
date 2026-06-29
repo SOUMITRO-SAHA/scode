@@ -15,18 +15,25 @@ describe("parseModelString", () => {
     });
   });
 
-  it("returns error for missing slash", () => {
-    const result = Effect.runSync(
-      Effect.flip(parseModelString("claude-sonnet-4")),
-    );
-    expect(result._tag).toBe("ModelParseError");
+  it("returns empty provider for bare model name", () => {
+    const result = Effect.runSync(parseModelString("claude-sonnet-4"));
+    expect(result).toEqual({
+      providerId: "",
+      model: "claude-sonnet-4",
+    });
   });
 
-  it("returns error for empty parts", () => {
-    const err1 = Effect.runSync(Effect.flip(parseModelString("/model")));
-    expect(err1._tag).toBe("ModelParseError");
-    const err2 = Effect.runSync(Effect.flip(parseModelString("provider/")));
-    expect(err2._tag).toBe("ModelParseError");
+  it("returns empty provider for /model format", () => {
+    const result = Effect.runSync(parseModelString("/model"));
+    expect(result).toEqual({
+      providerId: "",
+      model: "model",
+    });
+  });
+
+  it("returns error for provider/ with empty model", () => {
+    const err = Effect.runSync(Effect.flip(parseModelString("provider/")));
+    expect(err._tag).toBe("ModelParseError");
   });
 });
 

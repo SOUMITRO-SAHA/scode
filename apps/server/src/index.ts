@@ -13,6 +13,7 @@ import {
   SessionService,
   SkillService,
   ToolService,
+  WorkspaceService,
 } from "./services/index";
 import { logger } from "./services/logger";
 
@@ -40,6 +41,7 @@ const deps = await runtime.runPromise(
       toolService: yield* ToolService,
       activeClientService: yield* ActiveClientService,
       skillService: yield* SkillService,
+      workspaceService: yield* WorkspaceService,
     };
   }),
 );

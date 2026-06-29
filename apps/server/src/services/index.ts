@@ -9,3 +9,4 @@ export {
 export { ProviderService, ProviderServiceLive } from "../llm/provider-service";
 export { ToolService, ToolServiceLive } from "../tool/service";
 export { SkillService, SkillServiceLive } from "../skill/service";
+export { WorkspaceService, WorkspaceServiceLive } from "../tool/workspace";

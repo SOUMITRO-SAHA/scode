@@ -48,4 +48,39 @@ describe("ActiveClientManager", () => {
     expect(clients).toHaveLength(2);
     expect(clients.map((c) => c.id).sort()).toEqual(["c1", "c2"]);
   });
+
+  it("registers a client with cwd", () => {
+    const mgr = new ActiveClientManager();
+    const id = mgr.register("c1", "/some/project");
+    expect(id).toBe("c1");
+    expect(mgr.getCwd("c1")).toBe("/some/project");
+  });
+
+  it("registers a client without cwd stores undefined", () => {
+    const mgr = new ActiveClientManager();
+    mgr.register("c1");
+    expect(mgr.getCwd("c1")).toBeUndefined();
+  });
+
+  it("getCwd returns undefined for unknown client", () => {
+    const mgr = new ActiveClientManager();
+    expect(mgr.getCwd("unknown")).toBeUndefined();
+  });
+
+  it("getCwd returns stored cwd for multiple clients", () => {
+    const mgr = new ActiveClientManager();
+    mgr.register("c1", "/project/one");
+    mgr.register("c2", "/project/two");
+    mgr.register("c3");
+    expect(mgr.getCwd("c1")).toBe("/project/one");
+    expect(mgr.getCwd("c2")).toBe("/project/two");
+    expect(mgr.getCwd("c3")).toBeUndefined();
+  });
+
+  it("unregister removes client including cwd", () => {
+    const mgr = new ActiveClientManager();
+    mgr.register("c1", "/project/one");
+    mgr.unregister("c1");
+    expect(mgr.getCwd("c1")).toBeUndefined();
+  });
 });

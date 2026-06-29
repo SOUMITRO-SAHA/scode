@@ -53,4 +53,35 @@ describe("ActiveClientService", () => {
     expect(clients).toHaveLength(2);
     expect(clients.map((c) => c.id).sort()).toEqual(["a", "b"]);
   });
+
+  it("registerWithCwd stores cwd and getCwd retrieves it", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* ActiveClientService;
+      const id = yield* svc.registerWithCwd("my-client", "/some/workspace");
+      const cwd = yield* svc.getCwd(id);
+      return { id, cwd };
+    });
+    const result = runSync(Effect.provide(effect, ActiveClientServiceLive));
+    expect(result.id).toBe("my-client");
+    expect(result.cwd).toBe("/some/workspace");
+  });
+
+  it("getCwd returns undefined for unknown client", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* ActiveClientService;
+      return yield* svc.getCwd("nonexistent");
+    });
+    const result = runSync(Effect.provide(effect, ActiveClientServiceLive));
+    expect(result).toBeUndefined();
+  });
+
+  it("registerWithCwd without cwd stores undefined", () => {
+    const effect = Effect.gen(function* () {
+      const svc = yield* ActiveClientService;
+      const id = yield* svc.registerWithCwd("no-cwd");
+      return yield* svc.getCwd(id);
+    });
+    const result = runSync(Effect.provide(effect, ActiveClientServiceLive));
+    expect(result).toBeUndefined();
+  });
 });

@@ -22,11 +22,16 @@ export class ProviderRegistry {
 
   resolve(input: string): { provider: LLMProvider; model: string } {
     const { providerId, model } = this.parseModelString(input);
-    const provider = this.providers.get(providerId);
-    if (!provider)
-      throw new Error(
-        `Unknown provider: "${providerId}" (available: ${[...this.providers.keys()].join(", ")})`,
-      );
+    if (providerId) {
+      const provider = this.providers.get(providerId);
+      if (!provider)
+        throw new Error(
+          `Unknown provider: "${providerId}" (available: ${[...this.providers.keys()].join(", ")})`,
+        );
+      return { provider, model };
+    }
+    const provider = this.providers.values().next().value;
+    if (!provider) throw new Error("No providers registered");
     return { provider, model };
   }
 
