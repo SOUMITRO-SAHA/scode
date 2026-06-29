@@ -6,6 +6,7 @@ import { sendPrompt } from "@/services/client";
 import type { StreamError } from "@/services/errors";
 import { gracefulShutdown } from "@/services/shutdown";
 import { Logger } from "@scode/shared/logger";
+import { getCwd } from "@scode/shared/utils";
 
 const logger = new Logger({ stderr: true });
 
@@ -19,7 +20,9 @@ export const runPrompt = (
   model?: string,
 ): Effect.Effect<void, PromptRunError> =>
   Effect.gen(function* () {
+    const cwd = getCwd();
     logger.info(`Single-shot mode: "${text.slice(0, 60)}..."`);
+    logger.info(`CWD: ${cwd}`);
     if (model) logger.info(`Using model: ${model}`);
 
     yield* Effect.catchIf(
@@ -30,6 +33,7 @@ export const runPrompt = (
           stdout.write(token);
         },
         model,
+        undefined,
       ),
       (e: StreamError): e is StreamError => true,
       (cause) => Effect.fail(new PromptRunError({ message: cause.message })),

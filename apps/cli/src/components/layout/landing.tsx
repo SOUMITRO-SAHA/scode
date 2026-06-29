@@ -3,6 +3,7 @@ import { Effect, Option } from "effect";
 import { Composer } from "@/components/composer/index";
 import { KeyboardHints } from "@/components/feedback/keyboard-hints";
 import { TipSection } from "@/components/feedback/tip-section";
+import { ConnectionStatusIndicator } from "@/components/ui/connection-status-indicator";
 import { useConnectionStatus, useHealth } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
 import type { TextareaRenderable } from "@opentui/core";
@@ -86,22 +87,9 @@ export function Landing({
       />
       <KeyboardHints />
       <TipSection show={showTips} />
-      <text
-        fg={
-          status === "initializing"
-            ? theme.warning
-            : status === "connected"
-              ? theme.success
-              : theme.danger
-        }
-        marginTop={1}
-      >
-        {status === "initializing"
-          ? "◌ Initializing..."
-          : status === "connected"
-            ? "● Server Connected"
-            : "○ Connection Failed"}
-      </text>
+      <box marginTop={1}>
+        <ConnectionStatusIndicator status={status} showLabel />
+      </box>
     </box>
   );
 }

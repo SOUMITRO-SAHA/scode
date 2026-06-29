@@ -24,7 +24,6 @@ export const sendPrompt = (
 
     const body: Record<string, unknown> = {
       prompt,
-      cwd: process.cwd(),
       clientId: getClientId() ?? undefined,
     };
     if (model) body.model = model;

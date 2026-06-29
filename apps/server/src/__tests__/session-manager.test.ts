@@ -16,7 +16,8 @@ vi.mock("../db/client", async () => {
       updated_at TEXT NOT NULL,
       model TEXT NOT NULL,
       provider TEXT NOT NULL,
-      messages TEXT NOT NULL DEFAULT '[]'
+      messages TEXT NOT NULL DEFAULT '[]',
+      cwd TEXT NOT NULL DEFAULT ''
     )
   `);
   const db = drizzle(sqlite);
@@ -47,6 +48,7 @@ function seed(
         model: r.model ?? "m1",
         provider: r.provider ?? "p1",
         messages: r.messages ?? "[]",
+        cwd: r.cwd ?? "/test/cwd",
       })
       .run();
   }

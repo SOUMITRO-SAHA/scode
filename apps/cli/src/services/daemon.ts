@@ -168,7 +168,7 @@ export const registerActiveClient: Effect.Effect<string | null> =
     "/active-clients",
     {
       method: "POST",
-      body: JSON.stringify({ cwd: process.cwd() }),
+      body: JSON.stringify({}),
     },
     baseUrl,
   ).pipe(

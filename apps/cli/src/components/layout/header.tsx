@@ -1,3 +1,4 @@
+import { ConnectionStatusIndicator } from "@/components/ui/connection-status-indicator";
 import { useConnectionStatus } from "@/hooks/useApi";
 import { useAppStore } from "@/store/index";
 import { theme } from "@scode/theme";
@@ -44,21 +45,7 @@ export function Header({ sessionName }: HeaderProps) {
         </box>
 
         <box flexDirection="row" alignItems="center" gap={1}>
-          <text
-            fg={
-              status === "initializing"
-                ? theme.warning
-                : status === "connected"
-                  ? theme.success
-                  : theme.danger
-            }
-          >
-            {status === "initializing"
-              ? "◌"
-              : status === "connected"
-                ? "●"
-                : "○"}
-          </text>
+          <ConnectionStatusIndicator status={status} />
         </box>
       </box>
     </box>

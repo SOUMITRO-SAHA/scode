@@ -11,6 +11,7 @@ import type { SessionService } from "../session/service";
 import type { SkillService } from "../skill/service";
 import type { ToolService } from "../tool/service";
 import { constrainedDefinition } from "../tool/skill";
+import { workspaceStorage } from "../tool/workspace";
 import type { Skill, StreamEvent } from "../types";
 
 import { MAX_TOOL_ITERATIONS } from "@scode/shared/constants";
@@ -89,6 +90,30 @@ export async function handleChat(
   prompt: string,
   modelStr: string,
   sessionId: string | undefined,
+  cwd: string,
+  deps: HandlerDeps,
+  streamWriter: StreamWriter,
+  effortLevel?: EffortLevel,
+): Promise<string> {
+  logger.info(`[handleChat] Called with cwd: ${cwd}`);
+  return workspaceStorage.run(cwd, () =>
+    handleChatImpl(
+      prompt,
+      modelStr,
+      sessionId,
+      cwd,
+      deps,
+      streamWriter,
+      effortLevel,
+    ),
+  );
+}
+
+async function handleChatImpl(
+  prompt: string,
+  modelStr: string,
+  sessionId: string | undefined,
+  cwd: string,
   deps: HandlerDeps,
   streamWriter: StreamWriter,
   effortLevel?: EffortLevel,
@@ -116,6 +141,7 @@ export async function handleChat(
         Effect.runSync(truncate(prompt, 60)),
         resolvedModel,
         provider.id,
+        cwd,
       ),
     );
   }
@@ -140,8 +166,17 @@ export async function handleChat(
   const saveSync = (msg: string) =>
     Effect.runSync(persistError(deps, session.id, msg));
 
+  logger.info(
+    `[handleChatImpl] Loading skills for session.cwd: ${session.cwd}`,
+  );
   const skills = Effect.runSync(
-    Effect.orElseSucceed(deps.skillService.loadAllSkills, () => [] as Skill[]),
+    Effect.orElseSucceed(
+      deps.skillService.loadAllSkills(session.cwd),
+      () => [] as Skill[],
+    ),
+  );
+  logger.info(
+    `[handleChatImpl] Loaded ${skills.length} skills: ${skills.map((s) => s.name).join(", ")}`,
   );
   const matched = deps.skillService.matchSkills(prompt, skills);
   const skillNames = skills.map((s) => s.name);
@@ -332,7 +367,7 @@ async function generateTitleText(
   try {
     const gen = provider.streamResponse({
       system:
-        "You generate short conversation titles. Respond with ONLY the title, max 60 characters, no quotes, no punctuation, no explanation.",
+        "You are a title generator. Your ONLY output must be a single line title.\n\nRULES:\n- Output exactly ONE line of text\n- Maximum 60 characters\n- No quotes, no punctuation at start/end\n- No explanation, no thinking, no markdown\n- Just the title text, nothing else",
       messages: [
         {
           role: "user",
@@ -357,7 +392,7 @@ async function generateTitleText(
       .find((l) => l.length > 0);
 
     if (!cleaned) return null;
-    return cleaned.length > 100 ? cleaned.substring(0, 97) + "..." : cleaned;
+    return cleaned.length > 60 ? cleaned.substring(0, 57) + "..." : cleaned;
   } catch {
     return null;
   }

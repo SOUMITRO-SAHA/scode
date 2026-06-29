@@ -10,7 +10,9 @@ import { matchSkills } from "./matcher";
 export class SkillService extends Context.Service<
   SkillService,
   {
-    readonly discover: Effect.Effect<SkillDir[], SkillDiscoverError>;
+    readonly discover: (
+      cwd: string,
+    ) => Effect.Effect<SkillDir[], SkillDiscoverError>;
     readonly loadSkill: (
       dir: SkillDir,
     ) => Effect.Effect<Skill | null, SkillLoadError>;
@@ -20,10 +22,9 @@ export class SkillService extends Context.Service<
       { name: string; description: string } | null,
       SkillLoadError
     >;
-    readonly loadAllSkills: Effect.Effect<
-      Skill[],
-      SkillDiscoverError | SkillLoadError
-    >;
+    readonly loadAllSkills: (
+      cwd: string,
+    ) => Effect.Effect<Skill[], SkillDiscoverError | SkillLoadError>;
     readonly matchSkills: (prompt: string, skills: Skill[]) => Skill[];
   }
 >()("SkillService") {}
@@ -31,19 +32,20 @@ export class SkillService extends Context.Service<
 export const SkillServiceLive = Layer.succeed(
   SkillService,
   SkillService.of({
-    discover: discover(),
+    discover: (cwd) => discover(cwd),
     loadSkill: (dir) => loadSkill(dir),
     loadSkillMeta: (dir) => loadSkillMeta(dir),
-    loadAllSkills: Effect.gen(function* () {
-      const dirs = yield* discover();
-      const metas = yield* Effect.all(
-        dirs.map((d) => loadSkillMeta(d)),
-        { concurrency: 1 },
-      );
-      return metas
-        .filter((m): m is { name: string; description: string } => m !== null)
-        .map((m) => ({ ...m, body: "" }));
-    }),
+    loadAllSkills: (cwd) =>
+      Effect.gen(function* () {
+        const dirs = yield* discover(cwd);
+        const metas = yield* Effect.all(
+          dirs.map((d) => loadSkillMeta(d)),
+          { concurrency: 1 },
+        );
+        return metas
+          .filter((m): m is { name: string; description: string } => m !== null)
+          .map((m) => ({ ...m, body: "" }));
+      }),
     matchSkills: (prompt, skills) => matchSkills(prompt, skills),
   }),
 );

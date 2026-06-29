@@ -21,7 +21,6 @@ import { discover } from "../../skill/discover";
 import { loadSkill } from "../../skill/loader";
 import type { SkillService } from "../../skill/service";
 import type { ToolService } from "../../tool/service";
-import type { WorkspaceService } from "../../tool/workspace";
 
 import {
   LOG_MAX_FILES,
@@ -30,11 +29,13 @@ import {
   SCODE_DIR,
   SCODE_LOGS_DIR,
 } from "@scode/shared/constants";
+import { Logger } from "@scode/shared/logger";
 import { encodeStreamChunk } from "@scode/shared/types";
 import type { AppConfig, Skill, UnifiedMessage } from "@scode/shared/types";
 import { calcUptime, errorMessage } from "@scode/shared/utils";
 
 const runSync = Effect.runSync;
+const logger = new Logger();
 
 type DepsConfig = ConfigService["Service"];
 type DepsProvider = ProviderService["Service"];
@@ -42,7 +43,6 @@ type DepsSession = SessionService["Service"];
 type DepsTool = ToolService["Service"];
 type DepsActiveClient = ActiveClientService["Service"];
 type DepsSkill = SkillService["Service"];
-type DepsWorkspace = WorkspaceService["Service"];
 
 interface RouterDeps {
   configService: DepsConfig;
@@ -51,8 +51,21 @@ interface RouterDeps {
   toolService: DepsTool;
   activeClientService: DepsActiveClient;
   skillService: DepsSkill;
-  workspaceService: DepsWorkspace;
   startTime: number;
+}
+
+function getCwdFromHeader(c: Context): string | null {
+  const cwd = c.req.header("X-CWD");
+  logger.debug(`[getCwdFromHeader] X-CWD header: ${cwd}`);
+  return cwd ?? null;
+}
+
+function requireCwd(c: Context): string | null {
+  const cwd = getCwdFromHeader(c);
+  if (!cwd) {
+    logger.error("[requireCwd] X-CWD header missing");
+  }
+  return cwd;
 }
 
 export function createV1Router(deps: RouterDeps): Hono {
@@ -74,7 +87,6 @@ export function createV1Router(deps: RouterDeps): Hono {
       uptime: runSync(calcUptime(deps.startTime)),
       providers: deps.providerService.listProviders().length,
       connectedProviders,
-      sessions: runSync(deps.sessionService.list).length,
       activeClients: deps.activeClientService.getCount(),
       defaultProvider: defaultConnected ? cfg.defaultProvider : "",
       defaultModel: defaultConnected ? cfg.defaultModel : "",
@@ -207,7 +219,11 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/sessions", (c) => {
-    const sessions = runSync(deps.sessionService.list);
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
+    const sessions = runSync(deps.sessionService.list(cwd));
     return c.json({
       sessions: sessions
         .map((s) => ({
@@ -224,6 +240,10 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.post("/sessions", async (c) => {
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
     const body = await c.req.json().catch(() => ({}));
     const cfg = runSync(deps.configService.get);
     const session = runSync(
@@ -231,6 +251,7 @@ export function createV1Router(deps: RouterDeps): Hono {
         body.name ?? "",
         body.model ?? cfg.defaultModel,
         body.provider ?? cfg.defaultProvider,
+        cwd,
       ),
     );
     return c.json(session, 201);
@@ -290,7 +311,13 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/skills", (c) => {
-    const dirs = Effect.runSync(discover());
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
+    logger.info(`[/skills] Discovering skills for cwd: ${cwd}`);
+    const dirs = Effect.runSync(discover(cwd));
+    logger.info(`[/skills] Found ${dirs.length} skill directories`);
     const skills = dirs
       .map((d) => Effect.runSync(loadSkill(d)))
       .filter((s): s is Skill => s !== null);
@@ -303,7 +330,11 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.get("/skills/:name", (c) => {
-    const dirs = Effect.runSync(discover());
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
+    const dirs = Effect.runSync(discover(cwd));
     for (const dir of dirs) {
       if (dir.name === c.req.param("name")) {
         const skill = Effect.runSync(loadSkill(dir));
@@ -318,7 +349,11 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   router.post("/skills/validate", (c) => {
-    const dirs = Effect.runSync(discover());
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
+    const dirs = Effect.runSync(discover(cwd));
     const results = dirs.map((dir) => {
       const skill = Effect.runSync(loadSkill(dir));
       return {
@@ -363,12 +398,16 @@ export function createV1Router(deps: RouterDeps): Hono {
   });
 
   async function chatStream(c: Context) {
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
     const body = await c.req.json().catch(() => ({}));
     const message = body.message ?? body.prompt;
     if (!message) {
       return c.json({ error: "message or prompt required" }, 400);
     }
-    const cwd = body.cwd || runSync(deps.workspaceService.getWorkspace);
+    logger.info(`[chatStream] Received cwd: ${cwd}`);
     return stream(c, async (s) => {
       try {
         const model = body.model;
@@ -389,23 +428,20 @@ export function createV1Router(deps: RouterDeps): Hono {
           );
           return;
         }
-        await Effect.runPromise(
-          deps.workspaceService.runWithWorkspace(cwd, () =>
-            handleChat(
-              message,
-              modelStr,
-              sessionId,
-              {
-                configService: deps.configService,
-                providerService: deps.providerService,
-                sessionService: deps.sessionService,
-                toolService: deps.toolService,
-                skillService: deps.skillService,
-              },
-              (chunk: string) => s.write(chunk),
-              effortLevel,
-            ),
-          ),
+        await handleChat(
+          message,
+          modelStr,
+          sessionId,
+          cwd,
+          {
+            configService: deps.configService,
+            providerService: deps.providerService,
+            sessionService: deps.sessionService,
+            toolService: deps.toolService,
+            skillService: deps.skillService,
+          },
+          (chunk: string) => s.write(chunk),
+          effortLevel,
         );
       } catch (err: unknown) {
         s.write(
@@ -434,9 +470,13 @@ export function createV1Router(deps: RouterDeps): Hono {
       });
     })
     .post("/active-clients", async (c) => {
+      const cwd = requireCwd(c);
+      if (!cwd) {
+        return c.json({ error: "X-CWD header required" }, 400);
+      }
       const body = await c.req.json().catch(() => ({}));
       const clientId = runSync(
-        deps.activeClientService.registerWithCwd(body.clientId, body.cwd),
+        deps.activeClientService.registerWithCwd(body.clientId, cwd),
       );
       return c.json({ clientId }, 201);
     })
@@ -448,12 +488,16 @@ export function createV1Router(deps: RouterDeps): Hono {
     });
 
   router.get("/stats", (c) => {
-    const sessions = runSync(deps.sessionService.list);
+    const cwd = requireCwd(c);
+    if (!cwd) {
+      return c.json({ error: "X-CWD header required" }, 400);
+    }
+    const sessions = runSync(deps.sessionService.list(cwd));
     const totalMessages = sessions.reduce(
       (sum, s) => sum + s.messages.length,
       0,
     );
-    const dirs = Effect.runSync(discover());
+    const dirs = Effect.runSync(discover(cwd));
     return c.json({
       sessions: sessions.length,
       messages: totalMessages,

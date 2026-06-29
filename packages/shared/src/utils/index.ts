@@ -6,3 +6,4 @@ export { errorMessage } from "./error";
 export { truncate, splitLines, serializeContent } from "./string";
 export { safeJSONParse, readJSONFile, writeJSONFile } from "./json";
 export { clamp, calcUptime } from "./number";
+export { getCwd } from "./cwd";

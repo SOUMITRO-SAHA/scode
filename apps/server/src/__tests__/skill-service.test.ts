@@ -17,7 +17,7 @@ const mockDirs = vi.hoisted((): SkillDir[] => [
 ]);
 
 vi.mock("../skill/discover", () => ({
-  discover: vi.fn(() => Effect.succeed(mockDirs)),
+  discover: vi.fn((_cwd: string) => Effect.succeed(mockDirs)),
 }));
 
 vi.mock("../skill/loader", () => ({
@@ -53,7 +53,7 @@ describe("SkillService", () => {
   it("loads all skills via layer", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SkillService;
-      return yield* svc.loadAllSkills;
+      return yield* svc.loadAllSkills("/test/cwd");
     });
     const skills = runSync(Effect.provide(effect, SkillServiceLive));
     expect(skills).toHaveLength(2);
@@ -63,7 +63,7 @@ describe("SkillService", () => {
   it("discovers skill directories", () => {
     const effect = Effect.gen(function* () {
       const svc = yield* SkillService;
-      return yield* svc.discover;
+      return yield* svc.discover("/test/cwd");
     });
     const dirs = runSync(Effect.provide(effect, SkillServiceLive));
     expect(dirs).toHaveLength(2);

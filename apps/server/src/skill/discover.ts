@@ -5,10 +5,12 @@ import { join } from "node:path";
 
 import { SkillDiscoverError } from "./error";
 
+import { Logger } from "@scode/shared/logger";
+
+const logger = new Logger();
+
 const SKILL_DIRS = [
-  // Cross-client standard
   { subdir: ".agents/skills" },
-  // Client-specific
   { subdir: ".opencode/skills" },
   { subdir: ".claude/skills" },
   { subdir: ".codex/skills" },
@@ -26,7 +28,6 @@ export interface SkillDir {
 function scanDir(
   base: string,
   subdir: string,
-  label: string,
 ): Effect.Effect<SkillDir[], SkillDiscoverError> {
   const target = join(base, subdir);
   return Effect.try({
@@ -41,36 +42,48 @@ function scanDir(
   });
 }
 
-export function discover(): Effect.Effect<SkillDir[], SkillDiscoverError> {
-  const scans: Effect.Effect<SkillDir[], SkillDiscoverError>[] = [];
+export function discover(
+  cwd: string,
+): Effect.Effect<SkillDir[], SkillDiscoverError> {
+  return Effect.gen(function* () {
+    logger.info(`[discover] Starting skill discovery for cwd: ${cwd}`);
+    const home = homedir();
 
-  // Project-level (higher precedence)
-  for (const { subdir } of SKILL_DIRS) {
-    scans.push(scanDir(process.cwd(), subdir, "project"));
-  }
+    const scans: Effect.Effect<SkillDir[], SkillDiscoverError>[] = [];
 
-  // User-level — skip Cursor (no global location per the table)
-  for (const { subdir } of SKILL_DIRS) {
-    if (subdir === ".cursor/skills") continue;
-    scans.push(scanDir(homedir(), subdir, "user"));
-  }
+    for (const { subdir } of SKILL_DIRS) {
+      const target = join(cwd, subdir);
+      logger.debug(
+        `[discover] Scanning workspace: ${target} (exists: ${existsSync(target)})`,
+      );
+      scans.push(scanDir(cwd, subdir));
+    }
 
-  return Effect.all(scans).pipe(
-    Effect.map((results) => {
-      const seen = new Set<string>();
-      const merged: SkillDir[] = [];
+    for (const { subdir } of SKILL_DIRS) {
+      if (subdir === ".cursor/skills") continue;
+      const target = join(home, subdir);
+      logger.debug(
+        `[discover] Scanning home: ${target} (exists: ${existsSync(target)})`,
+      );
+      scans.push(scanDir(home, subdir));
+    }
 
-      for (const dirs of results) {
-        for (const d of dirs) {
-          if (seen.has(d.name)) {
-            continue;
-          }
-          seen.add(d.name);
-          merged.push(d);
-        }
+    const results = yield* Effect.all(scans);
+
+    const seen = new Set<string>();
+    const merged: SkillDir[] = [];
+
+    for (const dirs of results) {
+      for (const d of dirs) {
+        if (seen.has(d.name)) continue;
+        seen.add(d.name);
+        merged.push(d);
       }
+    }
 
-      return merged;
-    }),
-  );
+    logger.info(
+      `[discover] Found ${merged.length} unique skills: ${merged.map((d) => d.name).join(", ")}`,
+    );
+    return merged;
+  });
 }

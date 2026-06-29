@@ -23,9 +23,18 @@ export function getDb() {
         updated_at TEXT NOT NULL,
         model TEXT NOT NULL,
         provider TEXT NOT NULL,
-        messages TEXT NOT NULL DEFAULT '[]'
+        messages TEXT NOT NULL DEFAULT '[]',
+        cwd TEXT NOT NULL DEFAULT ''
       )
     `);
+
+    try {
+      sqlite.exec(
+        `ALTER TABLE sessions ADD COLUMN cwd TEXT NOT NULL DEFAULT ''`,
+      );
+    } catch {
+      // Column already exists
+    }
 
     _db = drizzle(sqlite, { schema });
   }
