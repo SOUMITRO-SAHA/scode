@@ -121,7 +121,7 @@ const port = Number(
     DEFAULT_PORT,
 );
 
-serve({ fetch: app.fetch, port }, (info) => {
+serve({ fetch: app.fetch, port, hostname: "127.0.0.1" }, () => {
   logger.info(`Server ready on ${healthUrl()}`);
   logger.info(`API v1 available at http://127.0.0.1:${port}/api/v1`);
 });

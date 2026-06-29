@@ -1,9 +1,9 @@
 import { Effect, Schema } from "effect";
-import { relative, resolve } from "node:path";
+import { relative } from "node:path";
 
 import { Tool } from "./core";
 import { isIgnoredPath, searchText } from "./ripgrep";
-import { getWorkspace } from "./workspace";
+import { getWorkspace, safeResolve } from "./workspace";
 
 import { ToolFailure } from "@scode/shared/effect";
 
@@ -30,7 +30,7 @@ export const tool = Tool.make({
     return Effect.tryPromise({
       try: async () => {
         const workspace = getWorkspace();
-        const searchPath = path ? resolve(workspace, path) : workspace;
+        const searchPath = path ? safeResolve(path) : workspace;
 
         let results;
         try {

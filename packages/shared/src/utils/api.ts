@@ -65,7 +65,7 @@ export const apiFetchStream = Effect.fnUntraced(function* (
       }),
   });
   if (res.status >= 400) {
-    const body = yield* Effect.tryPromise({
+    const errorBody = yield* Effect.tryPromise({
       try: () => {
         const stream = res.data as Readable;
         return new Promise<string>((resolve) => {
@@ -91,7 +91,9 @@ export const apiFetchStream = Effect.fnUntraced(function* (
       },
       catch: () => new ApiStreamError({ url, status: res.status }),
     });
-    yield* Effect.fail(new ApiStreamError({ url, status: res.status, body }));
+    yield* Effect.fail(
+      new ApiStreamError({ url, status: res.status, body: errorBody }),
+    );
   }
   return res.data as Readable;
 });
