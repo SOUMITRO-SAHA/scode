@@ -21,6 +21,103 @@
 - If you need a new token (e.g. a color for a new component variant), add it to `packages/theme/src/tokens.ts` (or `colors.ts` for new base colors). Never define scoped or local theme values in the CLI package.
 - Rationale: single source of truth for visual identity. No drift between components, no duplicated hex values.
 
+## Markdown Rendering
+
+### Architecture
+
+Markdown rendering uses a **preprocessing** approach:
+
+```
+LLM Stream → Store → preprocessMarkdown() → OpenTUI <markdown> → Terminal
+```
+
+The `preprocessMarkdown()` function transforms special markdown syntax before rendering:
+
+- Task lists: `- [ ]` → `☐`, `- [x]` → `☑`
+- Callouts: `> [!NOTE]` → `> ℹ **Note**:`
+- Code blocks: Adds language badge as comment line
+
+### Preprocessing Functions
+
+All preprocessing functions are in `markdown-renderer.tsx`:
+
+| Function               | Input          | Output                        |
+| ---------------------- | -------------- | ----------------------------- |
+| `preprocessTaskLists`  | `- [ ] Task`   | `☐ Task`                      |
+| `preprocessCallouts`   | `> [!NOTE]`    | `> ℹ **Note**:`               |
+| `preprocessCodeBlocks` | ` ```ts\ncode` | ` ```ts\n// TypeScript\ncode` |
+
+### Adding New Preprocessing
+
+1. Create a pure function that takes `string` → returns `string`
+2. Add to `preprocessMarkdown()` pipeline
+3. Write unit tests in `__tests__/markdown-renderer.test.ts`
+4. Update `LANGUAGE_DISPLAY_NAMES` or similar maps as needed
+
+### Supported Languages
+
+Code block badges support 40+ languages via `LANGUAGE_DISPLAY_NAMES`. Comment styles are detected per language:
+
+- C-style: `// Lang` (TypeScript, JavaScript, Rust, Go, etc.)
+- Shell-style: `# Lang` (Python, Bash, Ruby, etc.)
+- SQL-style: `-- Lang` (SQL, Lua)
+- Markup: `<!-- Lang -->` (HTML, XML)
+- CSS-style: `/* Lang */` (CSS, SCSS, Less)
+
+### Theme Tokens
+
+`theme.markdown` includes:
+
+- `task.checked` / `task.unchecked` — checkbox colors
+- `callout.{note,tip,important,warning,caution}` — callout border colors
+- `diff.{add,delete,context,header}` — diff syntax colors
+
+### OpenTUI `<markdown>` Props
+
+```tsx
+<markdown
+  content={processedContent}
+  syntaxStyle={style}
+  streaming={isStreaming}
+  conceal
+  tableOptions={{
+    style: "grid",
+    borderStyle: "single",
+    borderColor: theme.markdown.tableBorder,
+    cellPadding: 1,
+  }}
+/>
+```
+
+- `conceal` — hides markdown markers (`**`, `` ` ``, etc.)
+- `streaming` — enables incremental parsing for LLM output
+- `tableOptions` — controls table rendering
+
+### Streaming Behavior
+
+During streaming:
+
+- OpenTUI tracks `_stableBlockCount` for scrollback commit
+- Trailing block stays unstable while `streaming={true}`
+- Set `streaming={false}` to finalize parsing
+
+### Testing
+
+```bash
+# Run markdown tests
+cd apps/cli && pnpm test -- markdown-renderer
+
+# Run all CLI tests
+cd apps/cli && pnpm test
+```
+
+Tests cover:
+
+- Task list conversion (checked/unchecked)
+- All 5 callout types
+- Code block badge insertion
+- Combined content scenarios
+
 ## Debug panel (ThinkingPanel.tsx)
 
 - Skill names in debug mode are **hardcoded** (`welcome-me`, `documentation`), not dynamically loaded from `.agents/skills/`. Won't reflect actual discovered skills.

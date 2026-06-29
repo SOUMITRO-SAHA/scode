@@ -92,6 +92,70 @@ describe("preprocessMarkdown", () => {
     });
   });
 
+  describe("code blocks", () => {
+    it("adds language badge to TypeScript code block", () => {
+      const input = "```typescript\nconst x = 1;\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("// TypeScript");
+    });
+
+    it("adds language badge to Python code block with hash comment", () => {
+      const input = "```python\nx = 1\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("# Python");
+    });
+
+    it("adds language badge to bash code block", () => {
+      const input = "```bash\necho hello\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("# Bash");
+    });
+
+    it("adds language badge to SQL code block", () => {
+      const input = "```sql\nSELECT * FROM users;\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("-- SQL");
+    });
+
+    it("handles ts alias", () => {
+      const input = "```ts\nconst x = 1;\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("// TypeScript");
+    });
+
+    it("handles js alias", () => {
+      const input = "```js\nconst x = 1;\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("// JavaScript");
+    });
+
+    it("handles unknown languages", () => {
+      const input = "```unknownlang\ncode here\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("// UNKNOWNLANG");
+    });
+
+    it("preserves code blocks without language", () => {
+      const input = "```\ncode here\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toBe(input);
+    });
+
+    it("preserves code content after badge", () => {
+      const input = "```typescript\nconst x = 1;\nconst y = 2;\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("const x = 1;");
+      expect(result).toContain("const y = 2;");
+    });
+
+    it("handles multiple code blocks", () => {
+      const input = "```typescript\ncode1\n```\n\n```python\ncode2\n```";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("// TypeScript");
+      expect(result).toContain("# Python");
+    });
+  });
+
   describe("combined content", () => {
     it("handles task lists and callouts together", () => {
       const input = `# Project Tasks
@@ -120,6 +184,7 @@ const x = 1;
       expect(result).toContain("**Bold**");
       expect(result).toContain("*italic*");
       expect(result).toContain("```ts");
+      expect(result).toContain("// TypeScript");
     });
 
     it("preserves tables", () => {
