@@ -11,6 +11,7 @@
 - `jsxImportSource: "@opentui/react"` in tsconfig — not standard React JSX.
 - This project uses **React bindings only** (`@opentui/react`). Never use Solid.js bindings.
 - Components use OpenTUI primitives (`<box>`, `<text>`, `<scrollbox>`, `<textarea>`, `<input>`, `<markdown>`, `<ascii-font>`) with JSX — no custom renderers.
+- OpenTUI's native FFI only works under bun (not Node/tsx) because it uses Bun's FFI bindings under the hood. `pnpm dev` must run via bun; headless modes that skip TUI (REPL, `--prompt`) can use tsx.
 
 ## Theming — Strict policy
 
@@ -23,11 +24,6 @@
 ## Debug panel (ThinkingPanel.tsx)
 
 - Skill names in debug mode are **hardcoded** (`welcome-me`, `documentation`), not dynamically loaded from `.agents/skills/`. Won't reflect actual discovered skills.
-
-## Server lifecycle
-
-- Daemon spawns server via `npx tsx apps/server/src/index.ts` — no port is passed explicitly; relies on DEFAULT_PORT (4100) from server's own arg parsing.
-- CLI uses `fileURLToPath(import.meta.url)` to resolve server entry relative to its own `__dirname`.
 
 ## Responsive TUI Patterns
 
@@ -92,6 +88,13 @@
 
 - `pnpm cli` at root tries `bun` first (silent failure), falls back to `tsx` — bun is faster for dev startup. `--prompt` args only reach the tsx fallback (not bun), which is intentional — TUI mode doesn't need them, and `pnpm exec tsx ... --prompt` is available for headless single-shot mode.
 - Three modes: `--prompt` (single-shot stdout), TUI (interactive), REPL fallback if TUI fails.
+- `runHeadless` handles `--repl` mode and **returns `true`** — all `--repl` handling (including log suppression) must happen inside `runHeadless`, not in `index.tsx` after the call. Code after `runHeadless` for `--repl` is dead code.
+
+## Server lifecycle
+
+- Daemon spawns server via `npx tsx apps/server/src/index.ts` — no port is passed explicitly; relies on DEFAULT_PORT (4100) from server's own arg parsing.
+- CLI uses `fileURLToPath(import.meta.url)` to resolve server entry relative to its own `__dirname`.
+- The `[server]`-prefixed logs seen in TUI come from `daemon.ts`'s `child.stdout.on("data")` and `child.stderr.on("data")` handlers piping the child process's output — not from the daemon's own logger. To suppress server logs, check an env var (`SCODE_LOG_LEVEL`) in `daemon.ts` before forwarding, not in the server process itself.
 
 ## Stream cleanup asymmetry
 

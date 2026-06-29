@@ -57,6 +57,9 @@ Always import from `@scode/shared/utils` — never import `axios` directly. This
 - Maintenance: compress `.log` files ≥15 days, delete `.gz` files ≥30 days.
 - Colored console output with level prefixes: INF/DBG/WRN/ERR.
 - LoggerOptions can redirect to stderr instead of file.
+- **Console output and file logging are separate paths.** `consoleOut()` writes to stderr/stdout with level prefix; pino always writes to the log file regardless of console suppression.
+- Logger instances are created at ESM module-import time (static imports execute before `main()`). Env vars like `SCODE_LOG_LEVEL` set inside `main()` won't affect existing Loggers. Use `Logger.setLevel()` — a static `globalLevel` field checked at log-call time — to suppress console output at runtime after instantiation.
+- `Logger.setLevel()` only affects console output (via `shouldConsole()` check). Pino's own level filtering is separate and still honors its constructed `level` option.
 
 ## TypeScript
 
