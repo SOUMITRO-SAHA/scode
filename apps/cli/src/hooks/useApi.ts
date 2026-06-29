@@ -22,7 +22,7 @@ import {
   sessionPath,
   skillPath,
 } from "@scode/shared/constants";
-import { Logger } from "@scode/shared/logger";
+import { DebugLogger, Logger } from "@scode/shared/logger";
 import type {
   HealthStatus,
   LogEntry,
@@ -41,6 +41,7 @@ import { getCwd } from "@scode/shared/utils";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 const logger = new Logger({ stderr: true });
+const dbg = new DebugLogger("useApi");
 
 export function useApiBase(serverUrl?: string) {
   return serverUrl;
@@ -77,7 +78,7 @@ export function useConnectionStatus(serverUrl?: string): {
 // ── Stats ──
 export function useStats(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
-  logger.debug(`[useStats] Called with serverUrl: ${serverUrl}, cwd: ${cwd}`);
+  dbg.log(`useStats`, { serverUrl, cwd });
   return useQuery({
     queryKey: ["stats", serverUrl, cwd],
     queryFn: () =>
@@ -203,6 +204,7 @@ export function useSetDefaultModel(serverUrl?: string) {
 // ── Sessions ──
 export function useSessions(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
+  dbg.log(`useSessions`, { serverUrl, cwd });
   return useQuery({
     queryKey: ["sessions", serverUrl, cwd],
     queryFn: () =>
@@ -219,6 +221,7 @@ export function useSessions(serverUrl?: string) {
 export function useCreateSession(serverUrl?: string) {
   const qc = useQueryClient();
   const cwd = useMemo(() => getCwd(), []);
+  dbg.log(`useCreateSession`, { serverUrl, cwd });
   return useMutation({
     mutationFn: (body: { name?: string; model?: string; provider?: string }) =>
       Effect.runPromise(
@@ -304,6 +307,7 @@ export function useSessionMessages(id: string | undefined, serverUrl?: string) {
 // ── Skills ──
 export function useSkills(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
+  dbg.log(`useSkills`, { serverUrl, cwd });
   return useQuery({
     queryKey: ["skills", serverUrl, cwd],
     queryFn: () =>
@@ -331,6 +335,7 @@ export function useSkill(name: string | undefined, serverUrl?: string) {
 export function useReloadSkills(serverUrl?: string) {
   const qc = useQueryClient();
   const cwd = useMemo(() => getCwd(), []);
+  dbg.log(`useReloadSkills`, { serverUrl, cwd });
   return useMutation({
     mutationFn: () =>
       Effect.runPromise(
@@ -348,6 +353,7 @@ export function useReloadSkills(serverUrl?: string) {
 
 export function useValidateSkills(serverUrl?: string) {
   const cwd = useMemo(() => getCwd(), []);
+  dbg.log(`useValidateSkills`, { serverUrl, cwd });
   return useMutation({
     mutationFn: () =>
       Effect.runPromise(
