@@ -1,5 +1,150 @@
 import { Schema } from "effect";
 
+type AstNode = {
+  _tag: string;
+  propertySignatures?: Array<{ name: string; type: AstNode }>;
+  types?: AstNode[];
+  rest?: AstNode[];
+};
+
+function getTag(schema: Schema.Schema<unknown> | AstNode): string | undefined {
+  if (
+    "ast" in schema &&
+    typeof (schema as Schema.Schema<unknown>).ast === "object"
+  ) {
+    return ((schema as Schema.Schema<unknown>).ast as AstNode)._tag;
+  }
+  return (schema as AstNode)._tag;
+}
+
+function getPropertySignatures(
+  schema: Schema.Schema<unknown> | AstNode,
+): Array<{ name: string; type: AstNode }> | undefined {
+  if (
+    "ast" in schema &&
+    typeof (schema as Schema.Schema<unknown>).ast === "object"
+  ) {
+    return ((schema as Schema.Schema<unknown>).ast as AstNode)
+      .propertySignatures;
+  }
+  return (schema as AstNode).propertySignatures;
+}
+
+function getTypes(
+  schema: Schema.Schema<unknown> | AstNode,
+): AstNode[] | undefined {
+  if (
+    "ast" in schema &&
+    typeof (schema as Schema.Schema<unknown>).ast === "object"
+  ) {
+    return ((schema as Schema.Schema<unknown>).ast as AstNode).types;
+  }
+  return (schema as AstNode).types;
+}
+
+function getRest(
+  schema: Schema.Schema<unknown> | AstNode,
+): AstNode[] | undefined {
+  if (
+    "ast" in schema &&
+    typeof (schema as Schema.Schema<unknown>).ast === "object"
+  ) {
+    return ((schema as Schema.Schema<unknown>).ast as AstNode).rest;
+  }
+  return (schema as AstNode).rest;
+}
+
+function isOptionalType(type: AstNode): boolean {
+  if (type._tag === "Union") {
+    return (type.types ?? []).some(
+      (t) =>
+        t._tag === "Undefined" ||
+        t._tag === "UndefinedKeyword" ||
+        t._tag === "VoidKeyword",
+    );
+  }
+  return false;
+}
+
+function unwrapOptional(type: AstNode): AstNode {
+  if (type._tag === "Union") {
+    const nonUndefined = (type.types ?? []).filter(
+      (t) =>
+        t._tag !== "Undefined" &&
+        t._tag !== "UndefinedKeyword" &&
+        t._tag !== "VoidKeyword",
+    );
+    if (nonUndefined.length === 1) return nonUndefined[0];
+  }
+  return type;
+}
+
+/** Convert an Effect Schema to a JSON Schema object */
+export function schemaToJsonSchema(
+  schema: Schema.Schema<unknown>,
+): Record<string, unknown> {
+  const tag = getTag(schema);
+  if (!tag) return { type: "string" };
+
+  switch (tag) {
+    case "String":
+      return { type: "string" };
+    case "Number":
+      return { type: "number" };
+    case "Boolean":
+      return { type: "boolean" };
+    case "Arrays": {
+      const rest = getRest(schema) ?? [];
+      if (rest.length === 1) {
+        return {
+          type: "array",
+          items: schemaToJsonSchema(
+            rest[0] as unknown as Schema.Schema<unknown>,
+          ),
+        };
+      }
+      return { type: "array" };
+    }
+    case "Objects": {
+      const pss = getPropertySignatures(schema);
+      const props: Record<string, Record<string, unknown>> = {};
+      const required: string[] = [];
+      for (const ps of pss ?? []) {
+        const innerType = unwrapOptional(ps.type);
+        props[ps.name] = schemaToJsonSchema(
+          innerType as unknown as Schema.Schema<unknown>,
+        );
+        if (!isOptionalType(ps.type)) {
+          required.push(ps.name);
+        }
+      }
+      const result: Record<string, unknown> = {
+        type: "object",
+        properties: props,
+      };
+      if (required.length > 0) result.required = required;
+      return result;
+    }
+    case "Union": {
+      const ts = getTypes(schema) ?? [];
+      const nonUndefined = ts.filter(
+        (t) =>
+          t._tag !== "Undefined" &&
+          t._tag !== "UndefinedKeyword" &&
+          t._tag !== "VoidKeyword",
+      );
+      if (nonUndefined.length === 1) {
+        return schemaToJsonSchema(
+          nonUndefined[0] as unknown as Schema.Schema<unknown>,
+        );
+      }
+      return { type: "string" };
+    }
+    default:
+      return { type: "string" };
+  }
+}
+
 export const EffortLevel = Schema.Literals([
   "none",
   "minimal",

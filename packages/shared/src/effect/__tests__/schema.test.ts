@@ -17,6 +17,7 @@ import {
   StreamChunk,
   StreamEvent,
   ToolDefinition,
+  schemaToJsonSchema,
 } from "../schema";
 
 function parse<A, I>(schema: Schema.Schema<A, I>, input: I): A {
@@ -247,5 +248,67 @@ describe("StreamEvent", () => {
     if (result.type === "tool_use") {
       expect(result.toolCall.name).toBe("read");
     }
+  });
+});
+
+describe("schemaToJsonSchema", () => {
+  it("converts string schema", () => {
+    expect(schemaToJsonSchema(Schema.String)).toEqual({ type: "string" });
+  });
+
+  it("converts number schema", () => {
+    expect(schemaToJsonSchema(Schema.Number)).toEqual({ type: "number" });
+  });
+
+  it("converts boolean schema", () => {
+    expect(schemaToJsonSchema(Schema.Boolean)).toEqual({ type: "boolean" });
+  });
+
+  it("converts struct with required fields", () => {
+    const schema = Schema.Struct({ name: Schema.String, age: Schema.Number });
+    expect(schemaToJsonSchema(schema)).toEqual({
+      type: "object",
+      properties: { name: { type: "string" }, age: { type: "number" } },
+      required: ["name", "age"],
+    });
+  });
+
+  it("converts struct with optional fields", () => {
+    const schema = Schema.Struct({
+      name: Schema.String,
+      count: Schema.optional(Schema.Number),
+    });
+    expect(schemaToJsonSchema(schema)).toEqual({
+      type: "object",
+      properties: { name: { type: "string" }, count: { type: "number" } },
+      required: ["name"],
+    });
+  });
+
+  it("returns { type: 'string' } for unknown types", () => {
+    expect(
+      schemaToJsonSchema(
+        Schema.Literal("a", "b") as unknown as Schema.Schema<unknown>,
+      ),
+    ).toEqual({ type: "string" });
+  });
+
+  it("converts array schema", () => {
+    expect(schemaToJsonSchema(Schema.Array(Schema.String))).toEqual({
+      type: "array",
+      items: { type: "string" },
+    });
+  });
+
+  it("converts array of structs", () => {
+    const schema = Schema.Array(Schema.Struct({ name: Schema.String }));
+    expect(schemaToJsonSchema(schema)).toEqual({
+      type: "array",
+      items: {
+        type: "object",
+        properties: { name: { type: "string" } },
+        required: ["name"],
+      },
+    });
   });
 });

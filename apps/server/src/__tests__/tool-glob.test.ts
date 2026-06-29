@@ -1,75 +1,93 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
-import type { Mock } from "vitest";
+import { describe, expect, it } from "vitest";
 
-import { execFileSync } from "node:child_process";
+import { mkdirSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
-import { handler as globHandler } from "../tool/glob";
+import { runTool } from "../tool/core";
+import { tool as globTool } from "../tool/glob";
 import { workspaceStorage } from "../tool/workspace";
-
-vi.mock("node:child_process", () => ({ execFileSync: vi.fn() }));
 
 function withWorkspace(workspace: string, fn: () => Promise<unknown>) {
   return workspaceStorage.run(workspace, fn);
 }
 
-describe("glob tool - shell injection prevention", () => {
-  beforeEach(() => {
-    (execFileSync as Mock).mockReset();
+describe("glob tool - cross-platform file matching", () => {
+  it("finds files matching glob pattern", async () => {
+    const dir = resolve(tmpdir(), `scode-test-glob-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "a.ts"), "", "utf-8");
+    writeFileSync(join(dir, "b.ts"), "", "utf-8");
+    writeFileSync(join(dir, "c.js"), "", "utf-8");
+    try {
+      const result = (await withWorkspace(dir, () =>
+        runTool(globTool, { pattern: "*.ts" }),
+      )) as { files: string[] };
+      expect(result.files).toEqual(expect.arrayContaining(["a.ts", "b.ts"]));
+      expect(result.files).toHaveLength(2);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
-  it("passes pattern as separate argument to execFileSync", async () => {
-    (execFileSync as Mock).mockReturnValue("src/file.ts\n");
-    const result = await withWorkspace("/workspace", () =>
-      globHandler({ pattern: "**/*.ts" }),
-    );
-    expect(result).toEqual({ files: ["src/file.ts"] });
-    expect(execFileSync).toHaveBeenCalledWith(
-      "find",
-      [
-        "/workspace",
-        "-path",
-        "*/node_modules",
-        "-prune",
-        "-o",
-        "-path",
-        "**/*.ts",
-        "-print",
-      ],
-      expect.any(Object),
-    );
+  it("finds files recursively with ** pattern", async () => {
+    const dir = resolve(tmpdir(), `scode-test-glob-${Date.now()}`);
+    mkdirSync(join(dir, "src", "lib"), { recursive: true });
+    writeFileSync(join(dir, "src", "lib", "util.ts"), "", "utf-8");
+    writeFileSync(join(dir, "src", "index.ts"), "", "utf-8");
+    try {
+      const result = (await withWorkspace(dir, () =>
+        runTool(globTool, { pattern: "**/*.ts" }),
+      )) as { files: string[] };
+      expect(result.files).toEqual(
+        expect.arrayContaining(["src/lib/util.ts", "src/index.ts"]),
+      );
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
-  it("passes shell metacharacters in pattern as literal arguments", async () => {
-    (execFileSync as Mock).mockReturnValue("");
-    const malicious = '"; rm -rf / #';
-    await withWorkspace("/workspace", () =>
-      globHandler({ pattern: malicious }),
-    );
-    const args = (execFileSync as Mock).mock.calls[0][1];
-    expect(args[6]).toBe(malicious);
-    expect(execFileSync).toHaveBeenCalledWith(
-      "find",
-      expect.any(Array),
-      expect.any(Object),
-    );
-  });
-
-  it("handles empty glob output gracefully", async () => {
-    (execFileSync as Mock).mockImplementation(() => {
-      throw new Error("No matches");
-    });
-    const result = await withWorkspace("/workspace", () =>
-      globHandler({ pattern: "nonexistent/**" }),
-    );
-    expect(result).toEqual({ files: [] });
+  it("returns empty when no files match pattern", async () => {
+    const dir = resolve(tmpdir(), `scode-test-glob-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "a.txt"), "", "utf-8");
+    try {
+      const result = (await withWorkspace(dir, () =>
+        runTool(globTool, { pattern: "*.py" }),
+      )) as { files: string[] };
+      expect(result).toEqual({ files: [] });
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 
   it("uses custom search path when provided", async () => {
-    (execFileSync as Mock).mockReturnValue("");
-    await withWorkspace("/workspace", () =>
-      globHandler({ pattern: "*.ts", path: "src" }),
-    );
-    const args = (execFileSync as Mock).mock.calls[0][1];
-    expect(args[0]).toBe("/workspace/src");
+    const dir = resolve(tmpdir(), `scode-test-glob-${Date.now()}`);
+    mkdirSync(join(dir, "src"), { recursive: true });
+    mkdirSync(join(dir, "lib"), { recursive: true });
+    writeFileSync(join(dir, "src", "a.ts"), "", "utf-8");
+    writeFileSync(join(dir, "lib", "b.ts"), "", "utf-8");
+    try {
+      const result = (await withWorkspace(dir, () =>
+        runTool(globTool, { pattern: "*.ts", path: "src" }),
+      )) as { files: string[] };
+      expect(result.files).toEqual(["src/a.ts"]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
+  });
+
+  it("handles shell metacharacters in patterns safely", async () => {
+    const dir = resolve(tmpdir(), `scode-test-glob-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    writeFileSync(join(dir, "safe.txt"), "", "utf-8");
+    try {
+      const result = (await withWorkspace(dir, () =>
+        runTool(globTool, { pattern: '"; rm -rf / #' }),
+      )) as { files: string[] };
+      expect(result.files).toEqual([]);
+    } finally {
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

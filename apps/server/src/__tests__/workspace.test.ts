@@ -1,7 +1,15 @@
 import { describe, expect, it } from "vitest";
 
 import { Effect } from "effect";
-import { realpathSync } from "node:fs";
+import {
+  mkdirSync,
+  realpathSync,
+  rmSync,
+  symlinkSync,
+  writeFileSync,
+} from "node:fs";
+import { tmpdir } from "node:os";
+import { join, resolve } from "node:path";
 
 import {
   WorkspaceService,
@@ -102,5 +110,78 @@ describe("WorkspaceService", () => {
       ),
     );
     expect(result).toBe(realpathSync(process.cwd()));
+  });
+});
+
+describe("safeResolve", () => {
+  it("resolves path within workspace", async () => {
+    const dir = resolve(tmpdir(), `scode-test-sr-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    await workspaceStorage.run(dir, async () => {
+      const { safeResolve } = await import("../tool/workspace");
+      expect(safeResolve("foo.txt")).toBe(join(dir, "foo.txt"));
+    });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects path outside workspace", async () => {
+    const dir = resolve(tmpdir(), `scode-test-sr-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    await workspaceStorage.run(dir, async () => {
+      const { safeResolve } = await import("../tool/workspace");
+      expect(() => safeResolve("/etc/passwd")).toThrow(
+        "Path escapes workspace",
+      );
+    });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects relative .. escape", async () => {
+    const dir = resolve(tmpdir(), `scode-test-sr-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    await workspaceStorage.run(dir, async () => {
+      const { safeResolve } = await import("../tool/workspace");
+      expect(() => safeResolve("../../etc/passwd")).toThrow(
+        "Path escapes workspace",
+      );
+    });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("allows workspace root itself", async () => {
+    const dir = resolve(tmpdir(), `scode-test-sr-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    await workspaceStorage.run(dir, async () => {
+      const { safeResolve } = await import("../tool/workspace");
+      expect(safeResolve(".")).toBe(dir);
+    });
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it("rejects symlink that escapes workspace", async () => {
+    const dir = resolve(tmpdir(), `scode-test-sr-${Date.now()}`);
+    const outsideDir = resolve(tmpdir(), `scode-test-sr-outside-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    mkdirSync(outsideDir, { recursive: true });
+    writeFileSync(join(outsideDir, "secret.txt"), "pwned", "utf-8");
+    symlinkSync(outsideDir, join(dir, "link"));
+    await workspaceStorage.run(dir, async () => {
+      const { safeResolve } = await import("../tool/workspace");
+      expect(() => safeResolve("link/secret.txt")).toThrow(
+        "Path escapes workspace via symlink",
+      );
+    });
+    rmSync(dir, { recursive: true, force: true });
+    rmSync(outsideDir, { recursive: true, force: true });
+  });
+
+  it("allows new file path (non-existent, no symlink)", async () => {
+    const dir = resolve(tmpdir(), `scode-test-sr-${Date.now()}`);
+    mkdirSync(dir, { recursive: true });
+    await workspaceStorage.run(dir, async () => {
+      const { safeResolve } = await import("../tool/workspace");
+      expect(safeResolve("new_file.txt")).toBe(join(dir, "new_file.txt"));
+    });
+    rmSync(dir, { recursive: true, force: true });
   });
 });

@@ -8,6 +8,7 @@ import {
   IdGenerationError,
   LoggerError,
   ModelParseError,
+  ToolFailure,
 } from "../errors";
 
 describe("ApiFetchError", () => {
@@ -79,5 +80,13 @@ describe("LoggerError", () => {
   it("formats message", () => {
     const err = new LoggerError({ operation: "write" });
     expect(err.message).toBe("Logger write failed");
+  });
+});
+
+describe("ToolFailure", () => {
+  it("formats message", () => {
+    const err = new ToolFailure({ error: "something broke" });
+    expect(err.message).toBe("Tool execution failed: something broke");
+    expect(err._tag).toBe("ToolFailure");
   });
 });

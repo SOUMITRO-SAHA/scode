@@ -1,62 +1,61 @@
-import { execFileSync } from "node:child_process";
-import { resolve } from "node:path";
+import { Effect, Schema } from "effect";
+import { relative, resolve } from "node:path";
 
-import type { ToolDefinition, ToolHandler } from "../types";
+import { Tool } from "./core";
+import { isIgnoredPath, searchText } from "./ripgrep";
 import { getWorkspace } from "./workspace";
 
-import { MAX_BUFFER } from "@scode/shared/constants";
+import { ToolFailure } from "@scode/shared/effect";
 
-export const definition: ToolDefinition = {
+const InputStruct = Schema.Struct({
+  pattern: Schema.String,
+  include: Schema.optional(Schema.String),
+  path: Schema.optional(Schema.String),
+});
+
+export const tool = Tool.make({
   name: "grep",
   description: "Search file contents by regex pattern",
-  inputSchema: {
-    type: "object",
-    properties: {
-      pattern: { type: "string", description: "Regex pattern to search for" },
-      include: {
-        type: "string",
-        description: "File glob pattern to filter (e.g. '*.ts')",
-      },
-      path: {
-        type: "string",
-        description: "Directory to search in (default: workspace root)",
-      },
-    },
-    required: ["pattern"],
-  },
-};
+  input: InputStruct,
+  output: Schema.Struct({
+    results: Schema.Array(
+      Schema.Struct({
+        file: Schema.String,
+        line: Schema.Number,
+        content: Schema.String,
+      }),
+    ),
+  }),
+  execute: ({ pattern, include, path }) => {
+    return Effect.tryPromise({
+      try: async () => {
+        const workspace = getWorkspace();
+        const searchPath = path ? resolve(workspace, path) : workspace;
 
-export const handler: ToolHandler = async (input: Record<string, unknown>) => {
-  const pattern = input.pattern as string;
-  const workspace = getWorkspace();
-  const searchPath = input.path
-    ? resolve(workspace, input.path as string)
-    : workspace;
+        let results;
+        try {
+          results = await searchText(searchPath, pattern, {
+            include: include ?? undefined,
+          });
+        } catch (err) {
+          const msg = String(err);
+          if (msg.includes("ripgrep (rg) is not installed")) {
+            return { results: [] };
+          }
+          throw err;
+        }
 
-  const args = ["-rn", "--binary-files=without-match", pattern, searchPath];
-  if (input.include) {
-    args.splice(2, 0, "--include", input.include as string);
-  }
-
-  try {
-    const stdout = execFileSync("grep", args, {
-      encoding: "utf-8",
-      maxBuffer: MAX_BUFFER,
-    });
-    const results = stdout
-      .trim()
-      .split("\n")
-      .filter(Boolean)
-      .map((line) => {
-        const parts = line.split(":");
         return {
-          file: parts[0],
-          line: Number(parts[1]),
-          content: parts.slice(2).join(":"),
+          results: results
+            .map((r) => ({
+              file: relative(searchPath, r.file),
+              line: r.line,
+              content: r.content,
+            }))
+            .filter((r) => !isIgnoredPath(r.file)),
         };
-      });
-    return { results };
-  } catch {
-    return { results: [] };
-  }
-};
+      },
+      catch: (err) => new ToolFailure({ error: `Grep error: ${String(err)}` }),
+    });
+  },
+});

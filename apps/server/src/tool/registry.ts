@@ -1,28 +1,23 @@
 import { Effect } from "effect";
 
-import { ToolFailure } from "../llm/error";
-import type { ToolCall, ToolDefinition, ToolHandler } from "../types";
+import type { ToolCall, ToolDefinition } from "../types";
+import type { AnyTool } from "./core";
+import { Tool } from "./core";
 
-import { errorMessage } from "@scode/shared/utils";
-
-export interface ToolEntry {
-  definition: ToolDefinition;
-  handler: ToolHandler;
-}
+import { ToolFailure } from "@scode/shared/effect";
 
 export class ToolRegistry {
-  private tools = new Map<string, ToolEntry>();
+  private tools = new Map<string, AnyTool>();
 
-  register(
-    name: string,
-    definition: ToolDefinition,
-    handler: ToolHandler,
-  ): void {
-    this.tools.set(name, { definition, handler });
+  register(tool: AnyTool): void {
+    const entry = Tool.getEntry(tool);
+    if (entry) {
+      this.tools.set(entry.name, tool);
+    }
   }
 
   definitions(): ToolDefinition[] {
-    return [...this.tools.values()].map((t) => t.definition);
+    return [...this.tools.values()].map((t) => Tool.toDefinition(t));
   }
 
   settle(call: ToolCall): Effect.Effect<unknown, ToolFailure> {
@@ -32,12 +27,6 @@ export class ToolRegistry {
         new ToolFailure({ error: `Unknown tool: ${call.name}` }),
       );
     }
-    return Effect.tryPromise({
-      try: () => tool.handler(call.input),
-      catch: (err) =>
-        new ToolFailure({
-          error: Effect.runSync(errorMessage(err)),
-        }),
-    });
+    return Tool.settle(tool, call);
   }
 }

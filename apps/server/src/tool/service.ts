@@ -1,15 +1,10 @@
 import { Context, Effect, Layer } from "effect";
 
-import { ToolFailure } from "../llm/error";
 import type { ToolCall, ToolDefinition } from "../types";
-import * as bashTool from "./bash";
-import * as editTool from "./edit";
-import * as globTool from "./glob";
-import * as grepTool from "./grep";
-import * as readTool from "./read";
+import { allTools } from "./make";
 import { ToolRegistry } from "./registry";
-import * as skillTool from "./skill";
-import * as writeTool from "./write";
+
+import { ToolFailure } from "@scode/shared/effect";
 
 export class ToolService extends Context.Service<
   ToolService,
@@ -21,13 +16,9 @@ export class ToolService extends Context.Service<
 
 function buildToolRegistry(): ToolRegistry {
   const reg = new ToolRegistry();
-  reg.register("read", readTool.definition, readTool.handler);
-  reg.register("write", writeTool.definition, writeTool.handler);
-  reg.register("edit", editTool.definition, editTool.handler);
-  reg.register("bash", bashTool.definition, bashTool.handler);
-  reg.register("grep", grepTool.definition, grepTool.handler);
-  reg.register("glob", globTool.definition, globTool.handler);
-  reg.register("skill", skillTool.definition, skillTool.handler);
+  for (const t of allTools) {
+    reg.register(t);
+  }
   return reg;
 }
 

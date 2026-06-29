@@ -4,8 +4,9 @@ import { existsSync, mkdirSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
+import { runTool } from "../tool/core";
 import { workspaceStorage } from "../tool/workspace";
-import { handler as writeHandler } from "../tool/write";
+import { tool as writeTool } from "../tool/write";
 
 function withWorkspace(workspace: string, fn: () => Promise<unknown>) {
   return workspaceStorage.run(workspace, fn);
@@ -17,7 +18,7 @@ describe("write tool - path safety", () => {
     mkdirSync(dir, { recursive: true });
     try {
       const result = await withWorkspace(dir, () =>
-        writeHandler({ path: "new-file.txt", content: "hello" }),
+        runTool(writeTool, { path: "new-file.txt", content: "hello" }),
       );
       expect(result).toEqual({ ok: true });
       expect(existsSync(join(dir, "new-file.txt"))).toBe(true);
@@ -32,7 +33,7 @@ describe("write tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          writeHandler({
+          runTool(writeTool, {
             path: "/tmp/scode-test-write-forbidden",
             content: "evil",
           }),
@@ -49,7 +50,7 @@ describe("write tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          writeHandler({ path: "../escaped-file.txt", content: "evil" }),
+          runTool(writeTool, { path: "../escaped-file.txt", content: "evil" }),
         ),
       ).rejects.toThrow("Path escapes workspace");
     } finally {
@@ -63,7 +64,7 @@ describe("write tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          writeHandler({
+          runTool(writeTool, {
             path: `../${dir.split("/").pop()}-evil/evil.txt`,
             content: "evil",
           }),

@@ -2,7 +2,7 @@ import { Cause, Effect, Stream } from "effect";
 
 import type { ConfigService } from "../config/service";
 import { resolveApiKey } from "../llm/config";
-import { LLMError, ToolFailure } from "../llm/error";
+import { LLMError } from "../llm/error";
 import type { LLMProvider } from "../llm/provider";
 import type { ProviderService } from "../llm/provider-service";
 import { buildPrompt } from "../prompt/builder";
@@ -14,6 +14,7 @@ import { constrainedDefinition } from "../tool/skill";
 import type { Skill, StreamEvent } from "../types";
 
 import { MAX_TOOL_ITERATIONS } from "@scode/shared/constants";
+import { ToolFailure } from "@scode/shared/effect";
 import { Logger } from "@scode/shared/logger";
 import { encodeStreamChunk } from "@scode/shared/types";
 import type { EffortLevel } from "@scode/shared/types";

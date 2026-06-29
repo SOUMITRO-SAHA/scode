@@ -1,43 +1,68 @@
+import { Effect, Schema } from "effect";
 import { readFileSync, writeFileSync } from "node:fs";
 
-import type { ToolDefinition, ToolHandler } from "../types";
+import { Tool } from "./core";
 import { safeResolve } from "./workspace";
 
-export const definition: ToolDefinition = {
+import { ToolFailure } from "@scode/shared/effect";
+
+const InputStruct = Schema.Struct({
+  path: Schema.String,
+  oldString: Schema.String,
+  newString: Schema.String,
+  replaceAll: Schema.optional(Schema.Boolean),
+});
+
+function isToolError(err: unknown): err is { _tag: string } {
+  return typeof err === "object" && err !== null && "_tag" in err;
+}
+
+export const tool = Tool.make({
   name: "edit",
   description: "Exact string replacement in an existing file",
-  inputSchema: {
-    type: "object",
-    properties: {
-      path: { type: "string", description: "Path to the file" },
-      oldString: { type: "string", description: "Text to replace" },
-      newString: { type: "string", description: "Replacement text" },
-    },
-    required: ["path", "oldString", "newString"],
+  input: InputStruct,
+  output: Schema.Struct({ ok: Schema.Boolean }),
+  execute: ({ path, oldString, newString, replaceAll }) => {
+    return Effect.try({
+      try: () => {
+        const resolved = safeResolve(path);
+        const content = readFileSync(resolved, "utf-8");
+
+        if (!content.includes(oldString)) {
+          throw { _tag: "NotFound", message: "oldString not found in file" };
+        }
+
+        const occurrences = content.split(oldString).length - 1;
+        if (occurrences > 1 && !replaceAll) {
+          throw {
+            _tag: "MultipleMatches",
+            message:
+              "Multiple matches for oldString; set replaceAll=true or refine oldString",
+          };
+        }
+
+        const updated = replaceAll
+          ? content.split(oldString).join(newString)
+          : content.replace(oldString, newString);
+
+        writeFileSync(resolved, updated, "utf-8");
+        return { ok: true };
+      },
+      catch: (err) => {
+        if (isToolError(err)) {
+          if (err._tag === "NotFound") {
+            return new ToolFailure({ error: "oldString not found in file" });
+          }
+          if (err._tag === "MultipleMatches") {
+            return new ToolFailure({
+              error:
+                "Multiple matches for oldString; set replaceAll=true or refine oldString",
+            });
+          }
+        }
+        if (err instanceof ToolFailure) return err;
+        return new ToolFailure({ error: `Edit error: ${String(err)}` });
+      },
+    });
   },
-};
-
-export const handler: ToolHandler = async (input: Record<string, unknown>) => {
-  const inputPath = input.path as string;
-  const oldString = input.oldString as string;
-  const newString = input.newString as string;
-  const resolved = safeResolve(inputPath);
-  const content = readFileSync(resolved, "utf-8");
-
-  if (!content.includes(oldString)) {
-    throw new Error("oldString not found in file");
-  }
-
-  if (content.split(oldString).length - 1 > 1 && !input.replaceAll) {
-    throw new Error(
-      "Multiple matches for oldString; set replaceAll=true or refine oldString",
-    );
-  }
-
-  const updated = input.replaceAll
-    ? content.split(oldString).join(newString)
-    : content.replace(oldString, newString);
-
-  writeFileSync(resolved, updated, "utf-8");
-  return { ok: true };
-};
+});

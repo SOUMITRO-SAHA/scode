@@ -1,28 +1,32 @@
+import { Effect, Schema } from "effect";
 import { mkdirSync, writeFileSync } from "node:fs";
 import { dirname } from "node:path";
 
-import type { ToolDefinition, ToolHandler } from "../types";
+import { Tool } from "./core";
 import { safeResolve } from "./workspace";
 
-export const definition: ToolDefinition = {
+import { ToolFailure } from "@scode/shared/effect";
+
+const InputStruct = Schema.Struct({
+  path: Schema.String,
+  content: Schema.String,
+});
+
+export const tool = Tool.make({
   name: "write",
   description:
     "Create or overwrite a file. Creates parent directories if needed.",
-  inputSchema: {
-    type: "object",
-    properties: {
-      path: { type: "string", description: "Path to the file" },
-      content: { type: "string", description: "File content" },
-    },
-    required: ["path", "content"],
+  input: InputStruct,
+  output: Schema.Struct({ ok: Schema.Boolean }),
+  execute: ({ path, content }) => {
+    return Effect.try({
+      try: () => {
+        const resolved = safeResolve(path);
+        mkdirSync(dirname(resolved), { recursive: true });
+        writeFileSync(resolved, content, "utf-8");
+        return { ok: true };
+      },
+      catch: (err) => new ToolFailure({ error: `Write error: ${String(err)}` }),
+    });
   },
-};
-
-export const handler: ToolHandler = async (input: Record<string, unknown>) => {
-  const inputPath = input.path as string;
-  const content = input.content as string;
-  const resolved = safeResolve(inputPath);
-  mkdirSync(dirname(resolved), { recursive: true });
-  writeFileSync(resolved, content, "utf-8");
-  return { ok: true };
-};
+});

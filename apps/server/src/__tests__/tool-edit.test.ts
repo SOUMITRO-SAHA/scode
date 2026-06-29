@@ -4,7 +4,8 @@ import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join, resolve } from "node:path";
 
-import { handler as editHandler } from "../tool/edit";
+import { runTool } from "../tool/core";
+import { tool as editTool } from "../tool/edit";
 import { workspaceStorage } from "../tool/workspace";
 
 function withWorkspace(workspace: string, fn: () => Promise<unknown>) {
@@ -18,7 +19,7 @@ describe("edit tool - path safety", () => {
     writeFileSync(join(dir, "file.txt"), "hello world", "utf-8");
     try {
       const result = await withWorkspace(dir, () =>
-        editHandler({
+        runTool(editTool, {
           path: "file.txt",
           oldString: "hello",
           newString: "hi",
@@ -36,7 +37,7 @@ describe("edit tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          editHandler({
+          runTool(editTool, {
             path: "/etc/hosts",
             oldString: "127.0.0.1",
             newString: "0.0.0.0",
@@ -54,7 +55,7 @@ describe("edit tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          editHandler({
+          runTool(editTool, {
             path: "../outside.txt",
             oldString: "a",
             newString: "b",
@@ -72,7 +73,7 @@ describe("edit tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          editHandler({
+          runTool(editTool, {
             path: `../${dir.split("/").pop()}-evil/file.txt`,
             oldString: "a",
             newString: "b",
@@ -91,7 +92,7 @@ describe("edit tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          editHandler({
+          runTool(editTool, {
             path: "file.txt",
             oldString: "nonexistent",
             newString: "x",
@@ -110,7 +111,7 @@ describe("edit tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          editHandler({
+          runTool(editTool, {
             path: "file.txt",
             oldString: "a",
             newString: "b",
@@ -128,7 +129,7 @@ describe("edit tool - path safety", () => {
     writeFileSync(join(dir, "file.txt"), "a a a", "utf-8");
     try {
       const result = await withWorkspace(dir, () =>
-        editHandler({
+        runTool(editTool, {
           path: "file.txt",
           oldString: "a",
           newString: "b",

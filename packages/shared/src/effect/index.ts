@@ -6,6 +6,7 @@ export {
   IdGenerationError,
   ModelParseError,
   LoggerError,
+  ToolFailure,
 } from "./errors";
 
 export {

@@ -1,42 +1,48 @@
+import { Effect, Schema } from "effect";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 
-import type { ToolDefinition, ToolHandler } from "../types";
+import { Tool } from "./core";
 import { safeResolve } from "./workspace";
 
-export const definition: ToolDefinition = {
+import { ToolFailure } from "@scode/shared/effect";
+
+const InputStruct = Schema.Struct({
+  path: Schema.String,
+  offset: Schema.optional(Schema.Number),
+  limit: Schema.optional(Schema.Number),
+});
+
+export const tool = Tool.make({
   name: "read",
   description: "Read file contents or list directory entries",
-  inputSchema: {
-    type: "object",
-    properties: {
-      path: { type: "string", description: "Path to file or directory" },
-      offset: {
-        type: "number",
-        description: "Line offset (1-indexed, file only)",
+  input: InputStruct,
+  output: Schema.Struct({
+    content: Schema.optional(Schema.String),
+    totalLines: Schema.optional(Schema.Number),
+    entries: Schema.optional(Schema.Array(Schema.String)),
+  }),
+  execute: ({ path, offset, limit }) => {
+    return Effect.try({
+      try: () => {
+        const resolved = safeResolve(path);
+        const stat = statSync(resolved);
+
+        if (stat.isDirectory()) {
+          const entries = readdirSync(resolved);
+          return { entries };
+        }
+
+        const content = readFileSync(resolved, "utf-8");
+        const lines = content.split("\n");
+        const off = offset ?? 1;
+        const lim = limit ?? lines.length;
+
+        return {
+          content: lines.slice(off - 1, off - 1 + lim).join("\n"),
+          totalLines: lines.length,
+        };
       },
-      limit: { type: "number", description: "Max lines to read (file only)" },
-    },
-    required: ["path"],
+      catch: (err) => new ToolFailure({ error: `Read error: ${String(err)}` }),
+    });
   },
-};
-
-export const handler: ToolHandler = async (input: Record<string, unknown>) => {
-  const inputPath = input.path as string;
-  const resolved = safeResolve(inputPath);
-  const stat = statSync(resolved);
-
-  if (stat.isDirectory()) {
-    const entries = readdirSync(resolved);
-    return { entries };
-  }
-
-  const content = readFileSync(resolved, "utf-8");
-  const lines = content.split("\n");
-  const offset = (input.offset as number) ?? 1;
-  const limit = (input.limit as number) ?? lines.length;
-
-  return {
-    content: lines.slice(offset - 1, offset - 1 + limit).join("\n"),
-    totalLines: lines.length,
-  };
-};
+});

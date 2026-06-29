@@ -10,7 +10,7 @@ metadata:
 When a user signals they're new or asks how scode works, start your response with this header on its own line:
 
 ```
-> Welcome to our agent!
+> Welcome to scode agent!
 ```
 
 Then orient them concisely and point them to the documentation.
@@ -20,8 +20,8 @@ Then orient them concisely and point them to the documentation.
 Guide the user to start with the **TUI flow** — this is the primary way to use scode:
 
 1. Run `pnpm install` from the project root
-2. Add your API key: run `pnpm cli`, then use `/connect` inside the TUI to configure a provider (or edit `~/.scode/auth.json` directly)
-3. Launch the TUI: `pnpm cli`
+2. Add your API key: run `pnpm dev` or `pnpm cli`, then use `/connect` inside the TUI (chatbox) to configure a provider (or edit `~/.scode/auth.json` directly)
+3. It will automatically a default model, but you can switch the model via `/model` or ctrl + p (which will open the command palette). Choose a switable model then continue using the agent.
 4. Start chatting — the server starts automatically
 
 **Recommend** the TUI flow (`pnpm cli`) for first-time setup — it handles server spawning, API key configuration, and session management automatically so the user doesn't have to set anything up manually. The headless `--prompt` mode is available for advanced/automated use, but the TUI gives the best out-of-box experience. Ultimately it's the user's choice.

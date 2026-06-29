@@ -1,10 +1,12 @@
 import { describe, expect, it } from "vitest";
 
+import { Effect } from "effect";
 import { mkdirSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { basename, join, relative, resolve } from "node:path";
 
-import { handler as readHandler } from "../tool/read";
+import { runTool } from "../tool/core";
+import { tool as readTool } from "../tool/read";
 import { workspaceStorage } from "../tool/workspace";
 
 function withWorkspace(workspace: string, fn: () => Promise<unknown>) {
@@ -18,7 +20,7 @@ describe("read tool - path safety", () => {
     writeFileSync(join(dir, "test.txt"), "hello world", "utf-8");
     try {
       const result = await withWorkspace(dir, () =>
-        readHandler({ path: "test.txt" }),
+        runTool(readTool, { path: "test.txt" }),
       );
       expect(result).toEqual({
         content: "hello world",
@@ -34,7 +36,7 @@ describe("read tool - path safety", () => {
     mkdirSync(dir, { recursive: true });
     try {
       await expect(
-        withWorkspace(dir, () => readHandler({ path: "/etc/passwd" })),
+        withWorkspace(dir, () => runTool(readTool, { path: "/etc/passwd" })),
       ).rejects.toThrow("Path escapes workspace");
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -49,7 +51,7 @@ describe("read tool - path safety", () => {
     try {
       const relativeEvil = relative(dir, evilFile);
       await expect(
-        withWorkspace(dir, () => readHandler({ path: relativeEvil })),
+        withWorkspace(dir, () => runTool(readTool, { path: relativeEvil })),
       ).rejects.toThrow("Path escapes workspace");
     } finally {
       rmSync(dir, { recursive: true, force: true });
@@ -66,7 +68,7 @@ describe("read tool - path safety", () => {
     try {
       await expect(
         withWorkspace(dir, () =>
-          readHandler({
+          runTool(readTool, {
             path: `../${basename(dir)}-evil/file.txt`,
           }),
         ),
@@ -83,7 +85,9 @@ describe("read tool - path safety", () => {
     writeFileSync(join(dir, "a.txt"), "", "utf-8");
     writeFileSync(join(dir, "b.txt"), "", "utf-8");
     try {
-      const result = await withWorkspace(dir, () => readHandler({ path: "." }));
+      const result = await withWorkspace(dir, () =>
+        runTool(readTool, { path: "." }),
+      );
       expect(result).toHaveProperty("entries");
       expect((result as { entries: string[] }).entries).toEqual(
         expect.arrayContaining(["a.txt", "b.txt"]),

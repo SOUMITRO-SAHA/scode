@@ -64,3 +64,11 @@ export class LoggerError extends Data.TaggedError("LoggerError")<{
     return `Logger ${this.operation} failed`;
   }
 }
+
+export class ToolFailure extends Data.TaggedError("ToolFailure")<{
+  readonly error: string;
+}> {
+  override get message(): string {
+    return `Tool execution failed: ${this.error}`;
+  }
+}

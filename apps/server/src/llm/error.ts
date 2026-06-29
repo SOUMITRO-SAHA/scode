@@ -133,11 +133,3 @@ export class LLMError extends Data.TaggedError("LLMError")<{
     return `${this.module}.${this.method}: ${this.reason.message}`;
   }
 }
-
-export class ToolFailure extends Data.TaggedError("ToolFailure")<{
-  readonly error: string;
-}> {
-  override get message(): string {
-    return `Tool execution failed: ${this.error}`;
-  }
-}
