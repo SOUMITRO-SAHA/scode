@@ -1,10 +1,10 @@
 import { useMemo } from "react";
 
+import { getMarkdownStyle, preprocessMarkdown } from "./markdown-renderer";
 import { ToolCallDisplay } from "./tool-call-display";
 
 import { ThinkingDisplay } from "@/components/feedback/thinking-display";
 import { useAppStore } from "@/store/index";
-import { getMarkdownStyle } from "@/styles/syntaxTheme";
 import type { ToolCallState } from "@scode/shared/types";
 import { theme } from "@scode/theme";
 
@@ -20,6 +20,10 @@ export function AssistantMessage({
   thought?: string;
 }) {
   const style = useMemo(() => getMarkdownStyle(), []);
+  const processedContent = useMemo(
+    () => preprocessMarkdown(content),
+    [content],
+  );
   const storeThought = useAppStore((s) => s.thought);
   const thoughtStartTime = useAppStore((s) => s.thoughtStartTime);
   const streaming = useAppStore((s) => s.streaming);
@@ -41,12 +45,12 @@ export function AssistantMessage({
         {toolCalls && toolCalls.length > 0 && (
           <ToolCallDisplay toolCalls={toolCalls} isStreaming={isStreaming} />
         )}
-        {content ? (
-          content.startsWith("Error: ") ? (
-            <text fg={theme.danger}>{content}</text>
+        {processedContent ? (
+          processedContent.startsWith("Error: ") ? (
+            <text fg={theme.danger}>{processedContent}</text>
           ) : (
             <markdown
-              content={content}
+              content={processedContent}
               syntaxStyle={style}
               streaming={isStreaming}
               conceal
