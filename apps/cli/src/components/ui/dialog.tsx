@@ -753,6 +753,7 @@ export interface DialogProps {
   children?: ReactNode;
   footer?: ReactNode;
   onClose?: () => void;
+  width?: number;
 }
 
 export function Dialog({
@@ -761,6 +762,7 @@ export function Dialog({
   children,
   footer,
   onClose,
+  width,
 }: DialogProps) {
   const { width: termWidth, height: termHeight } = useTerminalDimensions();
 
@@ -773,7 +775,7 @@ export function Dialog({
 
   if (!open) return null;
 
-  const paletteWidth = Math.min(Math.floor(termWidth * 0.7), 72);
+  const paletteWidth = width ?? Math.min(Math.floor(termWidth * 0.7), 72);
 
   return (
     <box

@@ -48,12 +48,13 @@ export function HealthDialog({ api, onClose }: HealthDialogProps) {
   }, [onClose]);
 
   return (
-    <Dialog title="Server Health" open onClose={handleClose}>
+    <Dialog title="Server Health" open onClose={handleClose} width={52}>
       <box
         flexDirection="column"
         paddingLeft={2}
         paddingRight={2}
         paddingBottom={1}
+        gap={0}
       >
         {loading ? (
           <text fg={theme.text.muted}>Loading...</text>
@@ -112,9 +113,9 @@ function StatRow({
   valueColor?: string;
 }) {
   return (
-    <box height={1} flexDirection="row">
+    <box height={1} flexDirection="row" gap={2}>
       <text fg={theme.text.muted} wrapMode="none" flexShrink={0}>
-        {label.padEnd(18)}
+        {label.padEnd(22)}
       </text>
       <text fg={valueColor ?? theme.text.primary} wrapMode="none">
         {value}
