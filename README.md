@@ -118,6 +118,17 @@ Skills are stored in `.agents/skills/<name>/SKILL.md` with YAML frontmatter. See
 - **bun >= 1.3.14** (dev only — used by `pnpm cli` and `pnpm dev:cli` for fast startup; not required in production)
 - At least one API key configured (Anthropic, Gemini, DeepSeek, Z.ai, MiniMax, OpenAI, or CommandCode)
 
+## Contributing
+
+We welcome contributions! See [CONTRIBUTING.md](CONTRIBUTING.md) for the full guide, or check the [Development docs](docs/development/setup.md) for detailed setup and [Testing docs](docs/development/testing.md) for test conventions.
+
+Key points:
+
+- **TDD** — write tests first, then implement
+- **Conventional commits** — `feat:`, `fix:`, `docs:`, etc.
+- **Pre-commit hooks** — formatting enforced via Husky
+- **TypeScript** — strict mode, ^6.0.3 across all packages
+
 ## License
 
 MIT &copy; 2026 SOUMITRA SAHA
