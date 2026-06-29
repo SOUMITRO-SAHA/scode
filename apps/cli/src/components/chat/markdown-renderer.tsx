@@ -7,7 +7,7 @@ import { theme } from "@scode/theme";
 const TASK_CHECKED = "☑";
 const TASK_UNCHECKED = "☐";
 
-const BULLETS = ["•", "◦", "▪", "▫"];
+const BULLETS = ["●", "○", "◆", "◇"];
 const NUMBERED_REGEX = /^(\s*)(\d+)\.\s/;
 
 const CALLOUT_ICONS: Record<string, string> = {
