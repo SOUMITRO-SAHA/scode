@@ -22,21 +22,22 @@ pnpm cli --prompt "Refactor this component" --model "gemini/gemini-2.5-pro"
 
 ## Root package.json Commands
 
-| Command            | Description                                                                                  |
-| ------------------ | -------------------------------------------------------------------------------------------- |
-| `pnpm cli`         | Start the CLI (uses `tsx`; use `bun apps/cli/src/index.tsx` directly for faster TUI startup) |
-| `pnpm server`      | Start the server standalone on port 4100                                                     |
-| `pnpm web`         | Start the web dev server (experimental)                                                      |
-| `pnpm dev`         | Run CLI in debug mode (`SCODE_DEBUG=1 pnpm cli`)                                             |
-| `pnpm dev:cli`     | Dev mode for CLI with file watching                                                          |
-| `pnpm dev:server`  | Dev mode for server with `tsx watch`                                                         |
-| `pnpm dev:web`     | Dev mode for web app                                                                         |
-| `pnpm demo`        | Quick demo: spawns server + sends "Hello, what can you do?"                                  |
-| `pnpm test`        | Run all workspace tests                                                                      |
-| `pnpm lint`        | Run linting across the workspace                                                             |
-| `pnpm format`      | Format all `*.{ts,tsx,md}` with Prettier                                                     |
-| `pnpm check-types` | Type-check all packages                                                                      |
-| `pnpm prepare`     | Install husky hooks + effect-language-service                                                |
+| Command             | Description                                                                                    |
+| ------------------- | ---------------------------------------------------------------------------------------------- |
+| `pnpm dev`          | Interactive TUI (debug mode, uses bun — OpenTUI FFI only works under bun)                      |
+| `pnpm dev:headless` | REPL mode (no TUI, clean output, uses tsx)                                                     |
+| `pnpm cli`          | Start the CLI (uses `scripts/cli.sh` wrapper — routes `--prompt` to tsx, else tries bun first) |
+| `pnpm server`       | Start the server standalone on port 4100                                                       |
+| `pnpm web`          | Start the web dev server (experimental)                                                        |
+| `pnpm dev:cli`      | Dev mode for CLI with file watching (uses bun — tsx watch crashes OpenTUI FFI)                 |
+| `pnpm dev:server`   | Dev mode for server with `tsx watch`                                                           |
+| `pnpm dev:web`      | Dev mode for web app                                                                           |
+| `pnpm demo`         | Quick demo: `pnpm dev:headless --prompt "Hello, what can you do?"`                             |
+| `pnpm test`         | Run all workspace tests                                                                        |
+| `pnpm lint`         | Run linting across the workspace                                                               |
+| `pnpm format`       | Format all `*.{ts,tsx,md}` with Prettier                                                       |
+| `pnpm check-types`  | Type-check all packages                                                                        |
+| `pnpm prepare`      | Install husky hooks + effect-language-service                                                  |
 
 ## Per-Package Commands
 

@@ -238,6 +238,7 @@ import { useAppStore } from "../../store/index";
 
 - Root `pnpm cli` tries `bun` first (silent stderr redirect), falls back to `tsx` — bun is faster for dev. `--prompt` args reach tsx fallback (when bun isn't available); for TUI-only sessions bun is used.
 - pnpm appends extra args to the **end of the entire command string**, not as positional params. With `bun X || tsx Y --prompt "text"`, the args only reach `tsx Y`. `$@` doesn't help because pnpm doesn't pass args as shell positional parameters.
+- Fix: `scripts/cli.sh` is a bash wrapper that inspects `$@` for `--prompt` and routes to tsx directly, avoiding bun. Without `--prompt`, it tries bun first then falls back to tsx.
 - `SCODE_DEBUG=1 pnpm cli` in a script can fail with newer pnpm versions because `pnpm cli` may be interpreted as a subcommand rather than `pnpm run cli`. Use `pnpm exec tsx ...` or `bun ...` directly instead.
 
 ## Ignored directories
