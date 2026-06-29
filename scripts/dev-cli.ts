@@ -29,7 +29,6 @@ function startCli() {
 function restartCli() {
   if (restarting) return;
   restarting = true;
-  console.log("\x1b[33m[dev] File change detected, restarting...\x1b[0m");
   child?.kill();
   child = null;
   restarting = false;
@@ -57,5 +56,3 @@ watch(srcDir, { recursive: true }, (_event, filename) => {
     restartCli();
   }
 });
-
-console.log(`\x1b[36m[dev] Watching ${srcDir} for changes...\x1b[0m`);

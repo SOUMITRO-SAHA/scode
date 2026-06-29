@@ -14,14 +14,12 @@ import {
   SESSIONS_PATH,
   sessionMessagesPath,
 } from "@scode/shared/constants";
-import { DebugLogger } from "@scode/shared/logger";
 import { decodeStreamChunk } from "@scode/shared/types";
 import type { ToolCallState } from "@scode/shared/types";
 import { apiFetch, apiFetchStream, errorMessage } from "@scode/shared/utils";
 import { useQueryClient } from "@tanstack/react-query";
 
 const decoder = new TextDecoder();
-const dbg = new DebugLogger("client:stream");
 
 let assistantMsgAdded = false;
 
@@ -33,9 +31,6 @@ function processStreamChunk(chunk: string, buffer: string): string {
     if (!line) continue;
     const parsed = decodeStreamChunk(line);
     if (!parsed) {
-      dbg.warn("unparseable chunk, treating as plain text", {
-        line: line.slice(0, 80),
-      });
       if (!assistantMsgAdded) {
         useAppStore.getState().addAssistantMessage();
         assistantMsgAdded = true;
@@ -157,13 +152,6 @@ export function useStreamChat(serverUrl: string) {
       const current = useAppStore.getState();
       if (!text.trim() || current.streaming) return;
 
-      dbg.log("submit", {
-        text: text.slice(0, 120),
-        model: current.model,
-        currentSessionId: current.currentSessionId,
-        continuing: !!current.currentSessionId,
-      });
-
       assistantMsgAdded = false;
       streamRef.current = null;
 
@@ -181,7 +169,6 @@ export function useStreamChat(serverUrl: string) {
       // Wrap the stream lifecycle in an Effect for proper scoped resource management
       const program = Effect.gen(function* () {
         if (!sessionId) {
-          dbg.log("fetching config for default model");
           const config = yield* apiFetch<{ defaultModel: string }>(
             CONFIG_PATH,
             {},
@@ -197,7 +184,6 @@ export function useStreamChat(serverUrl: string) {
               "No model selected. Use Ctrl+M or /models command to select a model.",
             );
           }
-          dbg.log("creating session", { model: m, name: text.slice(0, 60) });
           const session = yield* apiFetch<{ id: string }>(
             SESSIONS_PATH,
             {
@@ -213,7 +199,6 @@ export function useStreamChat(serverUrl: string) {
           sessionId = session.id;
           useAppStore.getState().setCurrentSessionId(sessionId);
           toast.show({ variant: "success", message: "Session created" });
-          dbg.log("session created", { sessionId });
         }
 
         setStreamingSession(sessionId);
@@ -221,7 +206,6 @@ export function useStreamChat(serverUrl: string) {
         const model = useAppStore.getState().model;
         const effortLevel = useAppStore.getState().effortLevel;
 
-        dbg.log("opening stream", { sessionId, model, endpoint: "/chat" });
         const stream = yield* apiFetchStream(
           CHAT_PATH,
           { message: text, model, sessionId, effortLevel },
@@ -233,10 +217,8 @@ export function useStreamChat(serverUrl: string) {
         );
 
         streamRef.current = stream;
-        dbg.log("stream connected, reading chunks");
 
         yield* readStreamToStore(stream, "");
-        dbg.log("stream finished");
 
         // Commit thought from global store to the last assistant message
         const afterState = useAppStore.getState();
@@ -249,7 +231,6 @@ export function useStreamChat(serverUrl: string) {
         await Effect.runPromise(program);
       } catch (err) {
         const errMsg = Effect.runSync(errorMessage(err));
-        dbg.error("stream failed", { error: errMsg });
         useAppStore.getState().setLastAssistantError(errMsg);
         toast.show({ variant: "error", message: errMsg });
         // Persist error to server so it survives session reload
@@ -270,7 +251,6 @@ export function useStreamChat(serverUrl: string) {
           ).catch(() => {});
         }
       } finally {
-        dbg.log("stream flow complete, resetting state");
         const stream = streamRef.current;
         if (stream !== null) {
           try {

@@ -1,4 +1,4 @@
-export { LoggerService, LoggerServiceLive, logger, dbg } from "./logger";
+export { LoggerService, LoggerServiceLive, logger } from "./logger";
 
 export { ConfigService, ConfigServiceLive } from "../config/service";
 export { SessionService, SessionServiceLive } from "../session/service";

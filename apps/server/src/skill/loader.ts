@@ -7,8 +7,6 @@ import type { Skill } from "../types";
 import type { SkillDir } from "./discover";
 import { SkillLoadError } from "./error";
 
-import { DebugLogger } from "@scode/shared/logger";
-
 const SKILL_MD = "SKILL.md";
 const NAME_RE = /^[a-z0-9]([a-z0-9-]*[a-z0-9])?$/;
 const NAME_HYPHEN_RE = /--/;
@@ -21,8 +19,6 @@ const STRING_FIELDS = new Set([
   "compatibility",
 ]);
 
-const dbg = new DebugLogger("server:skill:loader");
-
 interface Frontmatter {
   name?: string;
   description?: string;
@@ -34,9 +30,6 @@ function warnNameIssues(name: string, dirName: string): void {
   if (NAME_HYPHEN_RE.test(name)) issues.push("consecutive-hyphens");
   if (name.length > MAX_NAME_LENGTH) issues.push("exceeds-max-length");
   if (name !== dirName) issues.push("dir-mismatch");
-  if (issues.length > 0) {
-    dbg.warn("skill name validation issues", { name, dirName, issues });
-  }
 }
 
 function validDescription(desc: string): boolean {
@@ -99,15 +92,10 @@ function validateSkill(
 ): { name: string; description: string } | null {
   if (!fm) return null;
   if (!fm.name) {
-    dbg.warn("skill missing name", { dir: dir.name });
     return null;
   }
   warnNameIssues(fm.name, basename(dir.path));
   if (!fm.description || !validDescription(fm.description)) {
-    dbg.warn("skill missing or invalid description", {
-      name: fm.name,
-      dir: dir.name,
-    });
     return null;
   }
   return { name: fm.name, description: fm.description };
@@ -121,16 +109,6 @@ export function loadSkillMeta(
       if (raw === null) return null;
       return validateSkill(parseFrontmatter(raw), dir);
     }),
-    Effect.tap((result) =>
-      Effect.sync(() => {
-        if (result) {
-          dbg.log("loaded skill meta", {
-            name: result.name,
-            description: result.description,
-          });
-        }
-      }),
-    ),
   );
 }
 
@@ -150,15 +128,5 @@ export function loadSkill(
         body,
       });
     }),
-    Effect.tap((result) =>
-      Effect.sync(() => {
-        if (result) {
-          dbg.log("loaded skill full", {
-            name: result.name,
-            bodyLength: result.body.length,
-          });
-        }
-      }),
-    ),
   );
 }

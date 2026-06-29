@@ -1,7 +1,5 @@
 import type { Skill } from "../types";
 
-import { DebugLogger } from "@scode/shared/logger";
-
 const STOP_WORDS = new Set([
   "the",
   "a",
@@ -59,8 +57,6 @@ const STOP_WORDS = new Set([
   "need",
 ]);
 
-const dbg = new DebugLogger("server:skill:matcher");
-
 function tokenize(text: string): string[] {
   return text
     .toLowerCase()
@@ -101,26 +97,12 @@ export function matchSkills(prompt: string, skills: Skill[]): Skill[] {
 
   const promptTokens = tokenize(prompt);
 
-  dbg.log("matching skills", {
-    prompt,
-    promptTokens,
-    skillCount: skills.length,
-    skillNames: skills.map((s) => s.name),
-  });
-
   const scored = skills.map((skill) => {
     const skillText = `${skill.name} ${skill.description}`;
     const skillTokens = tokenize(skillText);
     const exact = exactOverlap(promptTokens, skillTokens);
     const fuzzy = fuzzyOverlap(promptTokens, skillTokens);
     const score = exact > 0 ? exact : fuzzy;
-    dbg.log("skill score", {
-      name: skill.name,
-      exact,
-      fuzzy,
-      score,
-      skillTokens,
-    });
     return { skill, score };
   });
 
@@ -128,12 +110,6 @@ export function matchSkills(prompt: string, skills: Skill[]): Skill[] {
     .filter((s) => s.score > 0)
     .sort((a, b) => b.score - a.score)
     .map((s) => s.skill);
-
-  dbg.log("match result", {
-    matched: matched.map((s) => s.name),
-    count: matched.length,
-    fallbackOnly: matched.length === 0,
-  });
 
   return matched.length > 0 ? [...matched, MAIN_SKILL] : [MAIN_SKILL];
 }

@@ -5,10 +5,6 @@ import { join } from "node:path";
 
 import { SkillDiscoverError } from "./error";
 
-import { DebugLogger } from "@scode/shared/logger";
-
-const dbg = new DebugLogger("server:skill:discover");
-
 const SKILL_DIRS = [
   // Cross-client standard
   { subdir: ".agents/skills" },
@@ -42,18 +38,7 @@ function scanDir(
     },
     catch: (err) =>
       new SkillDiscoverError({ dir: target, message: String(err) }),
-  }).pipe(
-    Effect.tap((dirs) =>
-      Effect.sync(() =>
-        dbg.log("scanned skill directory", {
-          scope: label,
-          dir: target,
-          count: dirs.length,
-          dirs: dirs.map((d) => d.name),
-        }),
-      ),
-    ),
-  );
+  });
 }
 
 export function discover(): Effect.Effect<SkillDir[], SkillDiscoverError> {
@@ -78,10 +63,6 @@ export function discover(): Effect.Effect<SkillDir[], SkillDiscoverError> {
       for (const dirs of results) {
         for (const d of dirs) {
           if (seen.has(d.name)) {
-            dbg.warn("skill name collision", {
-              name: d.name,
-              shadowed: d.path,
-            });
             continue;
           }
           seen.add(d.name);
@@ -91,13 +72,5 @@ export function discover(): Effect.Effect<SkillDir[], SkillDiscoverError> {
 
       return merged;
     }),
-    Effect.tap((dirs) =>
-      Effect.sync(() =>
-        dbg.log("discovered skill directories", {
-          total: dirs.length,
-          dirs: dirs.map((d) => d.name),
-        }),
-      ),
-    ),
   );
 }

@@ -19,9 +19,6 @@ export const sendPrompt = (
   effortLevel?: EffortLevel,
 ): Effect.Effect<string, StreamError> =>
   Effect.gen(function* () {
-    logger.debug(
-      `Sending prompt to ${serverUrl} (${Effect.runSync(truncate(prompt, 60))}...)`,
-    );
     const startTime = Date.now();
 
     const body: Record<string, unknown> = { prompt };

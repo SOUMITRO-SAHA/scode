@@ -6,10 +6,6 @@ import { discover } from "../skill/discover";
 import { loadSkill } from "../skill/loader";
 import type { ToolDefinition, ToolHandler } from "../types";
 
-import { DebugLogger } from "@scode/shared/logger";
-
-const dbg = new DebugLogger("server:tool:skill");
-
 const NOT_FOUND = "Skill name required";
 
 function baseDefinition(): ToolDefinition {
@@ -55,8 +51,6 @@ function findSkill(name: string) {
     const dirs = yield* discover();
     const available = dirs.map((d) => d.name);
 
-    dbg.log("skill tool called", { name, available });
-
     const dir = dirs.find((d) => d.name === name);
     if (!dir) {
       const fuzzy = dirs.filter(
@@ -70,13 +64,11 @@ function findSkill(name: string) {
         available.length > 0
           ? `Skill "${name}" not found. Available skills: ${available.join(", ")}.${hint}`
           : `Skill "${name}" not found. No skills are currently loaded.`;
-      dbg.warn("skill not found", { requested: name, available, fuzzy });
       return { error: msg };
     }
 
     const skill = yield* loadSkill(dir);
     if (!skill) {
-      dbg.error("skill failed to parse", { name, path: dir.path });
       return { error: `Skill "${name}" failed to parse` };
     }
 
@@ -88,12 +80,6 @@ function findSkill(name: string) {
     } catch {
       /* no extra files */
     }
-
-    dbg.log("skill loaded", {
-      name,
-      bodyLength: skill.body.length,
-      extraFiles: extraFiles.length,
-    });
 
     const fileList =
       extraFiles.length > 0
@@ -115,7 +101,6 @@ export const handler: ToolHandler = async (input: Record<string, unknown>) => {
   try {
     return await Effect.runPromise(findSkill(name));
   } catch (err) {
-    dbg.error("skill tool error", { name, error: String(err) });
     return { error: `Skill tool error: ${String(err)}` };
   }
 };

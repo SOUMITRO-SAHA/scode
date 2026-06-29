@@ -20,18 +20,12 @@ export class BootstrapError extends Data.TaggedError("BootstrapError")<{
 export const bootstrap = Effect.gen(function* () {
   const config = yield* CliConfig;
 
-  logger.debug("Platform initialized", {
-    port: config.port,
-    maxPolls: config.maxPolls,
-  });
-
   const serverUrl = yield* ensureServer;
 
   const id = yield* registerActiveClient;
 
   if (id) {
     setClientId(id);
-    logger.debug(`Registered client: ${id}`);
   } else {
     logger.warn("Client registration failed — shutdown will skip unregister");
   }

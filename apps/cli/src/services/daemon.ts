@@ -50,7 +50,6 @@ export const findServer: Effect.Effect<string | null> = Effect.gen(
   function* () {
     const ok = yield* healthCheck;
     if (ok) {
-      logger.debug(`Found existing server at ${baseUrl}/health`);
       return baseUrl;
     }
     return null;
@@ -81,7 +80,6 @@ export function spawnServerProcess(): ChildProcess {
       } else {
         command = "npx";
         args = ["tsx", entry, `--port=${DEFAULT_PORT}`];
-        logger.debug("tsx not found in node_modules, falling back to npx");
       }
     }
   }
@@ -125,7 +123,6 @@ export function spawnServerProcess(): ChildProcess {
 }
 
 export const waitForServer: Effect.Effect<boolean> = Effect.gen(function* () {
-  logger.debug(`Polling server health at ${baseUrl}/health`);
   for (let i = 0; i < MAX_POLLS; i++) {
     const ok = yield* healthCheck;
     if (ok) return true;

@@ -2,9 +2,6 @@ import { useRef } from "react";
 
 import type { KeyEvent } from "@opentui/core";
 import { useKeyboard } from "@opentui/react";
-import { DebugLogger } from "@scode/shared/logger";
-
-const dbg = new DebugLogger("kb:shortcuts");
 
 interface KeyboardShortcutsOptions {
   paletteVisible: boolean;
@@ -39,17 +36,6 @@ export function useKeyboardShortcuts({
   onExitRef.current = onExit;
 
   useKeyboard((key: KeyEvent) => {
-    dbg.log("key event", {
-      name: key.name,
-      ctrl: key.ctrl,
-      meta: key.meta,
-      shift: key.shift,
-      option: key.option,
-      super: key.super,
-      sequence: key.sequence?.length,
-      eventType: key.eventType,
-    });
-
     if (key.name === "escape") {
       if (paletteVisible) {
         setPaletteVisible(false);

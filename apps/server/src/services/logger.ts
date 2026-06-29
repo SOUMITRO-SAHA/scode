@@ -1,6 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
-import { DebugLogger, Logger } from "@scode/shared/logger";
+import { Logger } from "@scode/shared/logger";
 
 export class LoggerService extends Context.Service<
   LoggerService,
@@ -14,7 +14,6 @@ export class LoggerService extends Context.Service<
 >()("LoggerService") {}
 
 const logger = new Logger();
-const dbg = new DebugLogger("server:handler");
 
 export const LoggerServiceLive = Layer.succeed(
   LoggerService,
@@ -27,4 +26,4 @@ export const LoggerServiceLive = Layer.succeed(
   }),
 );
 
-export { logger, dbg };
+export { logger };

@@ -14,13 +14,12 @@ import { constrainedDefinition } from "../tool/skill";
 import type { Skill, StreamEvent } from "../types";
 
 import { MAX_TOOL_ITERATIONS } from "@scode/shared/constants";
-import { DebugLogger, Logger } from "@scode/shared/logger";
+import { Logger } from "@scode/shared/logger";
 import { encodeStreamChunk } from "@scode/shared/types";
 import type { EffortLevel } from "@scode/shared/types";
 import { truncate } from "@scode/shared/utils";
 
 const logger = new Logger();
-const dbg = new DebugLogger("server:handler");
 
 type StreamWriter = (chunk: string) => void | Promise<unknown>;
 
@@ -65,7 +64,6 @@ function extractErrorMsg(
     return msg;
   }
   if (error instanceof ToolFailure) {
-    dbg.error("tool failure", { error: error.error });
     return error.error;
   }
   if (error instanceof Error) {
@@ -106,13 +104,6 @@ export async function handleChat(
   const { provider, model } = deps.providerService.resolve(resolvedModel);
   const apiKey = resolveApiKey(provider.id);
 
-  dbg.log("chat request received", {
-    prompt: Effect.runSync(truncate(prompt, 120)),
-    model: resolvedModel,
-    provider: provider.id,
-    sessionId,
-  });
-
   logger.info(
     `Chat with ${provider.id}/${model}: "${Effect.runSync(truncate(prompt, 80))}"`,
   );
@@ -143,7 +134,7 @@ export async function handleChat(
   // AI auto-rename on 2nd user message (fire-and-forget, non-blocking)
   Effect.runPromise(
     autoRenameSession(deps, session, resolvedModel, apiKey),
-  ).catch(() => dbg.warn("auto-rename: title generation failed"));
+  ).catch(() => {});
 
   const saveSync = (msg: string) =>
     Effect.runSync(persistError(deps, session.id, msg));
@@ -160,15 +151,6 @@ export async function handleChat(
     );
   const { system } = buildPrompt(matched, prompt, toolDefs);
 
-  dbg.log("skill matching result", {
-    prompt,
-    totalSkills: skills.length,
-    allSkills: skills.map((s) => s.name),
-    matchedSkills: matched.map((s) => s.name),
-    matchCount: matched.length,
-  });
-  dbg.log("tools available", { count: toolDefs.length });
-
   const conversation = [...session.messages];
   let fullResponse = "";
   let hadError = false;
@@ -177,7 +159,6 @@ export async function handleChat(
 
   for (let i = 0; i < MAX_TOOL_ITERATIONS; i++) {
     let toolCalled = false;
-    dbg.log(`tool loop iteration ${i + 1}/10`);
 
     let gen: AsyncGenerator<StreamEvent>;
     try {
@@ -191,7 +172,6 @@ export async function handleChat(
       });
     } catch (err: unknown) {
       const msg = extractErrorMsg(err, provider.id, model);
-      dbg.error("llm init failed", { error: msg });
       const errText = `LLM call failed - ${msg}`;
       lastErrorMessage = errText;
       await streamWriter(
@@ -237,10 +217,6 @@ export async function handleChat(
         );
       } else if (event.type === "tool_use") {
         toolCalled = true;
-        dbg.log("tool call", {
-          name: event.toolCall.name,
-          input: event.toolCall.input,
-        });
         logger.info(`Tool call: ${event.toolCall.name}`);
 
         // Forward tool_use to client before executing
@@ -260,11 +236,6 @@ export async function handleChat(
               ),
             ),
         );
-
-        dbg.log("tool result", {
-          name: event.toolCall.name,
-          resultPreview: JSON.stringify(result).slice(0, 200),
-        });
 
         conversation.push({
           role: "assistant",
@@ -333,15 +304,8 @@ export async function handleChat(
         break;
       }
     }
-    dbg.log("stream event loop done", { streamChunkCount, toolCalled });
     if (!toolCalled) break;
   }
-
-  dbg.log("response complete", {
-    responseLength: fullResponse.length,
-    hadError,
-    preview: fullResponse.slice(0, 200),
-  });
 
   if (fullResponse || hadError || thoughtText) {
     const content =
@@ -431,9 +395,4 @@ const autoRenameSession = Effect.fnUntraced(function* (
 
   session.name = title;
   yield* deps.sessionService.update(session);
-
-  dbg.log("auto-rename: session title updated", {
-    id: session.id.slice(0, 8),
-    title,
-  });
 });
