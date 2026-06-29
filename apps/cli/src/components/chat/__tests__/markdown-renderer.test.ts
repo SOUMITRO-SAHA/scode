@@ -37,7 +37,7 @@ describe("preprocessMarkdown", () => {
     it("preserves non-task list items", () => {
       const input = "- Regular item\n- [ ] Task item";
       const result = preprocessMarkdown(input);
-      expect(result).toBe("- Regular item\n☐ Task item");
+      expect(result).toBe("• Regular item\n☐ Task item");
     });
   });
 
@@ -89,6 +89,80 @@ describe("preprocessMarkdown", () => {
       const result = preprocessMarkdown(input);
       expect(result).toContain("ℹ");
       expect(result).toContain("**Note**");
+    });
+  });
+
+  describe("list items", () => {
+    it("normalizes bullet list markers", () => {
+      const input = "- Item 1\n- Item 2\n- Item 3";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Item 1");
+      expect(result).toContain("• Item 2");
+      expect(result).toContain("• Item 3");
+    });
+
+    it("handles asterisk bullet markers", () => {
+      const input = "* Item 1\n* Item 2";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Item 1");
+      expect(result).toContain("• Item 2");
+    });
+
+    it("handles plus bullet markers", () => {
+      const input = "+ Item 1\n+ Item 2";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Item 1");
+      expect(result).toContain("• Item 2");
+    });
+
+    it("uses different bullets for nested lists", () => {
+      const input = "- Top level\n    - Nested level";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Top level");
+      expect(result).toContain("◦ Nested level");
+    });
+
+    it("normalizes indentation to 2 spaces per level", () => {
+      const input = "- Top\n    - Deep nested";
+      const result = preprocessMarkdown(input);
+      expect(result).toMatch(/^• Top$/m);
+      expect(result).toMatch(/^  ◦ Deep nested$/m);
+    });
+
+    it("handles deeply nested lists", () => {
+      const input = "- Level 1\n    - Level 2\n        - Level 3";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Level 1");
+      expect(result).toContain("◦ Level 2");
+      expect(result).toContain("▪ Level 3");
+    });
+
+    it("preserves numbered list markers", () => {
+      const input = "1. First\n2. Second\n3. Third";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("1. First");
+      expect(result).toContain("2. Second");
+      expect(result).toContain("3. Third");
+    });
+
+    it("normalizes numbered list indentation", () => {
+      const input = "1. Top\n    1. Nested";
+      const result = preprocessMarkdown(input);
+      expect(result).toMatch(/^1\. Top$/m);
+      expect(result).toMatch(/^  1\. Nested$/m);
+    });
+
+    it("handles mixed bullet and numbered lists", () => {
+      const input = "- Bullet item\n1. Numbered item";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Bullet item");
+      expect(result).toContain("1. Numbered item");
+    });
+
+    it("preserves list item content with inline formatting", () => {
+      const input = "- Item with **bold** and *italic*";
+      const result = preprocessMarkdown(input);
+      expect(result).toContain("• Item with **bold** and *italic*");
     });
   });
 

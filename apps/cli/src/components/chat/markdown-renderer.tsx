@@ -7,6 +7,9 @@ import { theme } from "@scode/theme";
 const TASK_CHECKED = "☑";
 const TASK_UNCHECKED = "☐";
 
+const BULLETS = ["•", "◦", "▪", "▫"];
+const NUMBERED_REGEX = /^(\s*)(\d+)\.\s/;
+
 const CALLOUT_ICONS: Record<string, string> = {
   note: "ℹ",
   tip: "💡",
@@ -80,6 +83,43 @@ function preprocessTaskLists(content: string): string {
   });
 }
 
+function getNestingLevel(indentSpaces: number): number {
+  if (indentSpaces < 4) return 0;
+  return Math.floor(indentSpaces / 4);
+}
+
+function preprocessListItems(content: string): string {
+  const lines = content.split("\n");
+  const result: string[] = [];
+
+  for (const line of lines) {
+    const bulletMatch = line.match(/^( *)([-*+])\s+(.*)$/);
+    if (bulletMatch) {
+      const [, spaces, , text] = bulletMatch;
+      const indentCount = spaces.length;
+      const nestingLevel = getNestingLevel(indentCount);
+      const bullet = BULLETS[nestingLevel % BULLETS.length];
+      const normalizedIndent = "  ".repeat(nestingLevel);
+      result.push(`${normalizedIndent}${bullet} ${text}`);
+      continue;
+    }
+
+    const numberedMatch = line.match(/^( *)(\d+)\.\s+(.*)$/);
+    if (numberedMatch) {
+      const [, spaces, num, text] = numberedMatch;
+      const indentCount = spaces.length;
+      const nestingLevel = getNestingLevel(indentCount);
+      const normalizedIndent = "  ".repeat(nestingLevel);
+      result.push(`${normalizedIndent}${num}. ${text}`);
+      continue;
+    }
+
+    result.push(line);
+  }
+
+  return result.join("\n");
+}
+
 function preprocessCallouts(content: string): string {
   return content.replace(
     /> \[!(NOTE|TIP|IMPORTANT|WARNING|CAUTION)\]\s*/gi,
@@ -140,6 +180,7 @@ function preprocessDiffBlocks(content: string): string {
 export function preprocessMarkdown(content: string): string {
   let processed = content;
   processed = preprocessTaskLists(processed);
+  processed = preprocessListItems(processed);
   processed = preprocessCallouts(processed);
   processed = preprocessCodeBlocks(processed);
   processed = preprocessDiffBlocks(processed);

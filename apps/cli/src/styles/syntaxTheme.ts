@@ -35,10 +35,8 @@ const mdConfig = {
     italic: true,
   },
   "markup.list": {
-    fg: RGBA.fromHex(colors.gray[200]),
-  },
-  "markup.list.markup": {
     fg: RGBA.fromHex(colors.blue[400]),
+    bold: true,
   },
   "markup.quote": {
     fg: RGBA.fromHex(theme.markdown.quoteText),
