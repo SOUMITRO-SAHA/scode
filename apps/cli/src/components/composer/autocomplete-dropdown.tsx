@@ -1,7 +1,8 @@
-import { useMemo } from "react";
+import { useEffect, useMemo, useRef } from "react";
 
 import type { AutocompleteItem } from "./types";
 
+import type { ScrollBoxRenderable } from "@opentui/core";
 import { TextAttributes } from "@opentui/core";
 import { theme } from "@scode/theme";
 
@@ -48,6 +49,24 @@ export function AutocompleteDropdown({
     );
   }
 
+  const scrollRef = useRef<ScrollBoxRenderable | null>(null);
+
+  useEffect(() => {
+    setTimeout(() => {
+      const scroll = scrollRef.current;
+      if (!scroll) return;
+      const children = scroll.getChildren();
+      const target = children[selectedIndex];
+      if (!target) return;
+      const y = target.y - scroll.y;
+      if (y >= scroll.height) {
+        scroll.scrollBy(y - scroll.height + 1);
+      } else if (y < 0) {
+        scroll.scrollBy(y);
+      }
+    }, 0);
+  }, [selectedIndex]);
+
   const paddedNameLen = Math.max(maxNameLen + 1, 12);
 
   return (
@@ -63,6 +82,7 @@ export function AutocompleteDropdown({
       flexDirection="column"
     >
       <scrollbox
+        ref={scrollRef}
         flexGrow={1}
         flexDirection="column"
         scrollbarOptions={{ visible: false }}
