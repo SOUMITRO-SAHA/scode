@@ -37,7 +37,7 @@ export interface ComposerProps {
 
 const AGENT_COLORS: Record<string, string> = {
   plan: theme.warning,
-  write: theme.success,
+  write: theme.brand.primary,
   chat: theme.brand.primary,
 };
 
