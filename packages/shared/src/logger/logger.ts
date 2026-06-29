@@ -14,6 +14,7 @@ import type { Logger as PinoLogger } from "pino";
 
 import { LOG_COMPRESS_DAYS, LOG_DELETE_DAYS } from "../constants/limits";
 import { dateFromFilename, daysOld } from "../utils/time";
+import { LOG_LEVEL_PRIORITY } from "./types";
 import type { LogLevel, LoggerOptions } from "./types";
 
 function ts(): string {
@@ -94,6 +95,13 @@ export class Logger {
   private pino: PinoLogger;
   readonly logDir: string;
   private readonly useStdErr: boolean;
+  private readonly logLevel: LogLevel;
+
+  private static globalLevel: LogLevel | null = null;
+
+  static setLevel(level: LogLevel): void {
+    Logger.globalLevel = level;
+  }
 
   constructor(opts?: LoggerOptions) {
     this.logDir =
@@ -101,12 +109,16 @@ export class Logger {
       process.env.SCODE_LOG_DIR ??
       join(homedir(), ".scode", "logs");
     this.useStdErr = opts?.stderr ?? false;
+    this.logLevel =
+      opts?.level ??
+      (process.env.SCODE_LOG_LEVEL as LogLevel | undefined) ??
+      "debug";
     Effect.runSync(
       Effect.sync(() => mkdirSync(this.logDir, { recursive: true })),
     );
 
     this.pino = pino(
-      { level: opts?.level ?? "debug" },
+      { level: this.logLevel === "silent" ? "silent" : this.logLevel },
       pino.transport({
         target: "pino-roll",
         options: {
@@ -121,24 +133,37 @@ export class Logger {
     runMaintenance(this.logDir);
   }
 
+  private shouldConsole(level: LogLevel): boolean {
+    const effective = Logger.globalLevel ?? this.logLevel;
+    return LOG_LEVEL_PRIORITY[level] <= LOG_LEVEL_PRIORITY[effective];
+  }
+
   debug(msg: string, data?: unknown): void {
     this.pino.debug(data !== undefined ? { data } : {}, msg);
-    Effect.runSync(consoleOut("debug", msg, this.useStdErr));
+    if (this.shouldConsole("debug")) {
+      Effect.runSync(consoleOut("debug", msg, this.useStdErr));
+    }
   }
 
   info(msg: string, data?: unknown): void {
     this.pino.info(data !== undefined ? { data } : {}, msg);
-    Effect.runSync(consoleOut("info", msg, this.useStdErr));
+    if (this.shouldConsole("info")) {
+      Effect.runSync(consoleOut("info", msg, this.useStdErr));
+    }
   }
 
   warn(msg: string, data?: unknown): void {
     this.pino.warn(data !== undefined ? { data } : {}, msg);
-    Effect.runSync(consoleOut("warn", msg, this.useStdErr));
+    if (this.shouldConsole("warn")) {
+      Effect.runSync(consoleOut("warn", msg, this.useStdErr));
+    }
   }
 
   error(msg: string, data?: unknown): void {
     this.pino.error(data !== undefined ? { data } : {}, msg);
-    Effect.runSync(consoleOut("error", msg, this.useStdErr));
+    if (this.shouldConsole("error")) {
+      Effect.runSync(consoleOut("error", msg, this.useStdErr));
+    }
   }
 
   close(): void {

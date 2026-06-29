@@ -115,7 +115,7 @@ Skills are stored in `.agents/skills/<name>/SKILL.md` with YAML frontmatter. See
 
 - Node.js >= 18
 - pnpm 9
-- **bun >= 1.3.14** (dev only — used by `pnpm cli` and `pnpm dev:cli` for fast startup; not required in production)
+- **bun >= 1.3.14** (dev only — used by `pnpm dev:cli` for fast startup; for TUI-only sessions run `bun apps/cli/src/index.tsx` directly; not required in production)
 - At least one API key configured (Anthropic, Gemini, DeepSeek, Z.ai, MiniMax, OpenAI, or CommandCode)
 
 ## Contributing

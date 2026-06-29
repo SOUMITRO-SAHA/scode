@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as MutableRef from "effect/MutableRef";
 import { type ChildProcess, spawn } from "node:child_process";
+import { existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -21,9 +22,17 @@ const serverProcessRef = MutableRef.make<ChildProcess | null>(null);
 const baseUrl = serverBase();
 const healthCheckUrl = `${baseUrl}/health`;
 
+function isSeaBinary(): boolean {
+  return !process.argv[1];
+}
+
 function resolveServerEntry(): string {
-  const cliSrc = dirname(fileURLToPath(import.meta.url));
-  return resolve(cliSrc, "../../../server/src/index.ts");
+  const cliDir = dirname(fileURLToPath(import.meta.url));
+  if (cliDir.includes("dist")) {
+    const bundled = resolve(cliDir, "../../../server/dist/server/index.mjs");
+    if (existsSync(bundled)) return bundled;
+  }
+  return resolve(cliDir, "../../../server/src/index.ts");
 }
 
 const healthCheck = Effect.isSuccess(apiFetch<unknown>("/health", {}, baseUrl));
@@ -39,45 +48,77 @@ export const findServer: Effect.Effect<string | null> = Effect.gen(
   },
 );
 
-export const startServer: Effect.Effect<string, ServerNotFoundError> =
-  Effect.gen(function* () {
+export function spawnServerProcess(): ChildProcess {
+  let command: string;
+  let args: string[];
+
+  if (isSeaBinary()) {
+    command = process.execPath;
+    args = ["serve", `--port=${DEFAULT_PORT}`];
+    logger.info("Starting server (self-spawn)");
+  } else {
     const entry = resolveServerEntry();
     logger.info(`Starting server from ${entry}`);
 
-    const proc = spawn("npx", ["tsx", entry, `--port=${DEFAULT_PORT}`], {
-      stdio: ["ignore", "pipe", "pipe"],
-      detached: true,
-    });
-
-    MutableRef.set(serverProcessRef, proc);
-
-    proc.stdout?.on("data", (data: Buffer) => {
-      const msg = data.toString().trim();
-      if (msg) console.error("[server]", msg);
-    });
-
-    proc.stderr?.on("data", (data: Buffer) => {
-      const msg = data.toString().trim();
-      if (msg) console.error("[server]", msg);
-    });
-
-    proc.on("exit", (code) => {
-      if (code !== 0) logger.warn(`Server exited with code ${code}`);
-      MutableRef.set(serverProcessRef, null);
-    });
-
-    proc.unref();
-
-    logger.debug(`Polling server health at ${healthCheckUrl}`);
-    for (let i = 0; i < MAX_POLLS; i++) {
-      const ok = yield* healthCheck;
-      if (ok) {
-        logger.info(`Server ready at ${baseUrl}`);
-        return baseUrl;
-      }
-      yield* Effect.sleep(`${POLL_INTERVAL} millis`);
+    const isBundled = entry.endsWith(".mjs");
+    if (isBundled) {
+      command = "node";
+      args = [entry, `--port=${DEFAULT_PORT}`];
+    } else {
+      command = "npx";
+      args = ["tsx", entry, `--port=${DEFAULT_PORT}`];
     }
+  }
 
+  const proc = spawn(command, args, {
+    stdio: ["ignore", "pipe", "pipe"],
+    detached: true,
+    env: { ...process.env },
+  });
+
+  MutableRef.set(serverProcessRef, proc);
+
+  const quietServer =
+    process.env.SCODE_LOG_LEVEL === "silent" ||
+    process.env.SCODE_LOG_LEVEL === "error";
+
+  proc.stdout?.on("data", (data: Buffer) => {
+    const msg = data.toString().trim();
+    if (msg && !quietServer) console.error("[server]", msg);
+  });
+
+  proc.stderr?.on("data", (data: Buffer) => {
+    const msg = data.toString().trim();
+    if (msg && !quietServer) console.error("[server]", msg);
+  });
+
+  proc.on("exit", (code) => {
+    if (code !== 0) logger.warn(`Server exited with code ${code}`);
+    MutableRef.set(serverProcessRef, null);
+  });
+
+  proc.unref();
+  return proc;
+}
+
+export const waitForServer: Effect.Effect<boolean> = Effect.gen(function* () {
+  logger.debug(`Polling server health at ${healthCheckUrl}`);
+  for (let i = 0; i < MAX_POLLS; i++) {
+    const ok = yield* healthCheck;
+    if (ok) return true;
+    yield* Effect.sleep(`${POLL_INTERVAL} millis`);
+  }
+  return false;
+});
+
+export const startServer: Effect.Effect<string, ServerNotFoundError> =
+  Effect.gen(function* () {
+    spawnServerProcess();
+    const ok = yield* waitForServer;
+    if (ok) {
+      logger.info(`Server ready at ${baseUrl}`);
+      return baseUrl;
+    }
     return yield* Effect.fail(
       new ServerNotFoundError({
         port: DEFAULT_PORT,

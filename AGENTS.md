@@ -236,7 +236,7 @@ import { useAppStore } from "../../store/index";
 
 ## Dev startup
 
-- Root `pnpm cli` tries `bun` first (silent stderr redirect), falls back to `tsx` — bun is faster for dev.
+- Root `pnpm cli` tries `bun` first (silent stderr redirect), falls back to `tsx` — bun is faster for dev. `--prompt` args reach tsx fallback (when bun isn't available); for TUI-only sessions bun is used.
 
 ## Ignored directories
 

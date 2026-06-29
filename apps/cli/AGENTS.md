@@ -90,7 +90,7 @@
 
 ## Entrypoint
 
-- `pnpm cli` at root tries `bun` first (silent failure), falls back to `tsx` — bun is faster for dev startup.
+- `pnpm cli` at root tries `bun` first (silent failure), falls back to `tsx` — bun is faster for dev startup. `--prompt` args only reach the tsx fallback (not bun), which is intentional — TUI mode doesn't need them, and `pnpm exec tsx ... --prompt` is available for headless single-shot mode.
 - Three modes: `--prompt` (single-shot stdout), TUI (interactive), REPL fallback if TUI fails.
 
 ## Stream cleanup asymmetry
