@@ -1,7 +1,6 @@
 import { Context, Effect, Layer } from "effect";
 
 import { ClaudeAdapter } from "./claude/adapter";
-import { CommandCodeAdapter } from "./commandcode/adapter";
 import { GeminiAdapter } from "./gemini/adapter";
 import { OpenAICompatAdapter } from "./openai-compat/adapter";
 import type { LLMProvider } from "./provider";
@@ -67,7 +66,14 @@ function buildProviderRegistry(): ProviderRegistry {
       baseURL: "https://api.openai.com/v1",
     }),
   );
-  reg.register(new CommandCodeAdapter());
+  reg.register(
+    new OpenAICompatAdapter({
+      id: "commandcode",
+      name: "CommandCode",
+      defaultModel: "deepseek/deepseek-v4-flash",
+      baseURL: "https://api.commandcode.ai/provider/v1",
+    }),
+  );
   return reg;
 }
 
