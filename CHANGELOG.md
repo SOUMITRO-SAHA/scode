@@ -5,7 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [v0.0.0] - 2024-01-XX
+## [Unreleased]
+
+### Added
+
+- Features documentation integration with welcome-me skill
+- Comprehensive features.md file documenting all project capabilities
+- OpenAI compatibility for CommandCode provider via OpenAICompatAdapter
+
+### Changed
+
+- Improved agent title generation and auto-rename logging
+- Enhanced conversation title generation with 60-character truncation
+- Updated command palette styling with rounded border and focus border color
+- Improved markdown bullet symbol rendering and list item alignment
+
+### Fixed
+
+- Resolved bullet character expectations in markdown-renderer tests
+- Fixed dialog scrolling to keep selected items in view
+- Improved CWD propagation in skill discovery and session scoping
+
+## [v0.0.0] - 2024-06-30
 
 ### Added
 
