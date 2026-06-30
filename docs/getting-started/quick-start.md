@@ -61,6 +61,7 @@ pnpm cli --prompt "What does this project do?"
 
 ## What's Next?
 
+- [Features Overview](../../features.md) — full v0 feature list
 - [Configuration Guide](configuration.md) — API keys, auth file, env vars
 - [CLI Commands & Flags](../cli/commands.md)
 - [TUI Mode Guide](../cli/tui-mode.md)

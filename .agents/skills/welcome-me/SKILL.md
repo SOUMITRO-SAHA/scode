@@ -1,19 +1,54 @@
 ---
 name: welcome-me
-description: Greet new users, explain the scode client-server architecture, and suggest starter prompts. Use when a user says they're new, asks "what can you do", "how does this work", or "get started" — even if they don't explicitly say "new" or "beginner". Guide them to the project documentation.
+description: Greet new users, explain the scode client-server architecture, list features, and suggest starter prompts. Use when a user says they're new, asks "what can you do", "what features", "how does this work", "list features", "capabilities", or "get started" — even if they don't explicitly say "new" or "beginner". Guide them to the features documentation.
 compatibility: Designed for scode server — runtime skill loaded by the scode agent.
 metadata:
   author: scode
-  version: "2.0"
+  version: "2.1"
 ---
 
-When a user signals they're new or asks how scode works, start your response with this header on its own line:
+When a user signals they're new, asks about features, or asks how scode works, start your response with this header on its own line:
 
 ```
 > Welcome to scode agent!
 ```
 
-Then orient them concisely and point them to the documentation.
+Then orient them concisely and point them to the relevant documentation.
+
+## Feature Listing
+
+The `features.md` file at the project root documents all features. When a user asks "what can you do", "list features", or "what features does scode have", enumerate scode's capabilities by category from `features.md`:
+
+### CLI
+
+- Interactive TUI (OpenTUI + React), headless REPL, single-shot `--prompt` mode
+- Streaming output, session persistence, command palette, model switcher
+
+### Skill System
+
+- Auto-discovers skills from `.agents/skills/` and other standard directories
+- Matches skills to prompts via keyword overlap (exact + fuzzy)
+- LLM can dynamically load skill instructions mid-conversation via `skill` tool
+
+### LLM Providers
+
+- **Claude** (default, Sonnet 4 with extended thinking)
+- **Gemini**, **DeepSeek**, **Z.ai**, **MiniMax**, **OpenAI**, **CommandCode**
+
+### Tools
+
+- `read`, `write`, `edit`, `bash`, `grep`, `glob`, `skill`
+
+### Session Management
+
+- SQLite persistence, auto-rename, multi-session browsing
+
+### Configuration
+
+- `~/.scode/config.json` and `~/.scode/auth.json` with env var fallbacks
+- TUI-based `/connect` provider setup
+
+For a complete breakdown with every feature, point the user to `features.md` in the project root.
 
 ## Getting Started (TUI Only)
 
@@ -49,10 +84,11 @@ For any error, ask the user to share the exact error message, then guide them st
 - Supports multiple LLM providers: Claude, Gemini, DeepSeek, Z.ai, MiniMax, OpenAI, CommandCode
 - Persists sessions to SQLite via Drizzle ORM
 
-## Documentation
+## Documentation & References
 
-scode has full documentation in the `docs/` directory. Refer users to:
+scode has full documentation in the `docs/` directory and a features overview at the project root. Refer users to:
 
+- **Features Overview** — `features.md` (project root, all v0 features)
 - **Quick Start** — `docs/getting-started/quick-start.md`
 - **Installation & Configuration** — `docs/getting-started/installation.md`, `docs/getting-started/configuration.md`
 - **CLI Commands** — `docs/cli/commands.md` (all pnpm scripts, flags)
@@ -71,6 +107,7 @@ Suggest they try:
 ### General
 
 - "new to this project what should i do"
+- "What features do you have?"
 - "What does this project do?"
 - "Generate documentation for this project"
 - "Create a changelog for the last release"
@@ -101,5 +138,6 @@ Suggest they try:
 
 - Don't repeat full architecture unless asked — keep it brief
 - If the user asks about a specific task (e.g., "I need a changelog"), let the relevant skill handle it
-- Direct users to `docs/` for detailed information rather than explaining everything inline
-- If the user asks about a topic covered in the docs, summarize briefly and point them to the relevant file
+- When asked "what can you do" or "what features", enumerate from the Feature Listing section above and point to `features.md`
+- Direct users to `docs/` or `features.md` for detailed information rather than explaining everything inline
+- If the user asks about a topic covered in the docs or features, summarize briefly and point them to the relevant file

@@ -6,6 +6,7 @@
 
 | Section                                           | Description                                    |
 | ------------------------------------------------- | ---------------------------------------------- |
+| [Features](../features.md)                        | Full feature list for v0                       |
 | [Getting Started](getting-started/quick-start.md) | Quick start, installation, and configuration   |
 | [CLI](cli/overview.md)                            | CLI modes, commands, TUI, keybindings          |
 | [Server](server/overview.md)                      | Server architecture, API reference, providers  |
